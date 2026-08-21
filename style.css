@@ -1,0 +1,126 @@
+/* ==========================================
+   1. التنسيقات العامة وأساسيات الصفحة
+   ================================---------- */
+* {
+    box-sizing: border-box; /* لضمان حساب الأبعاد والمسافات بدقة دون أخطاء */
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f6f9; /* خلفية رمادية فاتحة ومريحة للعين للوحة التحكم */
+    color: #2c3e50;
+    direction: rtl;
+    padding: 20px;
+}
+
+/* ==========================================
+   2. نظام الشبكة لتوزيع لوحة التحكم (Grid)
+   ================================---------- */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* أعمدة متجاوبة بمرونة */
+    gap: 20px; /* مسافات منتظمة بين البطاقات */
+    max-width: 1200px;
+    margin: 0 auto; /* توسيط لوحة التحكم في منتصف الشاشة */
+}
+
+/* ==========================================
+   3. نظام الصناديق وتنسيق البطاقات (Box Model & Flexbox)
+   ================================---------- */
+.khazanti-card {
+    display: flex;
+    flex-direction: column;         /* ترتيب محتوى البطاقة عمودياً */
+    justify-content: space-between; /* توزيع العناصر من الأعلى للأسفل بمسافات متساوية */
+    
+    background-color: #ffffff;      /* خلفية بيضاء نقية */
+    padding: 25px;                  /* المسافة الداخلية (Padding) */
+    border: 1px solid #e0e0e0;      /* الحدود (Border) */
+    border-radius: 16px;            /* تدوير الحواف */
+    
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); /* الظل ثلاثي الأبعاد */
+    border-right: 5px solid #27ae60;/* شريط أخضر مميز لهیئة الخزينة */
+    
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* سلاسة الحركة عند التفاعل */
+}
+
+/* تأثير حركة خفيفة عند تمرير الماوس فوق البطاقة */
+.khazanti-card:hover {
+    transform: translateY(-5px); /* ترتفع البطاقة للأعلى قليلاً */
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12); /* يزداد عمق الظل */
+}
+
+/* ==========================================
+   4. تنسيق النصوص والعناوين (Typography)
+   ================================---------- */
+.khazanti-card h3 {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.balance-amount {
+    color: #2c3e50;
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    line-height: 1.2;
+}
+
+/* ألوان مخصصة للحالات المالية المختلفة */
+.balance-income {
+    color: #27ae60; /* أخضر للإيرادات */
+}
+
+.balance-expense {
+    color: #c0392b; /* أحمر للمصروفات */
+}
+
+/* ==========================================
+   5. تنسيق الأزرار والتفاعل (Transitions & Hover)
+   ================================---------- */
+.update-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;                /* تحويل مؤشر الماوس إلى يد */
+    width: 100%;                    /* عرض كامل للبطاقة */
+    
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.update-btn:hover {
+    background-color: #219653;      /* أخضر أغمق عند المرور بالماوس */
+    transform: translateY(-2px);    /* ارتفاع خفيف للزر */
+}
+
+.update-btn:active {
+    transform: translateY(0);       /* عودة الزر لمكانه عند الضغط الفعلي */
+}
+
+/* ==========================================
+   6. التجاوب مع شاشات الهواتف (Media Queries)
+   ================================---------- */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* تقليص هوامش الصفحة على الجوال */
+    }
+
+    .dashboard-layout {
+        gap: 15px;
+    }
+
+    .khazanti-card {
+        padding: 18px; /* تقليص الحشوة الداخلية للبطاقة */
+    }
+
+    .balance-amount {
+        font-size: 22px; /* تصغير حجم الرقم ليتناسب مع الشاشات الضيقة */
+    }
+}
