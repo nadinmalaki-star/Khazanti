@@ -1,0 +1,188 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    direction: rtl;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+h1 {
+    color: #2c3e50;
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+p {
+    color: #7f8c8d;
+    margin-bottom: 25px;
+}
+
+/* ترتيب البطاقات بجانب بعضها */
+.summary-cards {
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.card {
+    flex: 1;
+    min-width: 250px;
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card h3 {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.card p {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    color: white;
+}
+
+/* ألوان مميزة لكل بطاقة */
+.card.income {
+    background: linear-gradient(135deg, #27ae60, #2ecc71); /* أخضر للدخل */
+}
+
+.card.expenses {
+    background: linear-gradient(135deg, #c0392b, #e74c3c); /* أحمر للمصروفات */
+}
+
+.card.net {
+    background: linear-gradient(135deg, #2980b9, #3498db); /* أزرق لصافي الرصيد */
+}
+
+/* تنسيق قسم نموذج الإدخال */
+.form-section, .table-section {
+    margin-top: 35px;
+    background: #fdfdfd;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #e1e8ed;
+}
+
+.form-section h3, .table-section h3 {
+    color: #34495e;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+#transaction-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#transaction-form input, #transaction-form select {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+#transaction-form button {
+    padding: 10px 20px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+#transaction-form button:hover {
+    background-color: #219653;
+}
+
+/* تنسيق الجدول البنكي */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    text-align: right;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: #f1f4f6;
+}
+
+.text-income {
+    color: #27ae60;
+    font-weight: bold;
+}
+
+.text-expense {
+    color: #c0392b;
+    font-weight: bold;
+}
+
+/* تنسيق زر الحذف في الجدول */
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+/* لون بطاقة نسبة الصرف */
+.card.ratio {
+    background: linear-gradient(135deg, #8e44ad, #9b59b6); /* تدرج بنفسجي مميز */
+}
+
+/* تنسيق أزرار الفلترة الزمنية */
+.filter-btn {
+    background-color: #f1f2f6;
+    border: 1px solid #dcdde1;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background-color: #dfe4ea;
+}

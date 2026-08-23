@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>خزنتي - لوحة المتابعة المالية</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📊 لوحة تحكم خزينتي</h1>
+        <p>مرحباً بكِ يا نادين، متابعة أموالكِ أصبحت أسهل وأكثر دقة.</p>
+
+        <!-- صندوق الملخص المالي (4 بطاقات) -->
+        <div class="summary-cards">
+            <div class="card income">
+                <h3>إجمالي الدخل</h3>
+                <p id="total-income">جاري التحميل...</p>
+            </div>
+            <div class="card expenses">
+                <h3>إجمالي المصروفات</h3>
+                <p id="total-expenses">جاري التحميل...</p>
+            </div>
+            <div class="card net">
+                <h3>صافي الرصيد</h3>
+                <p id="net-balance">جاري التحميل...</p>
+            </div>
+            <div class="card ratio">
+                <h3>نسبة الصرف</h3>
+                <p id="spending-rate">جاري التحميل...</p>
+            </div>
+        </div>
+
+        <!-- نموذج إضافة معاملة مالية جديدة -->
+        <div class="form-section">
+            <h3>➕ إضافة حركة مالية جديدة</h3>
+            <form id="transaction-form" onsubmit="addTransaction(event)">
+                <input type="text" id="description" placeholder="وصف المعاملة (مثل: راتب، فاتورة...)" required>
+                <input type="number" id="amount" placeholder="المبلغ" step="0.01" required>
+                <select id="type" required>
+                    <option value="دخل">دخل</option>
+                    <option value="مصروف">مصروف</option>
+                </select>
+                <input type="date" id="date" required>
+                <button type="submit">حفظ الحركة</button>
+            </form>
+        </div>
+
+        <!-- قسم التقارير وأزرار الفلترة الزمنية -->
+        <div class="filter-section" style="margin: 20px 0; display: flex; gap: 10px; align-items: center;">
+            <span>🔍 تصفية حسب الفترات:</span>
+            <button onclick="filterTransactions('all')" class="filter-btn active">الكل</button>
+            <button onclick="filterTransactions('daily')" class="filter-btn">اليوم</button>
+            <button onclick="filterTransactions('monthly')" class="filter-btn">الشهر الحالي</button>
+            <button onclick="filterTransactions('yearly')" class="filter-btn">السنة الحالية</button>
+        </div>
+
+        <!-- جدول الحركات التفصيلية -->
+        <div class="table-section">
+            <h3>📋 سجل الحركات المالية</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>الرقم</th>
+                        <th>التاريخ</th>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                        <th>الوصف</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions-table-body">
+                    <!-- سيتم تعبئة البيانات هنا تلقائياً -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- كود الجافاسكريبت مع دعم الفلترة الزمنية -->
+    <script>
+        let allTransactions = []; // لتخزين كافة المعاملات محلياً للفلترة
+
+        async function fetchFinancialSummary() {
+            try {
+                const response = await fetch('/summary-db');
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    const summary = result.financial_summary;
+                    
+                    document.getElementById('total-income').innerText = summary.total_income + " 💵";
+                    document.getElementById('total-expenses').innerText = summary.total_expenses + " 📉";
+                    document.getElementById('net-balance').innerText = summary.net_balance + " 🎯";
+                    document.getElementById('spending-rate').innerText = summary.spending_rate + " % 📊";
+                    
+                    // حفظ البيانات الأصلية للفلترة
+                    allTransactions = result.transactions_details;
+                    
+                    // عرض كافة الحركات افتراضياً
+                    displayTransactions(allTransactions);
+                }
+            } catch (error) {
+                console.error("خطأ في الاتصال بالـ API:", error);
+            }
+        }
+
+        // دالة لعرض المعاملات في الجدول
+        function displayTransactions(transactions) {
+            const tableBody = document.getElementById('transactions-table-body');
+            tableBody.innerHTML = ""; 
+            
+            transactions.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.id}</td>
+                    <td>${item.date || 'غير محدد'}</td>
+                    <td class="${item.type === 'دخل' ? 'text-income' : 'text-expense'}">${item.type}</td>
+                    <td>${item.amount}</td>
+                    <td>${item.description || 'بدون وصف'}</td>
+                    <td><button class="delete-btn" onclick="deleteTransaction(${item.id})">حذف 🗑️</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // دالة الفلترة الزمنية
+        function filterTransactions(period) {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
+            const currentDate = today.toISOString().split('T')[0]; // صيغة YYYY-MM-DD
+
+            let filtered = allTransactions;
+
+            if (period === 'daily') {
+                filtered = allTransactions.filter(item => item.date === currentDate);
+            } else if (period === 'monthly') {
+                filtered = allTransactions.filter(item => item.date && item.date.startsWith(`${currentYear}-${currentMonth}`));
+            } else if (period === 'yearly') {
+                filtered = allTransactions.filter(item => item.date && item.date.startsWith(`${currentYear}`));
+            }
+
+            displayTransactions(filtered);
+        }
+
+        async function addTransaction(event) {
+            event.preventDefault();
+            
+            const description = document.getElementById('description').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const type = document.getElementById('type').value;
+            const date = document.getElementById('date').value;
+            
+            try {
+                const response = await fetch('/add-transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description, amount, type, date })
+                });
+                
+                const result = await response.json();
+                if (result.status === "success") {
+                    document.getElementById('transaction-form').reset();
+                    fetchFinancialSummary();
+                } else {
+                    alert("حدث خطأ أثناء الحفظ");
+                }
+            } catch (error) {
+                console.error("خطأ:", error);
+            }
+        }
+
+        async function deleteTransaction(id) {
+            if (!confirm("هل أنتِ متأكدة من رغبتكِ في حذف هذه الحركة؟")) return;
+            
+            try {
+                const response = await fetch(`/delete-transaction/${id}`, {
+                    method: 'DELETE',
+                });
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    fetchFinancialSummary();
+                } else {
+                    alert("فشل في حذف الحركة");
+                }
+            } catch (error) {
+                console.error("خطأ:", error);
+            }
+        }
+
+        fetchFinancialSummary();
+    </script>
+</body>
+</html>

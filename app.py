@@ -1,114 +1,94 @@
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from supabase import create_client, Client
 import os
-import requests
-import pandas as pd
 from dotenv import load_dotenv
 
 load_dotenv()
 
-url = "https://nygfcqlvxogxytwwgbjt.supabase.co/rest/v1/transactions"
-api_key = os.getenv("SUPABASE_KEY")  # سحب المفتاح بأمان من ملفات البيئة
+app = FastAPI(title="خزنتي API", description="الواجهة البرمجية لتطبيق خزينتي المالي")
 
-headers = {
-    "apikey": api_key,
-    "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json"
-}
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# دالة تحليل البيانات المالية باستخدام Pandas
-def analyze_finances():
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        
-        # تحويل البيانات إلى DataFrame (جدول بيانات تحليلي)
-        df = pd.DataFrame(data)
-        
-        if df.empty:
-            print("📭 لا توجد بيانات كافية للتحليل حالياً.")
-            return
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-        print("\n📈 --- تقرير التحليل المالي المتقدم (Pandas) ---")
-        print(df)
-        print("-" * 40)
-        
-        # تجميع المبالغ حسب نوع الحركة (دخل أو مصروف)
-        summary = df.groupby('type')['amount'].sum()
-        print("💡 إجمالي الحركات حسب النوع:")
-        print(summary)
-        print("-" * 40)
-        
-    else:
-        print("❌ حدث خطأ في جلب البيانات للتحليل:", response.text)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# تشغيل دالة التحليل
-analyze_finances()
+class TransactionCreate(BaseModel):
+    description: str
+    amount: float
+    type: str
+    date: str
 
-def generate_treasury_report():
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        df = pd.DataFrame(response.json())
-        
-        # تصفية البيانات لنركز فقط على المصروفات
-        expenses = df[df['type'] == 'مصروف']
-        
-        # استخدام التجميع (Aggregation) لحساب الإجمالي والعدد لكل فئة
-        report = expenses.groupby('category')['amount'].agg(['sum', 'count', 'mean'])
-        
-        print("\n📊 --- تقرير الخزينة التحليلي (Aggregated Report) ---")
-        print(report)
-        print("-" * 50)
-        print("💡 تم إعداد التقرير بنجاح: إجمالي، عدد الحركات، ومتوسط القيمة لكل فئة.")
+@app.get("/")
+def read_root():
+    return {"message": "أهلاً بكِ يا نادين في لوحة تحكم خزينتي عبر FastAPI! 🚀"}
 
-generate_treasury_report()
-headers = {
-    "apikey": api_key,
-    "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json"
-}
+@app.get("/summary-db")
+def get_real_financial_summary():
+    try:
+        response = supabase.table("transactions").select("*").execute()
+        data = response.data  
+        
+        total_income = 0.0
+        total_expenses = 0.0
+        
+        for item in data:
+            amount = float(item.get("amount") or 0)
+            trans_type = item.get("type")
+            
+            if trans_type == "دخل":
+                total_income += amount
+            elif trans_type == "مصروف":
+                total_expenses += amount
+                
+        net_balance = total_income - total_expenses
+        spending_rate = (total_expenses / total_income * 100) if total_income > 0 else 0.0
+        
+        return {
+            "status": "success",
+            "total_transactions": len(data),
+            "financial_summary": {
+                "total_income": total_income,
+                "total_expenses": total_expenses,
+                "net_balance": net_balance,
+                "spending_rate": round(spending_rate, 1)
+            },
+            "transactions_details": data
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
 
-# دالة تحليل البيانات المالية باستخدام Pandas
-def analyze_finances():
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
+@app.post("/add-transaction")
+def add_new_transaction(tx: TransactionCreate):
+    try:
+        response = supabase.table("transactions").insert({
+            "description": tx.description,
+            "amount": tx.amount,
+            "type": tx.type,
+            "date": tx.date
+        }).execute()
         
-        # تحويل البيانات إلى DataFrame (جدول بيانات تحليلي)
-        df = pd.DataFrame(data)
-        
-        if df.empty:
-            print("📭 لا توجد بيانات كافية للتحليل حالياً.")
-            return
+        return {"status": "success", "data": response.data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
-        print("\n📈 --- تقرير التحليل المالي المتقدم (Pandas) ---")
-        print(df)
-        print("-" * 40)
-        
-        # تجميع المبالغ حسب نوع الحركة (دخل أو مصروف)
-        summary = df.groupby('type')['amount'].sum()
-        print("💡 إجمالي الحركات حسب النوع:")
-        print(summary)
-        print("-" * 40)
-        
-    else:
-        print("❌ حدث خطأ في جلب البيانات للتحليل:", response.text)
+@app.delete("/delete-transaction/{transaction_id}")
+def delete_transaction(transaction_id: int):
+    try:
+        response = supabase.table("transactions").delete().eq("id", transaction_id).execute()
+        return {"status": "success", "data": response.data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
-# تشغيل دالة التحليل
-analyze_finances()
-
-def generate_treasury_report():
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        df = pd.DataFrame(response.json())
-        
-        # تصفية البيانات لنركز فقط على المصروفات
-        expenses = df[df['type'] == 'مصروف']
-        
-        # استخدام التجميع (Aggregation) لحساب الإجمالي والعدد لكل فئة
-        report = expenses.groupby('category')['amount'].agg(['sum', 'count', 'mean'])
-        
-        print("\n📊 --- تقرير الخزينة التحليلي (Aggregated Report) ---")
-        print(report)
-        print("-" * 50)
-        print("💡 تم إعداد التقرير بنجاح: إجمالي، عدد الحركات، ومتوسط القيمة لكل فئة.")
-
-generate_treasury_report()
+@app.get("/home", response_class=HTMLResponse)
+def get_frontend():
+    html_path = os.path.join("templates", "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "ملف index.html غير موجود"
