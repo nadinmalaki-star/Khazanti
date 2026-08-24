@@ -4,13 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>خزنتي - لوحة المتابعة المالية</title>
-    <!-- استيراد مكتبة Supabase عبر CDN لضمان عمل المصادقة -->
+    <!-- استيراد مكتبة Supabase عبر CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* تنسيق بسيط لإخفاء/إظهار صفحات الدخول واللوحة */
+        .hidden { display: none !important; }
+        .auth-container { max-width: 400px; margin: 100px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        .auth-container input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .auth-container button { width: 100%; padding: 10px; background: #2c3e50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📊 لوحة تحكم خزينتي</h1>
+
+    <!-- 1. شاشة تسجيل الدخول (تظهر افتراضياً إذا لم يكن هناك مسجل دخول) -->
+    <div id="auth-section" class="auth-container">
+        <h2>🔒 تسجيل الدخول إلى خزنتي</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+            <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+            <button type="submit">دخول</button>
+        </form>
+    </div>
+
+    <!-- 2. لوحة التحكم المالية (تكون مخفية ولن تظهر إلا بعد تسجيل الدخول) -->
+    <div id="dashboard-section" class="container hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>📊 لوحة تحكم خزينتي</h1>
+            <button id="logout-btn" style="padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="logout()">تسجيل الخروج 🚪</button>
+        </div>
         <p>مرحباً بكِ يا نادين، متابعة أموالكِ أصبحت أسهل وأكثر دقة.</p>
 
         <!-- صندوق الملخص المالي (4 بطاقات) -->
@@ -78,14 +100,59 @@
         </div>
     </div>
 
-    <!-- كود الجافاسكريبت الموحد والمنظم بالكامل -->
+    <!-- كود الجافاسكريبت بالكامل -->
     <script>
-        // ربط وتهيئة Supabase (استبدلي مفاتيحك هنا أو تأكدلي من ربطها بملف الـ JS الخاص بك)
-        const SUPABASE_URL = 'ضعِي_رابط_السيرفر_هنا';
-        const SUPABASE_ANON_KEY = 'ضعِي_مفتاح_الـ_anon_هنا';
+        // إعدادات Supabase (تأكدي من وضع بياناتك الصحيحة هنا)
+        const SUPABASE_URL = "https://nygfcqlvxogxytwwgbjt.supabase.co";
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55Z2ZjcWx2eG9neHl0d3dnYmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTEyNTksImV4cCI6MjEwMjgyNzI1OX0.8siHLjdgPREeCDKM2ggHW_JrMmalh2n9Qlz4XuWnGRI';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let allTransactions = []; // لتخزين كافة المعاملات محلياً للفلترة
+        let allTransactions = [];
+
+        // التحقق من حالة الدخول عند فتح الصفحة مباشرة
+        async function checkUserSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                // إذا كان مسجلاً، أخفِ شاشة الدخول وأظهر لوحة التحكم وحمّل البيانات
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('dashboard-section').classList.remove('hidden');
+                fetchFinancialSummary();
+            } else {
+                // إذا لم يكن مسجلاً، أظهر شاشة الدخول وأخفِ اللوحة
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('dashboard-section').classList.add('hidden');
+            }
+        }
+
+        // تنفيذ عملية تسجيل الدخول
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    alert('خطأ في تسجيل الدخول: ' + error.message);
+                    return;
+                }
+
+                // بعد النجاح، إعادة تحميل حالة الجلسة لعرض اللوحة
+                checkUserSession();
+            } catch (err) {
+                console.error('Login error:', err);
+            }
+        });
+
+        // زر تسجيل الخروج
+        async function logout() {
+            await supabase.auth.signOut();
+            checkUserSession();
+        }
 
         async function fetchFinancialSummary() {
             try {
@@ -147,7 +214,6 @@
 
         async function addTransaction(event) {
             event.preventDefault();
-            
             const description = document.getElementById('description').value;
             const amount = parseFloat(document.getElementById('amount').value);
             const type = document.getElementById('type').value;
@@ -191,38 +257,8 @@
             }
         }
 
-        // كود معالجة تسجيل الدخول عبر Supabase متكامل وآمن
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('loginForm');
-            
-            if (loginForm) {
-                loginForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const email = document.getElementById('loginEmail').value;
-                    const password = document.getElementById('loginPassword').value;
-
-                    try {
-                        const { data, error } = await supabase.auth.signInWithPassword({
-                            email: email,
-                            password: password,
-                        });
-
-                        if (error) {
-                            alert('خطأ في تسجيل الدخول: ' + error.message);
-                            return;
-                        }
-
-                        window.location.reload();
-                    } catch (err) {
-                        console.error('Login error:', err);
-                    }
-                });
-            }
-        });
-
-        // تشغيل جلب الملخص المالي عند تحميل الصفحة
-        fetchFinancialSummary();
+        // فحص حالة الجلسة أول ما تحمّل الصفحة
+        checkUserSession();
     </script>
 </body>
 </html>
