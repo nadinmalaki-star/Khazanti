@@ -1,13 +1,325 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خزنتي | KHZNTI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --emerald-950:#061E17;
+    --emerald-900:#0A2A20;
+    --emerald-850:#0E3327;
+    --emerald-800:#123B2D;
+    --emerald-700:#1B4E3B;
+    --gold:#D4AF37;
+    --gold-light:#EBCF7E;
+    --gold-dim:#8B7530;
+    --cream:#F3EEDF;
+    --muted:#9FB8AC;
+    --hairline: rgba(212,175,55,0.28);
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    background:var(--emerald-950);
+    color:var(--cream);
+    font-family:'Tajawal', sans-serif;
+    scroll-behavior:smooth;
+  }
+
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(212,175,55,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(212,175,55,0.06), transparent 60%),
+      var(--emerald-950);
+  }
+
+  .wrap{max-width:960px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- Header & Login Button ---------- */
+  .site-header{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 24px 0 0;
+  }
+  .login-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family:'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--emerald-950);
+    background: var(--gold);
+    padding: 10px 22px;
+    border-radius: 999px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+    transition: all 0.3s ease;
+    border: 1px solid var(--gold-light);
+  }
+  .login-btn:hover{
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  }
+
+  /* ---------- Divider ---------- */
+  .hairline{
+    height:1px;
+    background:linear-gradient(to left, transparent, var(--hairline) 15%, var(--hairline) 85%, transparent);
+    margin:0 auto;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    padding:50px 0 60px;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(212,175,55,0.035) 0px, rgba(212,175,55,0.035) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(90deg, rgba(212,175,55,0.035) 0px, rgba(212,175,55,0.035) 1px, transparent 1px, transparent 64px);
+    mask-image:linear-gradient(to bottom, black, transparent 85%);
+    pointer-events:none;
+  }
+  .hero-inner{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:40px;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:13px;
+    color:var(--gold-light); letter-spacing:0.5px;
+    border:1px solid var(--hairline); border-radius:999px;
+    padding:7px 16px;
+    background:rgba(212,175,55,0.06);
+  }
+  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 8px var(--gold);}
+
+  .brand-name{
+    font-family:'Cairo', sans-serif;
+    font-weight:900;
+    font-size:clamp(48px, 8vw, 76px);
+    line-height:1.05;
+    margin-top:18px;
+    background:linear-gradient(180deg, var(--cream) 20%, var(--gold-light) 130%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .brand-en{
+    font-family:'Cairo', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:6px;
+    color:var(--gold-dim);
+    margin-top:6px;
+  }
+  .tagline{
+    font-size:19px;
+    color:var(--muted);
+    margin-top:22px;
+    max-width:420px;
+    line-height:1.9;
+  }
+
+  /* ---------- Signature: Safe Dial ---------- */
+  .dial-stage{
+    position:relative;
+    width:260px; height:260px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dial-glow{
+    position:absolute; inset:-30px;
+    background:radial-gradient(circle, rgba(212,175,55,0.16), transparent 65%);
+    filter:blur(4px);
+  }
+  .dial-rotor{
+    animation:spin 34s linear infinite;
+    transform-origin:130px 130px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){
+    .dial-rotor{ animation:none; }
+  }
+  .app-logo-img{
+    width:230px; height:230px; border-radius:52px;
+    box-shadow:0 30px 70px -20px rgba(0,0,0,0.65), 0 0 0 1px var(--hairline);
+    position:relative;
+  }
+
+  /* ---------- Section shell ---------- */
+  section{ padding:64px 0; }
+  .section-head{ margin-bottom:36px; }
+  .kicker{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:13px;
+    color:var(--gold); letter-spacing:0.5px; margin-bottom:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .kicker::after{ content:''; flex:1; height:1px; background:var(--hairline); }
+  .section-title{
+    font-family:'Cairo', sans-serif; font-weight:800; font-size:32px;
+    color:var(--cream);
+  }
+  .lede{
+    color:var(--muted); font-size:16.5px; line-height:2; max-width:680px; margin-top:16px;
+  }
+
+  /* ---------- Identity / color guide ---------- */
+  .identity-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:32px;
+  }
+  .swatch-card{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:24px;
+    background:linear-gradient(160deg, var(--emerald-850), var(--emerald-900));
+  }
+  .swatch{
+    width:44px; height:44px; border-radius:10px; margin-bottom:16px;
+    box-shadow:0 6px 20px -6px rgba(0,0,0,0.5);
+  }
+  .swatch.green{ background:linear-gradient(160deg,#1B4E3B,#0A2A20); border:1px solid var(--hairline); }
+  .swatch.gold{ background:linear-gradient(160deg,var(--gold-light),var(--gold)); }
+  .swatch-name{ font-family:'Cairo', sans-serif; font-weight:700; font-size:16px; color:var(--cream); }
+  .swatch-hex{ font-family:'Cairo', sans-serif; font-size:12px; color:var(--gold-dim); letter-spacing:1px; margin-top:2px; }
+  .swatch-desc{ color:var(--muted); font-size:14.5px; line-height:1.85; margin-top:12px; }
+
+  /* ---------- Feature grid ---------- */
+  .feature-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px;
+  }
+  .feature-card{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:22px 24px;
+    background:rgba(212,175,55,0.03);
+    transition:border-color .25s ease, background .25s ease;
+  }
+  .feature-card h4{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:16px; color:var(--gold-light); margin-bottom:8px;
+  }
+  .feature-card p{ color:var(--muted); font-size:14.5px; line-height:1.85; }
+
+  /* ---------- Roadmap ---------- */
+  .roadmap{
+    display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px;
+  }
+  .road-card{
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:30px;
+    background:linear-gradient(160deg, var(--emerald-850), var(--emerald-950));
+    position:relative;
+    overflow:hidden;
+  }
+  .road-card::before{
+    content:'';
+    position:absolute; top:-40%; left:-20%;
+    width:220px; height:220px;
+    background:radial-gradient(circle, rgba(212,175,55,0.10), transparent 70%);
+  }
+  .road-tag{
+    font-family:'Cairo', sans-serif; font-weight:800; font-size:12px;
+    color:var(--gold); letter-spacing:1px; margin-bottom:10px;
+  }
+  .road-card h3{
+    font-family:'Cairo', sans-serif; font-weight:800; font-size:21px; color:var(--cream); margin-bottom:12px;
+  }
+  .road-card p{ color:var(--muted); font-size:14.5px; line-height:1.9; }
+
+  /* ---------- Closing ---------- */
+  .closing{
+    text-align:center;
+    padding:90px 0 70px;
+  }
+  .closing-line{
+    font-family:'Cairo', sans-serif; font-weight:800;
+    font-size:clamp(24px, 4vw, 34px);
+    color:var(--cream);
+    line-height:1.7;
+    max-width:640px;
+    margin:0 auto;
+  }
+  .closing-line .accent{ color:var(--gold); }
+  .closing-mark{
+    margin-top:34px;
+    font-family:'Cairo', sans-serif; font-weight:900; font-size:15px;
+    letter-spacing:4px; color:var(--gold-dim);
+  }
+
+  footer{
+    border-top:1px solid var(--hairline);
+    padding:28px 0 40px;
+    text-align:center;
+    color:var(--gold-dim);
+    font-family:'Cairo', sans-serif;
+    font-size:12.5px;
+    letter-spacing:1px;
+  }
+  footer .foot-tagline{ margin-bottom:10px; }
+  footer .foot-credit{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    color:var(--muted); font-size:11.5px; letter-spacing:0.5px;
+  }
+  footer .foot-credit .athar-mark{
+    color:var(--gold-light); font-weight:700;
+  }
+  footer .foot-copyright{
+    margin-top:6px; color:rgba(159,184,172,0.5); font-size:10.5px; letter-spacing:0.5px;
+  }
+
+  @media (max-width:720px){
+    .hero-inner{ flex-direction:column-reverse; text-align:center; }
+    .tagline{ margin-inline:auto; }
+    .dial-stage{ width:190px; height:190px; }
+    .identity-grid, .feature-grid, .roadmap{ grid-template-columns:1fr; }
+    .site-header { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="wrap">
+    <!-- Header with Login Button on the side -->
+    <header class="site-header">
+      <a href="#login" class="login-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+        تسجيل الدخول
+      </a>
+    </header>
+
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> بوابة مالية سحابية</div>
+          <div class="brand-name">خزنتي</div>
+          <div class="brand-en">K H Z N T I</div>
+          <p class="tagline">بوابتك الذكية للتحكم المالي والأمان السحابي. فخامة العمل المصرفي، بسهولة التقنية الحديثة.</p>
+        </div>
+
+        <div class="dial-stage">
+          <div class="dial-glow"></div>
+          <!-- مكان الشعار أو الدائرة -->
+        </div>
+      </div>
+    </section>
+
+    <!-- بقية الأقسام -->
+    <div class="hairline"></div>
+    
+  </div>
+
+</body>
 </html>
