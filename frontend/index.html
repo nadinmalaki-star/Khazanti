@@ -23,7 +23,6 @@
             text-align: center;
         }
 
-        /* الهيدر واللوغو الذهبي */
         header {
             width: 100%;
             padding: 20px 0;
@@ -46,11 +45,9 @@
             font-size: 13px;
             color: #c9a961;
             opacity: 0.85;
-            letter-spacing: 0.5px;
             font-weight: 500;
         }
 
-        /* المحتوى الرئيسي والبطاقة */
         .main-content {
             max-width: 450px;
             width: 100%;
@@ -74,7 +71,6 @@
             margin-bottom: 25px;
         }
         
-        /* زر الدخول التفاعلي الذهبي */
         .btn {
             display: inline-block;
             width: 100%;
@@ -93,10 +89,8 @@
         .btn:hover {
             opacity: 0.95;
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(201, 169, 97, 0.6);
         }
 
-        /* الـ Footer وروابط الشروط */
         footer {
             width: 100%;
             padding: 15px 0;
@@ -111,113 +105,42 @@
             display: flex;
             gap: 15px;
         }
-        footer button, footer a {
+        footer button {
             background: none;
             border: none;
             color: #c9a961;
-            text-decoration: none;
             cursor: pointer;
             font-family: 'Tajawal', sans-serif;
             font-size: 13px;
-            transition: 0.2s;
         }
-        footer button:hover, footer a:hover {
+        footer button:hover {
             text-decoration: underline;
-        }
-
-        /* نافذة الشروط والأحكام (Modal) لتفتح بشكل صحيح */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .modal-box {
-            background: linear-gradient(135deg, #1b3936, #16302d);
-            border: 1px solid #c9a961;
-            border-radius: 20px;
-            padding: 25px;
-            max-width: 450px;
-            width: 100%;
-            text-align: right;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-            color: #f2ede2;
-            position: relative;
-        }
-        .modal-box h3 {
-            color: #c9a961;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-        .modal-box p {
-            font-size: 12.5px;
-            line-height: 1.8;
-            opacity: 0.9;
-            margin-bottom: 15px;
-        }
-        .close-btn {
-            background: #c9a961;
-            color: #0e1a1a;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 8px;
-            font-weight: 900;
-            cursor: pointer;
-            display: block;
-            margin: 0 auto;
         }
     </style>
 </head>
 <body>
 
-    <!-- اللوغو الذهبي واسم الشركة في الأعلى -->
     <header>
         <a href="#" class="logo"><span>✨</span> خِزنتي ☁️</a>
         <span class="company-subtitle">من منتجات شركة أثر 🛡️</span>
     </header>
 
-    <!-- المحتوى الرئيسي وزر التوجيه للتطبيق الحقيقي -->
     <div class="main-content">
         <h1>💎 أهلاً بكِ في خِزنتي</h1>
         <p>نظامك الذكي والأكثر أماناً لإدارة المصاريف، الأرصدة، والديون بكفاءة وسهولة تامة عبر السحابة.</p>
         
-        <!-- زر التوجيه لتطبيق الـ React الفعلي على Vercel -->
-        <a href="https://khazanti-git-main-my-projects-da5c.vercel.app/" class="btn">🚀 تسجيل الدخول / فتح التطبيق</a>
+        <!-- الرابط الصحيح لتطبيق React الحقيقي الذي يحتوي على خانات تسجيل الدخول -->
+        <a href="https://khazanti-alpha.vercel.app" class="btn">🚀 تسجيل الدخول / فتح التطبيق</a>
     </div>
 
-    <!-- الـ Footer والشروط والأحكام في الأسفل (مع ربط زر الشروط لتفتح نافذة حقيقية) -->
     <footer>
         <div class="footer-links">
-            <button onclick="openModal()">📜 الشروط والأحكام</button>
+            <button onclick="alert('شركة أثر - نظام خِزنتي الآمن لإدارة الأموال')">📜 الشروط والأحكام</button>
             <span>•</span>
             <span style="color: #c9a961;">🔐 سياسة الخصوصية</span>
         </div>
         <p>جميع الحقوق محفوظة © 2026 شركة أثر | خِزنتي</p>
     </footer>
-
-    <!-- نافذة الشروط والأحكام المنبثقة -->
-    <div id="termsModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>📜 الشروط والأحكام وسياسة الخصوصية</h3>
-            <p><strong>1. حماية البيانات:</strong> نلتزم في شركة أثر بحماية كافة بياناتك المالية والمعلومات المسجلة على منصة "خزنتي" بتشفير سحابة عالي الأمان.</p>
-            <p><strong>2. الاستخدام المهني:</strong> التطبيق مصمم لمساعدتك بكفاءة عالية في تتبع الأرصدة والديون والعمليات اليومية.</p>
-            <button class="close-btn" onclick="closeModal()">فهمت، إغلاق</button>
-        </div>
-    </div>
-
-    <script>
-        function openModal() {
-            document.getElementById('termsModal').style.display = 'flex';
-        }
-        function closeModal() {
-            document.getElementById('termsModal').style.display = 'none';
-        }
-    </style>
 
 </body>
 </html>
