@@ -56,6 +56,7 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   // حالات التطبيق والبيانات
   const [transactions, setTransactions] = useState([]);
@@ -334,6 +335,7 @@ export default function App() {
         minHeight: '100vh',
         background: currentTheme.bg,
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         fontFamily: "'Tajawal', sans-serif",
@@ -462,6 +464,55 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {/* زر الشروط والأحكام في صفحة الدخول */}
+        <div style={{ marginTop: '20px' }}>
+          <button 
+            onClick={() => setIsTermsModalOpen(true)}
+            style={{ background: 'none', border: 'none', color: currentTheme.accent, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            الشروط والأحكام
+          </button>
+        </div>
+
+        {/* نافذة الشروط والأحكام المنبثقة */}
+        {isTermsModalOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Tajawal, sans-serif' }}>
+            <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.accent}`, borderRadius: '20px', padding: '25px', width: '100%', maxWidth: '480px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.8)', position: 'relative', textAlign: 'right', direction: 'rtl', color: currentTheme.text }}>
+              
+              <button onClick={() => setIsTermsModalOpen(false)} style={{ position: 'absolute', top: '15px', left: '15px', background: 'none', border: 'none', color: currentTheme.accent, fontSize: '22px', cursor: 'pointer' }}>&times;</button>
+              
+              <h3 style={{ color: currentTheme.accent, fontSize: '18px', fontWeight: '700', marginBottom: '15px', textAlign: 'center' }}>
+                الشروط والأحكام
+              </h3>
+              
+              <div style={{ fontSize: '12.5px', opacity: 0.9, lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <strong style={{ color: currentTheme.accent }}>1. قبول الشروط:</strong>
+                  <p>باستخدامك لمنصة "خزنتي"، فإنكِ توافقين على الالتزام بكافة الشروط والأحكام المذكورة هنا.</p>
+                </div>
+                <div>
+                  <strong style={{ color: currentTheme.accent }}>2. الخصوصية والأمان:</strong>
+                  <p>نلتزم بحماية بياناتك المالية بأعلى معايير الأمان السحابي، وأنتِ مسؤولة عن سرية بيانات حسابك.</p>
+                </div>
+                <div>
+                  <strong style={{ color: currentTheme.accent }}>3. استخدام الخدمة:</strong>
+                  <p>المنصة مخصصة لإدارة التدفقات والعمليات المالية بكفاءة، ويُمنع استخدامها لأي أغراض مخالفة للأنظمة.</p>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                <button 
+                  onClick={() => setIsTermsModalOpen(false)}
+                  style={{ padding: '8px 20px', background: currentTheme.accent, border: 'none', borderRadius: '8px', color: '#071913', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  فهمت واستوعبت الشروط
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -689,24 +740,22 @@ export default function App() {
             </div>
 
             <input type="text" placeholder="اسم الشخص أو الجهة" value={debtName} onChange={(e) => setDebtName(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: 8, color: currentTheme.text, fontSize: 11, marginBottom: 8 }} />
-            
-            <input type="number" placeholder="المبلغ" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: 8, color: currentTheme.text, fontSize: 11, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+            <input type="number" inputMode="decimal" placeholder="مبلغ الدين" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: 8, color: currentTheme.text, fontSize: 11, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
 
-            <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: 8, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-              ➕ إضافة الدين
+            <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: "8px", fontWeight: 700, fontSize: 12, cursor: "pointer", marginBottom: 16 }}>
+              ➕ إضافة دين جديد
             </button>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {debts.map((d) => (
-                <div key={d.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 10, fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={d.id} style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: 10, fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontWeight: 700 }}>{d.name} ({d.type})</div>
-                    <div style={{ opacity: 0.7, fontSize: 10 }}>المبلغ: {Number(d.amount) * exchangeRate} {currencySymbol}</div>
+                    <div style={{ fontWeight: 700 }}>{d.name}</div>
+                    <div style={{ fontSize: 9, opacity: 0.6 }}>{d.type}</div>
                   </div>
-                  <button onClick={async () => {
-                    await supabase.from("debts").delete().eq("id", d.id);
-                    setDebts(debts.filter(item => item.id !== d.id));
-                  }} style={{ background: "none", border: "none", cursor: "pointer" }}>🗑️</button>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: currentTheme.accent }}>
+                    {currencySymbol}{(Number(d.amount) * exchangeRate).toFixed(2)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -715,8 +764,8 @@ export default function App() {
 
         {activeTab === "accounts" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>🏦 حسابات الخزينة</div>
-            <p style={{ fontSize: 11, opacity: 0.7 }}>يمكنك إدارة توزيع الأموال بين صندوق الكاش المباشر وحساب البنك عبر حقل "الحساب" عند تسجيل أي حركة مالية جديدة.</p>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>إدارة الخزائن والحسابات</div>
+            <p style={{ fontSize: 11, opacity: 0.8, lineHeight: 1.6 }}>يتم تحديث أرصدة الخزائن (الكاش والبنك) بشكل تلقائي بناءً على الحركات المالية المسجلة ضمن قسم العمليات.</p>
           </div>
         )}
 
