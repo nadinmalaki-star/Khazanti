@@ -153,11 +153,6 @@
   @media (prefers-reduced-motion: reduce){
     .dial-rotor{ animation:none; }
   }
-  .app-logo-img{
-    width:230px; height:230px; border-radius:52px;
-    box-shadow:0 30px 70px -20px rgba(0,0,0,0.65), 0 0 0 1px var(--hairline);
-    position:relative;
-  }
 
   /* ---------- Section shell ---------- */
   section{ padding:64px 0; }
@@ -294,7 +289,7 @@
   <div class="wrap">
     <!-- Header with Login Button on the side -->
     <header class="site-header">
-      <a href="#login" class="login-btn">
+      <a href="#login" class="login-btn" id="openLoginModal">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
         تسجيل الدخول
       </a>
@@ -311,28 +306,154 @@
 
         <div class="dial-stage" style="display: flex; align-items: center; justify-content: center;">
           <div class="dial-glow"></div>
-          <div class="logo-wrapper" style="display: flex; justify-content: center; align-items: center; position: relative; z-index: 2; margin-bottom: 20px;">
-  <div style="width: 230px; height: 230px; border-radius: 50%; padding: 4px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center;">
-    <img src="logo.png.png" alt="شعار خزنتي" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-  </div>
-</div>
+          <div class="logo-wrapper" style="display: flex; justify-content: center; align-items: center; position: relative; z-index: 2;">
+            <div style="width: 230px; height: 230px; border-radius: 50%; padding: 4px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center;">
+              <img src="logo.png.png" alt="شعار خزنتي" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- بقية الأقسام -->
     <div class="hairline"></div>
-    
+
+    <!-- قسم الهوية والألوان -->
+    <section>
+      <div class="section-head">
+        <div class="kicker">هوية البصرية</div>
+        <h2 class="section-title">فخامة المستثمر وأمان المصارف</h2>
+        <p class="lede">تجمع لوحة ألوان خزنتي بين عراقة الزمرد الداكن وبريق الذهب الخالص، لتعكس شعوراً بالثقة المطلقة والخصوصية التامة.</p>
+      </div>
+      <div class="identity-grid">
+        <div class="swatch-card">
+          <div class="swatch green"></div>
+          <div class="swatch-name">الزمرد المصرفي العميق</div>
+          <div class="swatch-hex">#061E17</div>
+          <div class="swatch-desc">يمثل الاستقرار، والأمان المؤسسي، والهدوء الثقة المالي.</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch gold"></div>
+          <div class="swatch-name">الذهب السيادي</div>
+          <div class="swatch-hex">#D4AF37</div>
+          <div class="swatch-desc">يرمز إلى القيمة الرفيعة، والتدقيق المالي العالي، والموثوقية المطلقة.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- قسم المميزات -->
+    <section>
+      <div class="section-head">
+        <div class="kicker">القدرات الأساسية</div>
+        <h2 class="section-title">إدارة مالية مصممة لأصحاب القرار</h2>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>تتبع السيولة والتدفقات</h4>
+          <p>رؤية فورية وشاملة للحركات النقدية والأرصدة لضمان اتخاذ قرارات مالية دقيقة.</p>
+        </div>
+        <div class="feature-card">
+          <h4>تقارير بصرية ذكية</h4>
+          <p>تحليلات مترابطة ومبسطة تسهل قراءة المؤشرات المالية دون تعقيد.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- خارطة الطريق -->
+    <section>
+      <div class="section-head">
+        <div class="kicker">المسار المستقبلي</div>
+        <h2 class="section-title">خارطة طريق التطور</h2>
+      </div>
+      <div class="roadmap">
+        <div class="road-card">
+          <div class="road-tag">المرحلة الأولى</div>
+          <h3>التأسيس والإطلاق الأولي</h3>
+          <p>بناء الأساسات البرمجية وتفعيل واجهات الإدارة المالية الأساسية بأعلى معايير الأمان السحابي.</p>
+        </div>
+        <div class="road-card">
+          <div class="road-tag">المرحلة الثانية</div>
+          <h3>الذكاء المالي المتقدم</h3>
+          <p>إدمج أدوات تحليل التنبؤ بالسيولة وربط المؤشرات الذكية لتوفير استشارات تلقائية دقيقة.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- الخاتمة -->
+    <div class="closing">
+      <div class="closing-line">
+        اجعل مالك يتحرك بذكاء، وثقة، و<span class="accent">أمان تام</span>.
+      </div>
+      <div class="closing-mark">KHZNTI &bull; خزنتي</div>
+    </div>
+
   </div>
 
+  <!-- Footer -->
+  <footer>
+    <div class="wrap">
+      <div class="foot-tagline">بوابتك الذكية للتحكم المالي والأمان السحابي</div>
+      <div class="foot-credit">منصة <span class="athar-mark">خزنتي</span> للحلول المالية المتكاملة</div>
+      <div class="foot-copyright">&copy; 2026 جميع الحقوق محفوظة</div>
+    </div>
+  </footer>
+
+  <!-- نافذة تسجيل الدخول المنبثقة (Login Modal) -->
+  <div id="loginModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999; justify-content: center; align-items: center; font-family: 'Cairo', sans-serif;">
+    <div style="background: #0d231b; border: 1px solid #D4AF37; border-radius: 20px; padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); position: relative; text-align: right; direction: rtl;">
+      
+      <!-- زر إغلاق النافذة (X) -->
+      <button id="closeLoginModal" style="position: absolute; top: 20px; left: 20px; background: none; border: none; color: #FFE082; font-size: 24px; cursor: pointer; transition: transform 0.2s;">&times;</button>
+      
+      <!-- عنوان النافذة -->
+      <h2 style="color: #FFE082; font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;">تسجيل الدخول</h2>
+      <p style="color: #a3b8b0; font-size: 14px; margin-bottom: 30px; text-align: center;">مرحباً بكِ مجدداً في بوابة خزنتي المالية</p>
+      
+      <!-- نموذج تسجيل الدخول -->
+      <form onsubmit="event.preventDefault(); alert('تم تسجيل الدخول بنجاح!');">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 8px; font-weight: 600;">البريد الإلكتروني</label>
+          <input type="email" required placeholder="name@example.com" style="width: 100%; padding: 12px 16px; background: #071913; border: 1px solid #1f4537; border-radius: 10px; color: #fff; font-size: 14px; outline: none;">
+        </div>
+        
+        <div style="margin-bottom: 25px;">
+          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 8px; font-weight: 600;">كلمة المرور</label>
+          <input type="password" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: #071913; border: 1px solid #1f4537; border-radius: 10px; color: #fff; font-size: 14px; outline: none;">
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); border: none; border-radius: 10px; color: #071913; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(212,175,55,0.3);">دخول</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- البرمجة المسؤولة عن فتح وإغلاق النافذة -->
   <script>
-  document.querySelector('.login-btn').addEventListener('click', function(e) {
-    // التأكد من وجود قسم أو نافذة تسجيل الدخول في الصفحة
-    const loginSection = document.querySelector('#login') || document.querySelector('.login-modal');
-    if (loginSection) {
-      e.preventDefault();
-      loginSection.scrollIntoView({ behavior: 'smooth' });
+    const modal = document.getElementById('loginModal');
+    const openBtn = document.getElementById('openLoginModal');
+    const closeBtn = document.getElementById('closeLoginModal');
+
+    if (openBtn && modal && closeBtn) {
+      openBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        modal.style.display = 'flex';
+      });
+
+      closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+      });
+
+      window.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
     }
-  });
-</script>
+  </script>
 
 </body>
 </html>
