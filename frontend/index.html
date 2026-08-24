@@ -323,5 +323,16 @@
     
   </div>
 
+  <script>
+  document.querySelector('.login-btn').addEventListener('click', function(e) {
+    // التأكد من وجود قسم أو نافذة تسجيل الدخول في الصفحة
+    const loginSection = document.querySelector('#login') || document.querySelector('.login-modal');
+    if (loginSection) {
+      e.preventDefault();
+      loginSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+</script>
+
 </body>
 </html>
