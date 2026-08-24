@@ -1,10 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// إعدادات السحابة الخاصة بك
-const SUPABASE_URL = "https://nygfcqlvxogxytwwgbjt.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55Z2ZjcWx2eG9neHl0d3dnYmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTEyNTksImV4cCI6MjEwMjgyNzI1OX0.8siHLjdgPREeCDKM2ggHW_JrMmalh2n9Qlz4XuWnGRI";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import React, { useState, useEffect, useMemo } from "react";
+import { supabase } from "./supabase.js";
 
 const CATEGORIES = [
   { key: "طعام", icon: "🍔", type: "مصروف" },
@@ -54,6 +49,17 @@ const THEMES = {
 };
 
 export default function App() {
+  // --- 1. جميع الـ Hooks في أعلى الكومبوننت بالترتيب الثابت ---
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // حالات تسجيل الدخول
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  // حالات التطبيق
   const [activeTab, setActiveTab] = useState("transactions"); 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -62,11 +68,14 @@ export default function App() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("مبيعات");
   const [selectedAccount, setSelectedAccount] = useState("الصندوق (كاش)");
-  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]); // التاريخ الافتراضي اليوم
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
   const [searchQuery, setSearchQuery] = useState(""); 
   const [error, setError] = useState("");
   const [currency, setCurrency] = useState("ILS");
   const [themeKey, setThemeKey] = useState("emerald");
+
+  const [deletedItem, setDeletedItem] = useState(null);
+  const [undoTimer, setUndoTimer] = useState(null);
 
   const [debtType, setDebtType] = useState("لي عند الناس"); 
   const [debtName, setDebtName] = useState("");
@@ -74,27 +83,29 @@ export default function App() {
 
   const currentTheme = THEMES[themeKey];
 
+  // مراقبة الجلسة
   useEffect(() => {
-    fetchData();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchData() {
-    setLoading(true);
-    const { data: txData } = await supabase
-      .from("transactions")
-      .select("*")
-      .order("id", { ascending: false });
+  // جلب البيانات عند تسجيل الدخول
+  useEffect(() => {
+    if (session) {
+      fetchData();
+    }
+  }, [session]);
 
-    const { data: debtData } = await supabase
-      .from("debts")
-      .select("*")
-      .order("id", { ascending: false });
-
-    setTransactions(txData || []);
-    setDebts(debtData || []);
-    setLoading(false);
-  }
-
+  // القيم المشتقة (useMemo) يجب أن تظل ثابتة في كل رندر وقبل الـ returns
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
 
@@ -171,6 +182,49 @@ export default function App() {
     return { totals, rawExpenseTotal };
   }, [transactions]);
 
+  // دوال التعامل مع البيانات
+  async function handleAuth(e) {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setAuthError(error.message);
+      } else {
+        alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.');
+        setIsSignUp(false);
+      }
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setAuthError(error.message);
+      } else {
+        setSession(data.session);
+      }
+    }
+    setAuthLoading(false);
+  }
+
+  async function fetchData() {
+    setLoading(true);
+    // ملاحظة: تأكدي من تفعيل Row Level Security (RLS) في Supabase لتتم حماية البيانات لكل مستخدم
+    const { data: txData } = await supabase
+      .from("transactions")
+      .select("*")
+      .order("id", { ascending: false });
+
+    const { data: debtData } = await supabase
+      .from("debts")
+      .select("*")
+      .order("id", { ascending: false });
+
+    setTransactions(txData || []);
+    setDebts(debtData || []);
+    setLoading(false);
+  }
+
   async function addTransaction() {
     const num = parseFloat(amount);
     if (!num || num <= 0) {
@@ -178,7 +232,6 @@ export default function App() {
       return;
     }
     const baseAmount = num / exchangeRate;
-    
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
 
@@ -187,14 +240,11 @@ export default function App() {
       amount: baseAmount, 
       category,
       account: selectedAccount,
-      date: transactionDate || new Date().toISOString().split("T")[0]
+      date: transactionDate || new Date().toISOString().split("T")[0],
+      user_id: session?.user?.id
     };
 
-    const { data, error } = await supabase
-      .from("transactions")
-      .insert([newRecord])
-      .select();
-
+    const { data, error } = await supabase.from("transactions").insert([newRecord]).select();
     if (error) {
       setError("فشل الحفظ: " + error.message);
     } else if (data && data.length > 0) {
@@ -213,23 +263,39 @@ export default function App() {
       name: debtName,
       amount: num / exchangeRate,
       paid: 0,
-      date: new Date().toISOString().split("T")[0]
+      date: new Date().toISOString().split("T")[0],
+      user_id: session?.user?.id
     };
 
     const { data, error } = await supabase.from("debts").insert([newDebt]).select();
     if (data && data.length > 0) {
       setDebts([data[0], ...debts]);
     }
-
     setDebtName("");
     setDebtAmount("");
   }
 
   async function removeTransaction(id) {
-    const { error } = await supabase.from("transactions").delete().eq("id", id);
-    if (!error) {
-      setTransactions(transactions.filter((t) => t.id !== id));
-    }
+    const itemToDelete = transactions.find(t => t.id === id);
+    if (!itemToDelete) return;
+
+    setTransactions(transactions.filter((t) => t.id !== id));
+    setDeletedItem(itemToDelete);
+
+    if (undoTimer) clearTimeout(undoTimer);
+    const timer = setTimeout(async () => {
+      await supabase.from("transactions").delete().eq("id", id);
+      setDeletedItem(null);
+    }, 5000);
+    setUndoTimer(timer);
+  }
+
+  async function undoDelete() {
+    if (!deletedItem) return;
+    if (undoTimer) clearTimeout(undoTimer);
+    setTransactions(prev => [deletedItem, ...prev]);
+    setDeletedItem(null);
+    setUndoTimer(null);
   }
 
   function exportCSV() {
@@ -246,6 +312,128 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
+  // --- 2. شروط الـ Early Returns تأتي حصراً بعد انتهاء جميع الـ Hooks ---
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: currentTheme.bg, color: currentTheme.text, display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "'Tajawal', sans-serif" }}>
+        جاري التحميل...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div dir="rtl" style={{
+        minHeight: '100vh',
+        background: currentTheme.bg,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontFamily: "'Tajawal', sans-serif",
+        padding: '16px',
+        color: currentTheme.text
+      }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
+          * { box-sizing: border-box; }
+        `}</style>
+        <div style={{
+          background: currentTheme.cardBg,
+          border: `1px solid ${currentTheme.border}`,
+          borderRadius: '20px',
+          padding: '24px',
+          width: '100%',
+          maxWidth: '360px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+        }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '8px', color: currentTheme.accent, fontWeight: 900 }}>خِزنتي ☁️</h2>
+          <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.7, marginBottom: '20px' }}>
+            {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة أعمالك'}
+          </p>
+
+          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
+              <input
+                type="email"
+                placeholder="example@domain.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  background: currentTheme.boxBg,
+                  border: `1px solid ${currentTheme.border}`,
+                  borderRadius: '10px',
+                  padding: '10px',
+                  color: currentTheme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  background: currentTheme.boxBg,
+                  border: `1px solid ${currentTheme.border}`,
+                  borderRadius: '10px',
+                  padding: '10px',
+                  color: currentTheme.text,
+                  fontSize: '12px'
+                }}
+              />
+            </div>
+
+            {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              style={{
+                background: currentTheme.accent,
+                color: '#0e1a1a',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '10px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                marginTop: '6px'
+              }}
+            >
+              {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
+            </button>
+          </form>
+
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <button
+              onClick={() => setIsSignUp(!isSignUp)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: currentTheme.accent,
+                fontSize: '11px',
+                cursor: 'pointer',
+                textDecoration: 'underline'
+              }}
+            >
+              {isSignUp ? 'لديك حساب بالفعل؟ سجل دخولك' : 'ليس لديك حساب؟ أنشئ حساباً جديداً'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 3. واجهة التطبيق الرئيسية (تظهر عند توفر الجلسة بنجاح) ---
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -255,7 +443,6 @@ export default function App() {
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", gap: 4 }}>
             {Object.keys(CURRENCIES).map((curr) => (
@@ -274,9 +461,24 @@ export default function App() {
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, marginBottom: 2 }}>☁️ متصل بسحابة Supabase</div>
           <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
+          <button 
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.reload();
+            }} 
+            style={{ marginTop: 8, background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, fontSize: 10, padding: "4px 10px", borderRadius: 8, cursor: "pointer" }}
+          >
+            تسجيل الخروج 🚪
+          </button>
         </div>
 
-        {/* Tabs */}
+        {deletedItem && (
+          <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
+            <span>تم حذف الحركة. هل تريد التراجع؟</span>
+            <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#c9a961", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع (Undo)</button>
+          </div>
+        )}
+
         <div style={{ display: "flex", background: currentTheme.boxBg, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${currentTheme.border}` }}>
           {[
             { id: "transactions", label: "📊 العمليات" },
@@ -289,7 +491,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* Total Balance Card */}
         <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: 18, textAlign: "center", marginBottom: 12 }}>
           <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>إجمالي السيولة النقدية الكلية</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -297,7 +498,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Separate Accounts Balances Preview */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <div style={{ flex: 1, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 10 }}>
             <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>💵 صندوق الكاش</div>
@@ -320,7 +520,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Transactions Tab */}
         {activeTab === "transactions" && (
           <>
             {categoryBreakdown.rawExpenseTotal > 0 && (
@@ -375,7 +574,6 @@ export default function App() {
 
               <input type="number" inputMode="decimal" placeholder={`المبلغ بـ ${CURRENCIES[currency].name}`} value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", color: currentTheme.text, fontSize: 15, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
 
-              {/* تصنيف الأيقونات مقسمة بين دخل ومصروف فقط لتبسيط الواجهة */}
               <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>اختر التصنيف:</div>
               
               <div style={{ marginBottom: 8 }}>
@@ -407,7 +605,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* صندوق البحث الذكي */}
             <div style={{ marginBottom: 12 }}>
               <input 
                 type="text" 
@@ -453,7 +650,6 @@ export default function App() {
           </>
         )}
 
-        {/* Debts Tab */}
         {activeTab === "debts" && (
           <div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -476,50 +672,34 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <input type="text" placeholder="اسم الشخص أو الجهة" value={debtName} onChange={e => setDebtName(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px 12px", color: currentTheme.text, fontSize: 12, marginBottom: 8 }} />
-              <input type="number" placeholder="مبلغ الدين" value={debtAmount} onChange={e => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px 12px", color: currentTheme.text, fontSize: 12, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
-              <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: "8px", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>حفظ الدين</button>
+              <input type="text" placeholder="اسم الشخص أو الجهة" value={debtName} onChange={e => setDebtName(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 8 }} />
+              <input type="number" inputMode="decimal" placeholder="المبلغ" value={debtAmount} onChange={e => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+              <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: "8px", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>إضافة الدين</button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {debts.map(d => (
-                <div key={d.id} style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{d.name}</div>
-                    <div style={{ fontSize: 10, color: d.type === "لي عند الناس" ? "#6fbf9a" : "#d97f6b" }}>{d.type}</div>
+              {debts.map(d => {
+                const converted = Number(d.amount) * exchangeRate;
+                const isToMe = d.type === "لي عند الناس";
+                return (
+                  <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", fontSize: 12 }}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{d.name}</div>
+                      <div style={{ fontSize: 9, opacity: 0.6, color: isToMe ? "#6fbf9a" : "#d97f6b" }}>{d.type}</div>
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: isToMe ? "#6fbf9a" : "#d97f6b" }}>
+                      {currencySymbol}{converted.toFixed(0)}
+                    </div>
                   </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{(Number(d.amount) * exchangeRate).toFixed(0)}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Accounts Tab */}
         {activeTab === "accounts" && (
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>إدارة الخزائن والحسابات المالية</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>💵 الصندوق (كاش)</div>
-                  <div style={{ fontSize: 10, opacity: 0.6 }}>النقدية اليدوية في الخزنة</div>
-                </div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: currentTheme.accent }}>
-                  {currencySymbol} {cashBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </div>
-              </div>
-
-              <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>🏦 حساب البنك</div>
-                  <div style={{ fontSize: 10, opacity: 0.6 }}>الأرصدة البنكية والحوالات</div>
-                </div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: currentTheme.accent }}>
-                  {currencySymbol} {bankBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                </div>
-              </div>
-            </div>
+          <div style={{ textAlign: "center", padding: "30px 0", fontSize: 13, opacity: 0.7 }}>
+            قريباً: إدارة تفصيلية لأرصدة وحركات الخزائن والتحويل بينها 🚀
           </div>
         )}
       </div>
