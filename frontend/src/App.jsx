@@ -383,70 +383,104 @@ export default function App() {
             {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة أعمالك'}
           </p>
 
-          <form onSubmit={(e) => {
-    console.log("تم الضغط على زر إرسال النموذج");
-    handleAuth(e);
-  }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-    <div>
-      <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
-      <input
-        type="email"
-        placeholder="example@domain.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        style={{
-          width: '100%',
-          background: currentTheme.boxBg,
-          border: `1px solid ${currentTheme.border}`,
-          borderRadius: '10px',
-          padding: '10px',
-          color: currentTheme.text,
-          fontSize: '12px'
-        }}
-      />
-    </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
+            <input
+              type="email"
+              placeholder="example@domain.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: '100%',
+                background: currentTheme.boxBg,
+                border: `1px solid ${currentTheme.border}`,
+                borderRadius: '10px',
+                padding: '10px',
+                color: currentTheme.text,
+                fontSize: '12px'
+              }}
+            />
+          </div>
 
-    <div>
-      <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
-      <input
-        type="password"
-        placeholder="••••••••"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        style={{
-          width: '100%',
-          background: currentTheme.boxBg,
-          border: `1px solid ${currentTheme.border}`,
-          borderRadius: '10px',
-          padding: '10px',
-          color: currentTheme.text,
-          fontSize: '12px'
-        }}
-      />
-    </div>
+          <div>
+            <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: '100%',
+                background: currentTheme.boxBg,
+                border: `1px solid ${currentTheme.border}`,
+                borderRadius: '10px',
+                padding: '10px',
+                color: currentTheme.text,
+                fontSize: '12px'
+              }}
+            />
+          </div>
 
-    {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
+          {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
 
-    <button
-      type="submit"
-      disabled={authLoading}
-      style={{
-        background: currentTheme.accent,
-        color: '#0e1a1a',
-        border: 'none',
-        borderRadius: '10px',
-        padding: '10px',
-        fontWeight: 'bold',
-        fontSize: '13px',
-        cursor: 'pointer',
-        marginTop: '6px'
-      }}
-    >
-      {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
-    </button>
-  </form>
+          <button
+            type="button"
+            disabled={authLoading}
+            onClick={async () => {
+              console.log("تم النقر على زر الدخول المباشر!");
+              setAuthLoading(true);
+              setAuthError('');
+
+              try {
+                if (isSignUp) {
+                  const { data, error } = await supabase.auth.signUp({ email, password });
+                  if (error) {
+                    setAuthError(error.message);
+                  } else {
+                    if (data.session) {
+                      setSession(data.session);
+                    } else {
+                      alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.');
+                      setIsSignUp(false);
+                    }
+                  }
+                } else {
+                  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                  if (error) {
+                    setAuthError(error.message);
+                  } else if (data.session) {
+                    setSession(data.session);
+                  } else {
+                    // فحص احتياطي للجلسة إذا لم تعود مباشرة
+                    const currentSession = await supabase.auth.getSession();
+                    if (currentSession.data.session) {
+                      setSession(currentSession.data.session);
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error("خطأ:", err);
+                setAuthError('حدث خطأ غير متوقع.');
+              } finally {
+                setAuthLoading(false);
+              }
+            }}
+            style={{
+              background: currentTheme.accent,
+              color: '#0e1a1a',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '10px',
+              fontWeight: 'bold',
+              fontSize: '13px',
+              cursor: 'pointer',
+              marginTop: '6px'
+            }}
+          >
+            {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
+          </button>
+        </div>
 
           <div style={{ textAlign: 'center', marginTop: '16px' }}>
             <button
