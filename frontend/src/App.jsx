@@ -59,6 +59,22 @@ export default function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authError, setAuthError] = useState("");
 
+  useEffect(() => {
+    // 1. جلب الجلسة الحالية عند فتح التطبيق
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    // 2. الاستماع لأي تغيرات في حالة تسجيل الدخول (دخول أو خروج)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // حالات التطبيق
   const [activeTab, setActiveTab] = useState("transactions"); 
   const [transactions, setTransactions] = useState([]);

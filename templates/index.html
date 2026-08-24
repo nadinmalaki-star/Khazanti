@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>خزنتي - لوحة المتابعة المالية</title>
+    <!-- استيراد مكتبة Supabase عبر CDN لضمان عمل المصادقة -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -76,8 +78,13 @@
         </div>
     </div>
 
-    <!-- كود الجافاسكريبت مع دعم الفلترة الزمنية -->
+    <!-- كود الجافاسكريبت الموحد والمنظم بالكامل -->
     <script>
+        // ربط وتهيئة Supabase (استبدلي مفاتيحك هنا أو تأكدلي من ربطها بملف الـ JS الخاص بك)
+        const SUPABASE_URL = 'ضعِي_رابط_السيرفر_هنا';
+        const SUPABASE_ANON_KEY = 'ضعِي_مفتاح_الـ_anon_هنا';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         let allTransactions = []; // لتخزين كافة المعاملات محلياً للفلترة
 
         async function fetchFinancialSummary() {
@@ -93,10 +100,7 @@
                     document.getElementById('net-balance').innerText = summary.net_balance + " 🎯";
                     document.getElementById('spending-rate').innerText = summary.spending_rate + " % 📊";
                     
-                    // حفظ البيانات الأصلية للفلترة
                     allTransactions = result.transactions_details;
-                    
-                    // عرض كافة الحركات افتراضياً
                     displayTransactions(allTransactions);
                 }
             } catch (error) {
@@ -104,7 +108,6 @@
             }
         }
 
-        // دالة لعرض المعاملات في الجدول
         function displayTransactions(transactions) {
             const tableBody = document.getElementById('transactions-table-body');
             tableBody.innerHTML = ""; 
@@ -123,12 +126,11 @@
             });
         }
 
-        // دالة الفلترة الزمنية
         function filterTransactions(period) {
             const today = new Date();
             const currentYear = today.getFullYear();
             const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
-            const currentDate = today.toISOString().split('T')[0]; // صيغة YYYY-MM-DD
+            const currentDate = today.toISOString().split('T')[0];
 
             let filtered = allTransactions;
 
@@ -189,6 +191,37 @@
             }
         }
 
+        // كود معالجة تسجيل الدخول عبر Supabase متكامل وآمن
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            
+            if (loginForm) {
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const email = document.getElementById('loginEmail').value;
+                    const password = document.getElementById('loginPassword').value;
+
+                    try {
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: password,
+                        });
+
+                        if (error) {
+                            alert('خطأ في تسجيل الدخول: ' + error.message);
+                            return;
+                        }
+
+                        window.location.reload();
+                    } catch (err) {
+                        console.error('Login error:', err);
+                    }
+                });
+            }
+        });
+
+        // تشغيل جلب الملخص المالي عند تحميل الصفحة
         fetchFinancialSummary();
     </script>
 </body>

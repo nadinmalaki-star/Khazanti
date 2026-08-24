@@ -464,6 +464,32 @@
         alert('مرحباً بكِ مجدداً، تم تسجيل الدخول بنجاح!');
       });
     }
+    document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    const modalContainer = document.getElementById('loginModalContainer'); // أو اسم الـ id الخاص بنافذة الدخول لديكِ
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // منع إعادة تحميل الصفحة الافتراضي
+            
+            // قراءة البريد وكلمة المرور إذا رغبتِ بالتحقق منها
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // حفظ حالة تسجيل الدخول في الـ localStorage لتشغيل لوحة تحكم React
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', email);
+
+            // إخفاء نافذة الـ Modal الخاصة بالدخول
+            if (modalContainer) {
+                modalContainer.style.display = 'none';
+            }
+
+            // تحديث الصفحة لتنتقل تلقائياً لعرض لوحة التحكم في React (App.jsx)
+            window.location.reload();
+        });
+    }
+});
   </script>
 
 </body>
