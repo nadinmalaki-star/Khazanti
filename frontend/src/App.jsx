@@ -188,11 +188,13 @@ export default function App() {
 
     try {
       if (isSignUp) {
+        console.log("محاولة إنشاء حساب...");
         const { data, error } = await supabase.auth.signUp({ email, password });
+        console.log("نتيجة إنشاء الحساب:", { data, error });
+        
         if (error) {
           setAuthError(error.message);
         } else {
-          // إذا كان الحساب يتطلب تفعيل البريد أو تم تسجيل الدخول مباشرة
           if (data.session) {
             setSession(data.session);
           } else {
@@ -201,15 +203,26 @@ export default function App() {
           }
         }
       } else {
+        console.log("محاولة تسجيل الدخول...");
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        console.log("نتيجة تسجيل الدخول:", { data, error });
+        
         if (error) {
           setAuthError(error.message);
         } else if (data.session) {
-          // تحديث الجلسة والانتقال الفوري للوحة التحكم
+          console.log("تم جلب الجلسة بنجاح، جاري التحديث...");
           setSession(data.session);
+        } else {
+          // حالة نادرة جداً إذا لم تكن الجلسة موجودة في الـ data مباشرة
+          const currentSession = await supabase.auth.getSession();
+          console.log("الجلسة الحالية من الـ Session:", currentSession);
+          if (currentSession.data.session) {
+            setSession(currentSession.data.session);
+          }
         }
       }
     } catch (err) {
+      console.error("خطأ غير متوقع:", err);
       setAuthError('حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.');
     } finally {
       setAuthLoading(false);
@@ -370,67 +383,70 @@ export default function App() {
             {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة أعمالك'}
           </p>
 
-          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
-              <input
-                type="email"
-                placeholder="example@domain.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  background: currentTheme.boxBg,
-                  border: `1px solid ${currentTheme.border}`,
-                  borderRadius: '10px',
-                  padding: '10px',
-                  color: currentTheme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
+          <form onSubmit={(e) => {
+    console.log("تم الضغط على زر إرسال النموذج");
+    handleAuth(e);
+  }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div>
+      <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
+      <input
+        type="email"
+        placeholder="example@domain.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        style={{
+          width: '100%',
+          background: currentTheme.boxBg,
+          border: `1px solid ${currentTheme.border}`,
+          borderRadius: '10px',
+          padding: '10px',
+          color: currentTheme.text,
+          fontSize: '12px'
+        }}
+      />
+    </div>
 
-            <div>
-              <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  background: currentTheme.boxBg,
-                  border: `1px solid ${currentTheme.border}`,
-                  borderRadius: '10px',
-                  padding: '10px',
-                  color: currentTheme.text,
-                  fontSize: '12px'
-                }}
-              />
-            </div>
+    <div>
+      <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
+      <input
+        type="password"
+        placeholder="••••••••"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+        style={{
+          width: '100%',
+          background: currentTheme.boxBg,
+          border: `1px solid ${currentTheme.border}`,
+          borderRadius: '10px',
+          padding: '10px',
+          color: currentTheme.text,
+          fontSize: '12px'
+        }}
+      />
+    </div>
 
-            {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
+    {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
 
-            <button
-              type="submit"
-              disabled={authLoading}
-              style={{
-                background: currentTheme.accent,
-                color: '#0e1a1a',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '10px',
-                fontWeight: 'bold',
-                fontSize: '13px',
-                cursor: 'pointer',
-                marginTop: '6px'
-              }}
-            >
-              {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
-            </button>
-          </form>
+    <button
+      type="submit"
+      disabled={authLoading}
+      style={{
+        background: currentTheme.accent,
+        color: '#0e1a1a',
+        border: 'none',
+        borderRadius: '10px',
+        padding: '10px',
+        fontWeight: 'bold',
+        fontSize: '13px',
+        cursor: 'pointer',
+        marginTop: '6px'
+      }}
+    >
+      {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
+    </button>
+  </form>
 
           <div style={{ textAlign: 'center', marginTop: '16px' }}>
             <button
