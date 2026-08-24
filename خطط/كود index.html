@@ -390,9 +390,10 @@
   <!-- Footer -->
   <footer>
     <div class="wrap">
-      <div class="foot-tagline">بوابتك الذكية للتحكم المالي والأمان السحابي</div>
-      <div class="foot-credit">منصة <span class="athar-mark">خزنتي</span> للحلول المالية المتكاملة</div>
-      <div class="foot-copyright">&copy; 2026 جميع الحقوق محفوظة</div>
+       <div class="wrap">
+      <div class="foot-tagline"><div class="foot-tagline">  خزنتي - بوابتك الذكية للتحكم المالي والأمان السحابي</div>
+      <div class="foot-credit">تصميم وتطوير <span class="athar-mark">أثر</span> استوديو رقمي</div>
+      <div class="foot-copyright">&copy; 2026 أثر. جميع الحقوق محفوظة.</div>
     </div>
   </footer>
 
@@ -426,71 +427,52 @@
 
   <!-- البرمجة المسؤولة عن فتح وإغلاق وعملية تسجيل الدخول -->
   <script>
-    const modal = document.getElementById('loginModalContainer');
-    const openBtn = document.getElementById('openLoginModal');
-    const closeBtn = document.getElementById('closeLoginModal');
-    const loginForm = document.getElementById('loginForm');
-    const loginBtnText = document.getElementById('loginBtnText');
-
-    if (openBtn && modal && closeBtn) {
-      openBtn.addEventListener('click', function(e) {
-        modal.style.display = 'flex';
-      });
-
-      closeBtn.addEventListener('click', function() {
-        modal.style.display = 'none';
-      });
-
-      window.addEventListener('click', function(e) {
-        if (e.target === modal) {
-          modal.style.display = 'none';
-        }
-      });
-    }
-
-    // معالجة إرسال نموذج تسجيل الدخول
-    if (loginForm) {
-      loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        
-        // إغلاق النافذة
-        modal.style.display = 'none';
-        
-        // تحديث زر الدخول في الأعلى ليعكس حالة تسجيل الدخول بنجاح
-        loginBtnText.textContent = 'لوحة التحكم';
-        
-        // رسالة ترحيبية أو إمكانية التوجيه لصفحة الداشبورد مستقبلاً
-        alert('مرحباً بكِ مجدداً، تم تسجيل الدخول بنجاح!');
-      });
-    }
     document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('loginForm');
-    const modalContainer = document.getElementById('loginModalContainer'); // أو اسم الـ id الخاص بنافذة الدخول لديكِ
+      const modal = document.getElementById('loginModalContainer');
+      const openBtn = document.getElementById('openLoginModal');
+      const closeBtn = document.getElementById('closeLoginModal');
+      const loginForm = document.getElementById('loginForm');
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // منع إعادة تحميل الصفحة الافتراضي
-            
-            // قراءة البريد وكلمة المرور إذا رغبتِ بالتحقق منها
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            // حفظ حالة تسجيل الدخول في الـ localStorage لتشغيل لوحة تحكم React
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userEmail', email);
-
-            // إخفاء نافذة الـ Modal الخاصة بالدخول
-            if (modalContainer) {
-                modalContainer.style.display = 'none';
-            }
-
-            // تحديث الصفحة لتنتقل تلقائياً لعرض لوحة التحكم في React (App.jsx)
-            window.location.reload();
+      // فتح وإغلاق النافذة المنبثقة
+      if (openBtn && modal && closeBtn) {
+        openBtn.addEventListener('click', function() {
+          modal.style.display = 'flex';
         });
-    }
-});
-  </script>
 
+        closeBtn.addEventListener('click', function() {
+          modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      }
+
+      // معالجة إرسال نموذج تسجيل الدخول والانتقال للوحة التحكم
+      if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+          e.preventDefault(); // منع إعادة تحميل الصفحة الافتراضي
+          
+          const email = document.getElementById('loginEmail').value;
+          const password = document.getElementById('loginPassword').value;
+
+          // حفظ حالة الدخول مؤقتاً للتأكد من انتقال واجهة React
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userEmail', email);
+
+          // إخفاء النافذة
+          if (modal) {
+            modal.style.display = 'none';
+          }
+
+          // إعادة تحميل الصفحة لتظهر لوحة التحكم فوراً
+          window.location.reload();
+        });
+      }
+    });
+  </script>
+  
 </body>
 </html>
