@@ -49,16 +49,16 @@ const THEMES = {
 };
 
 export default function App() {
-  // حالات المصادقة والتسجيل
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [authError, setAuthError] = useState('');
+  
+  // حالة نافذة سياسة الخصوصية والشروط
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
-  // حالات التطبيق والبيانات
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -74,14 +74,12 @@ export default function App() {
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
 
-  // حقول الديون
   const [debtName, setDebtName] = useState('');
   const [debtAmount, setDebtAmount] = useState('');
   const [debtType, setDebtType] = useState('لي عند الناس');
 
   const currentTheme = THEMES[themeKey] || THEMES.emerald;
 
-  // تسجيل الخروج
   const handleLogout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('isLoggedIn');
@@ -89,10 +87,8 @@ export default function App() {
     setSession(null);
   };
 
-  // مراقبة الجلسة والتحقق من الـ LocalStorage
   useEffect(() => {
     let isMounted = true;
-
     const localLoggedIn = localStorage.getItem('isLoggedIn');
     if (localLoggedIn === 'true') {
       const savedEmail = localStorage.getItem('userEmail') || 'user';
@@ -135,7 +131,6 @@ export default function App() {
     };
   }, []);
 
-  // جلب البيانات عند تسجيل الدخول بنجاح
   useEffect(() => {
     if (session) {
       fetchData();
@@ -274,7 +269,7 @@ export default function App() {
       user_id: session?.user?.id
     };
 
-    const { data, error } = await supabase.from("debts").insert([newDebt]).select();
+    const { data } = await supabase.from("debts").insert([newDebt]).select();
     if (data && data.length > 0) {
       setDebts([data[0], ...debts]);
     }
@@ -319,7 +314,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  // شاشة التحميل الأولية
   if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", background: currentTheme.bg, color: currentTheme.text, display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "'Tajawal', sans-serif" }}>
@@ -328,7 +322,7 @@ export default function App() {
     );
   }
 
-  // شاشة تسجيل الدخول
+  // شاشة تسجيل الدخول مع نافذة سياسة الخصوصية والشروط
   if (!session) {
     return (
       <div dir="rtl" style={{
@@ -346,6 +340,7 @@ export default function App() {
           @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
           * { box-sizing: border-box; }
         `}</style>
+        
         <div style={{
           background: currentTheme.cardBg,
           border: `1px solid ${currentTheme.border}`,
@@ -426,7 +421,7 @@ export default function App() {
                       setSession(data.session);
                     }
                   }
-                } catch (err) {
+                } catch {
                   setAuthError('حدث خطأ غير متوقع.');
                 } finally {
                   setAuthLoading(false);
@@ -465,48 +460,109 @@ export default function App() {
           </div>
         </div>
 
-        {/* زر الشروط والأحكام في صفحة الدخول */}
+        {/* زر سياسة الخصوصية والشروط */}
         <div style={{ marginTop: '20px' }}>
           <button 
             onClick={() => setIsTermsModalOpen(true)}
-            style={{ background: 'none', border: 'none', color: currentTheme.accent, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: currentTheme.accent, 
+              fontSize: '12px', 
+              cursor: 'pointer', 
+              textDecoration: 'underline',
+              fontWeight: 600 
+            }}
           >
-            الشروط والأحكام
+            📜 سياسة الخصوصية والشروط والأحكام
           </button>
         </div>
 
-        {/* نافذة الشروط والأحكام المنبثقة */}
+        {/* نافذة سياسة الخصوصية والشروط والأحكام المنبثقة */}
         {isTermsModalOpen && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Tajawal, sans-serif' }}>
-            <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.accent}`, borderRadius: '20px', padding: '25px', width: '100%', maxWidth: '480px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.8)', position: 'relative', textAlign: 'right', direction: 'rtl', color: currentTheme.text }}>
+          <div style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            height: '100%', 
+            background: 'rgba(0, 0, 0, 0.8)', 
+            backdropFilter: 'blur(5px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            padding: '16px' 
+          }}>
+            <div style={{ 
+              background: currentTheme.cardBg, 
+              border: `1px solid ${currentTheme.accent}`, 
+              borderRadius: '20px', 
+              padding: '24px', 
+              width: '100%', 
+              maxWidth: '450px', 
+              maxHeight: '85vh', 
+              overflowY: 'auto', 
+              boxShadow: '0 20px 40px rgba(0,0,0,0.8)', 
+              position: 'relative', 
+              textAlign: 'right', 
+              color: currentTheme.text 
+            }}>
               
-              <button onClick={() => setIsTermsModalOpen(false)} style={{ position: 'absolute', top: '15px', left: '15px', background: 'none', border: 'none', color: currentTheme.accent, fontSize: '22px', cursor: 'pointer' }}>&times;</button>
+              <button 
+                onClick={() => setIsTermsModalOpen(false)} 
+                style={{ 
+                  position: 'absolute', 
+                  top: '15px', 
+                  left: '15px', 
+                  background: 'none', 
+                  border: 'none', 
+                  color: currentTheme.accent, 
+                  fontSize: '24px', 
+                  cursor: 'pointer' 
+                }}
+              >
+                &times;
+              </button>
               
-              <h3 style={{ color: currentTheme.accent, fontSize: '18px', fontWeight: '700', marginBottom: '15px', textAlign: 'center' }}>
-                الشروط والأحكام
+              <h3 style={{ color: currentTheme.accent, fontSize: '16px', fontWeight: '900', marginBottom: '15px', textAlign: 'center' }}>
+                سياسة الخصوصية والشروط والأحكام
               </h3>
               
-              <div style={{ fontSize: '12.5px', opacity: 0.9, lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ fontSize: '11.5px', opacity: 0.9, lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
-                  <strong style={{ color: currentTheme.accent }}>1. قبول الشروط:</strong>
-                  <p>باستخدامك لمنصة "خزنتي"، فإنكِ توافقين على الالتزام بكافة الشروط والأحكام المذكورة هنا.</p>
+                  <strong style={{ color: currentTheme.accent }}>1. جمع وتخزين البيانات:</strong>
+                  <p>تلتزم منصة "خزنتي" بحماية بياناتك المالية والشخصية. يتم تخزين حركاتك وأرصدتك بأمان تام عبر قاعدة بيانات سحابية مشفرة (Supabase) ولا يتم مشاركتها مع أي طرف ثالث.</p>
                 </div>
                 <div>
-                  <strong style={{ color: currentTheme.accent }}>2. الخصوصية والأمان:</strong>
-                  <p>نلتزم بحماية بياناتك المالية بأعلى معايير الأمان السحابي، وأنتِ مسؤولة عن سرية بيانات حسابك.</p>
+                  <strong style={{ color: currentTheme.accent }}>2. أمن الحساب:</strong>
+                  <p>أنتِ مسؤولة عن الحفاظ على سرية بيانات تسجيل الدخول الخاصة بك (البريد الإلكتروني وكلمة المرور). نوصي باستخدام كلمة مرور قوية.</p>
                 </div>
                 <div>
-                  <strong style={{ color: currentTheme.accent }}>3. استخدام الخدمة:</strong>
-                  <p>المنصة مخصصة لإدارة التدفقات والعمليات المالية بكفاءة، ويُمنع استخدامها لأي أغراض مخالفة للأنظمة.</p>
+                  <strong style={{ color: currentTheme.accent }}>3. استخدام التطبيق:</strong>
+                  <p>تم تصميم التطبيق لمساعدتك في تتبع وإدارة المصاريف، الأرصدة، والديون بكفاءة شخصية ومهنية.</p>
+                </div>
+                <div>
+                  <strong style={{ color: currentTheme.accent }}>4. التعديلات:</strong>
+                  <p>يحق لنا تحديث بنود سياسة الخصوصية والشروط والأحكام كلما دعت الحاجة لتحسين أداء الخدمة والأمان.</p>
                 </div>
               </div>
 
               <div style={{ textAlign: 'center', marginTop: '20px' }}>
                 <button 
                   onClick={() => setIsTermsModalOpen(false)}
-                  style={{ padding: '8px 20px', background: currentTheme.accent, border: 'none', borderRadius: '8px', color: '#071913', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+                  style={{ 
+                    padding: '8px 24px', 
+                    background: currentTheme.accent, 
+                    border: 'none', 
+                    borderRadius: '10px', 
+                    color: '#0e1a1a', 
+                    fontSize: '12px', 
+                    fontWeight: '900', 
+                    cursor: 'pointer' 
+                  }}
                 >
-                  فهمت واستوعبت الشروط
+                  إغلاق وفهمت الشروط
                 </button>
               </div>
 
@@ -517,7 +573,7 @@ export default function App() {
     );
   }
 
-  // الواجهة الرئيسية للتطبيق
+  // الواجهة الرئيسية للتطبيق (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
