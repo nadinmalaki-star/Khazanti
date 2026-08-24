@@ -256,7 +256,7 @@
     font-size:12.5px;
     letter-spacing:1px;
   }
-  footer .foot-tagline{ margin-bottom:10px; }
+  footer .foot-tagline{ margin-bottom:10px; color: var(--muted); }
   footer .foot-credit{
     display:flex; align-items:center; justify-content:center; gap:8px;
     color:var(--muted); font-size:11.5px; letter-spacing:0.5px;
@@ -280,7 +280,7 @@
 <body>
 
   <div class="wrap">
-    <!-- Header with Login Button on the side -->
+    <!-- Header with Login Button -->
     <header class="site-header">
       <button class="login-btn" id="openLoginModal">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
@@ -313,7 +313,7 @@
     <!-- قسم الهوية والألوان -->
     <section>
       <div class="section-head">
-        <div class="kicker">هوية البصرية</div>
+        <div class="kicker">الهوية البصرية</div>
         <h2 class="section-title">فخامة المستثمر وأمان المصارف</h2>
         <p class="lede">تجمع لوحة ألوان خزنتي بين عراقة الزمرد الداكن وبريق الذهب الخالص، لتعكس شعوراً بالثقة المطلقة والخصوصية التامة.</p>
       </div>
@@ -321,13 +321,13 @@
         <div class="swatch-card">
           <div class="swatch green"></div>
           <div class="swatch-name">الزمرد المصرفي العميق</div>
-          <div class="swatch-hex"></div>
-          <div class="swatch-desc">يمثل الاستقرار، والأمان المؤسسي، والهدوء الثقة المالي.</div>
+          <div class="swatch-hex">#061E17</div>
+          <div class="swatch-desc">يمثل الاستقرار، والأمان المؤسسي، والهدوء والثقة المالي.</div>
         </div>
         <div class="swatch-card">
           <div class="swatch gold"></div>
           <div class="swatch-name">الذهب السيادي</div>
-          <div class="swatch-hex"></div>
+          <div class="swatch-hex">#D4AF37</div>
           <div class="swatch-desc">يرمز إلى القيمة الرفيعة، والتدقيق المالي العالي، والموثوقية المطلقة.</div>
         </div>
       </div>
@@ -370,7 +370,7 @@
         <div class="road-card">
           <div class="road-tag">المرحلة الثانية</div>
           <h3>الذكاء المالي المتقدم</h3>
-          <p>إدمج أدوات تحليل التنبؤ بالسيولة وربط المؤشرات الذكية لتوفير استشارات تلقائية دقيقة.</p>
+          <p>دمج أدوات تحليل التنبؤ بالسيولة وربط المؤشرات الذكية لتوفير استشارات تلقائية دقيقة.</p>
         </div>
       </div>
     </section>
@@ -390,85 +390,105 @@
   <!-- Footer -->
   <footer>
     <div class="wrap">
-       <div class="wrap">
-      <div class="foot-tagline"><div class="foot-tagline">  خزنتي - بوابتك الذكية للتحكم المالي والأمان السحابي</div>
+      <div class="foot-tagline">خزنتي - بوابتك الذكية للتحكم المالي والأمان السحابي</div>
       <div class="foot-credit">تصميم وتطوير <span class="athar-mark">أثر</span> استوديو رقمي</div>
       <div class="foot-copyright">&copy; 2026 أثر. جميع الحقوق محفوظة.</div>
     </div>
   </footer>
 
-  <!-- نافذة تسجيل الدخول المنبثقة (Login Modal) -->
+  <!-- نافذة تسجيل الدخول / إنشاء حساب المنبثقة -->
   <div id="loginModalContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999; justify-content: center; align-items: center; font-family: 'Cairo', sans-serif;">
     <div style="background: #0d231b; border: 1px solid #D4AF37; border-radius: 20px; padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); position: relative; text-align: right; direction: rtl;">
       
-      <!-- زر إغلاق النافذة (X) -->
+      <!-- زر إغلاق النافذة -->
       <button id="closeLoginModal" style="position: absolute; top: 20px; left: 20px; background: none; border: none; color: #FFE082; font-size: 24px; cursor: pointer; transition: transform 0.2s;">&times;</button>
       
-      <!-- عنوان النافذة -->
-      <h2 style="color: #FFE082; font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;">تسجيل الدخول</h2>
-      <p style="color: #a3b8b0; font-size: 14px; margin-bottom: 30px; text-align: center;">مرحباً بكِ مجدداً في بوابة خزنتي المالية</p>
+      <!-- عنوان النافذة المتغير حسب الحالة -->
+      <h2 id="modalTitle" style="color: #FFE082; font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;">تسجيل الدخول</h2>
+      <p id="modalSubtitle" style="color: #a3b8b0; font-size: 14px; margin-bottom: 25px; text-align: center;">مرحباً بكِ مجدداً في بوابة خزنتي المالية</p>
       
-      <!-- نموذج تسجيل الدخول -->
+      <!-- نموذج الدخول / التسجيل -->
       <form id="loginForm">
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 8px; font-weight: 600;">البريد الإلكتروني</label>
+        <div style="margin-bottom: 18px;">
+          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 6px; font-weight: 600;">البريد الإلكتروني</label>
           <input type="email" id="loginEmail" required placeholder="name@example.com" style="width: 100%; padding: 12px 16px; background: #071913; border: 1px solid #1f4537; border-radius: 10px; color: #fff; font-size: 14px; outline: none;">
         </div>
         
-        <div style="margin-bottom: 25px;">
-          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 8px; font-weight: 600;">كلمة المرور</label>
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 6px; font-weight: 600;">كلمة المرور</label>
           <input type="password" id="loginPassword" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: #071913; border: 1px solid #1f4537; border-radius: 10px; color: #fff; font-size: 14px; outline: none;">
         </div>
+
+        <div id="authErrorMsg" style="color: #d97f6b; font-size: 12px; text-align: center; margin-bottom: 12px; display: none;"></div>
         
-        <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); border: none; border-radius: 10px; color: #071913; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(212,175,55,0.3); transition: opacity 0.2s;">دخول</button>
+        <button type="submit" id="submitBtnText" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); border: none; border-radius: 10px; color: #071913; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(212,175,55,0.3);">دخول</button>
       </form>
+
+      <!-- زر التبديل بين تسجيل الدخول وإنشاء حساب -->
+      <div style="text-align: center; margin-top: 20px;">
+        <button type="button" id="toggleAuthMode" style="background: none; border: none; color: #EBCF7E; font-size: 12.5px; cursor: pointer; text-decoration: underline; font-family: 'Cairo', sans-serif;">
+          ليس لديك حساب؟ أنشئ حساباً جديداً
+        </button>
+      </div>
+
     </div>
   </div>
 
-  <!-- البرمجة المسؤولة عن فتح وإغلاق وعملية تسجيل الدخول -->
+  <!-- البرمجة المسؤولة عن التفاعل -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const modal = document.getElementById('loginModalContainer');
       const openBtn = document.getElementById('openLoginModal');
       const closeBtn = document.getElementById('closeLoginModal');
       const loginForm = document.getElementById('loginForm');
+      const toggleAuthBtn = document.getElementById('toggleAuthMode');
+      
+      const modalTitle = document.getElementById('modalTitle');
+      const modalSubtitle = document.getElementById('modalSubtitle');
+      const submitBtnText = document.getElementById('submitBtnText');
+
+      let isSignUpMode = false; // الحالة الافتراضية تسجيل دخول
 
       // فتح وإغلاق النافذة المنبثقة
       if (openBtn && modal && closeBtn) {
-        openBtn.addEventListener('click', function() {
-          modal.style.display = 'flex';
+        openBtn.addEventListener('click', () => modal.style.display = 'flex');
+        closeBtn.addEventListener('click', () => modal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+          if (e.target === modal) modal.style.display = 'none';
         });
+      }
 
-        closeBtn.addEventListener('click', function() {
-          modal.style.display = 'none';
-        });
-
-        window.addEventListener('click', function(e) {
-          if (e.target === modal) {
-            modal.style.display = 'none';
+      // التبديل بين تسجيل الدخول وإنشاء حساب
+      if (toggleAuthBtn) {
+        toggleAuthBtn.addEventListener('click', () => {
+          isSignUpMode = !isSignUpMode;
+          if (isSignUpMode) {
+            modalTitle.textContent = 'إنشاء حساب جديد';
+            modalSubtitle.textContent = 'ابدأ رحلتك المالية بأمان وسهولة';
+            submitBtnText.textContent = 'إنشاء الحساب';
+            toggleAuthBtn.textContent = 'لديك حساب بالفعل؟ سجل دخولك';
+          } else {
+            modalTitle.textContent = 'تسجيل الدخول';
+            modalSubtitle.textContent = 'مرحباً بكِ مجدداً في بوابة خزنتي المالية';
+            submitBtnText.textContent = 'دخول';
+            toggleAuthBtn.textContent = 'ليس لديك حساب؟ أنشئ حساباً جديداً';
           }
         });
       }
 
-      // معالجة إرسال نموذج تسجيل الدخول والانتقال للوحة التحكم
+      // معالجة البيانات
       if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-          e.preventDefault(); // منع إعادة تحميل الصفحة الافتراضي
-          
+        loginForm.addEventListener('submit', (e) => {
+          e.preventDefault();
           const email = document.getElementById('loginEmail').value;
           const password = document.getElementById('loginPassword').value;
 
-          // حفظ حالة الدخول مؤقتاً للتأكد من انتقال واجهة React
+          // حفظ البيانات مؤقتاً لتتزامن مع نظام React 
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('userEmail', email);
 
-          // إخفاء النافذة
-          if (modal) {
-            modal.style.display = 'none';
-          }
-
-          // إعادة تحميل الصفحة لتظهر لوحة التحكم فوراً
-          window.location.reload();
+          modal.style.display = 'none';
+          window.location.reload(); // إعادة التحميل لتفعيل واجهة التطبيق الرئيسية
         });
       }
     });
