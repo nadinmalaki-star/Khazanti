@@ -49,33 +49,15 @@ const THEMES = {
 };
 
 export default function App() {
-  // --- 1. جميع الـ Hooks في أعلى الكومبوننت بالترتيب الثابت ---
+  // حالات المصادقة والتسجيل
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-
-  // حالات تسجيل الدخول
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [authError, setAuthError] = useState('');
 
-  useEffect(() => {
-    // 1. جلب الجلسة الحالية عند فتح التطبيق
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    // 2. الاستماع لأي تغيرات في حالة تسجيل الدخول (دخول أو خروج)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // حالات التطبيق
+  // حالات التطبيق الأساسية
   const [activeTab, setActiveTab] = useState("transactions"); 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -99,7 +81,7 @@ export default function App() {
 
   const currentTheme = THEMES[themeKey];
 
-  // مراقبة الجلسة
+  // مراقبة الجلسة من سحابة Supabase
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -114,14 +96,13 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // جلب البيانات عند تسجيل الدخول
+  // جلب البيانات عند تسجيل الدخول بنجاح
   useEffect(() => {
     if (session) {
       fetchData();
     }
   }, [session]);
 
-  // القيم المشتقة (useMemo) يجب أن تظل ثابتة في كل رندر وقبل الـ returns
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
 
@@ -198,7 +179,7 @@ export default function App() {
     return { totals, rawExpenseTotal };
   }, [transactions]);
 
-  // دوال التعامل مع البيانات
+  // دوال التعامل مع المصادقة
   async function handleAuth(e) {
     e.preventDefault();
     setAuthLoading(true);
@@ -225,7 +206,6 @@ export default function App() {
 
   async function fetchData() {
     setLoading(true);
-    // ملاحظة: تأكدي من تفعيل Row Level Security (RLS) في Supabase لتتم حماية البيانات لكل مستخدم
     const { data: txData } = await supabase
       .from("transactions")
       .select("*")
@@ -328,7 +308,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  // --- 2. شروط الـ Early Returns تأتي حصراً بعد انتهاء جميع الـ Hooks ---
+  // شاشة التحميل الأولية
   if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", background: currentTheme.bg, color: currentTheme.text, display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "'Tajawal', sans-serif" }}>
@@ -337,6 +317,7 @@ export default function App() {
     );
   }
 
+  // شاشة تسجيل الدخول
   if (!session) {
     return (
       <div dir="rtl" style={{
@@ -449,7 +430,7 @@ export default function App() {
     );
   }
 
-  // --- 3. واجهة التطبيق الرئيسية (تظهر عند توفر الجلسة بنجاح) ---
+  // الواجهة الرئيسية للتطبيق
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -688,23 +669,23 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <input type="text" placeholder="اسم الشخص أو الجهة" value={debtName} onChange={e => setDebtName(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 8 }} />
-              <input type="number" inputMode="decimal" placeholder="المبلغ" value={debtAmount} onChange={e => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
-              <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: "8px", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>إضافة الدين</button>
+              <input type="text" placeholder="اسم الشخص / الجهة" value={debtName} onChange={(e) => setDebtName(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 8 }} />
+              <input type="number" inputMode="decimal" placeholder="المبلغ" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
+              <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: "8px 0", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>إضافة الدين</button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {debts.map(d => {
-                const converted = Number(d.amount) * exchangeRate;
+                const convertedDebt = Number(d.amount) * exchangeRate;
                 const isToMe = d.type === "لي عند الناس";
                 return (
-                  <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", fontSize: 12 }}>
+                  <div key={d.id} style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
                     <div>
                       <div style={{ fontWeight: 700 }}>{d.name}</div>
-                      <div style={{ fontSize: 9, opacity: 0.6, color: isToMe ? "#6fbf9a" : "#d97f6b" }}>{d.type}</div>
+                      <div style={{ fontSize: 9, color: isToMe ? "#6fbf9a" : "#d97f6b" }}>{d.type}</div>
                     </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: isToMe ? "#6fbf9a" : "#d97f6b" }}>
-                      {currencySymbol}{converted.toFixed(0)}
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: currentTheme.accent }}>
+                      {currencySymbol}{convertedDebt.toFixed(0)}
                     </div>
                   </div>
                 );
@@ -714,10 +695,12 @@ export default function App() {
         )}
 
         {activeTab === "accounts" && (
-          <div style={{ textAlign: "center", padding: "30px 0", fontSize: 13, opacity: 0.7 }}>
-            قريباً: إدارة تفصيلية لأرصدة وحركات الخزائن والتحويل بينها 🚀
+          <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>🏦 إدارة الحزائن والخزائن</div>
+            <p style={{ fontSize: 12, opacity: 0.7 }}>سيتم إضافة ميزات تفصيلية للحسابات المصرفية والنقدية هنا قريباً.</p>
           </div>
         )}
+
       </div>
     </div>
   );
