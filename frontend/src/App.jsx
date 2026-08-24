@@ -230,23 +230,33 @@ export default function App() {
     const baseAmount = num / exchangeRate;
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
-
+  
+    // 1. إنشاء عنصر مؤقت وتحديث الواجهة فوراً لتكون الاستجابة سريعة جداً
+    const tempId = Date.now();
     const newRecord = { 
+      id: tempId,
       type: finalType, 
       amount: baseAmount, 
       category,
       account: selectedAccount,
-      date: transactionDate || new Date().toISOString().split("T")[0],
-      user_id: session?.user?.id
+      date: transactionDate || new Date().toISOString().split("T")[0]
     };
-
-    const { data, error } = await supabase.from("transactions").insert([newRecord]).select();
-    if (error) {
-      setError("فشل الحفظ: " + error.message);
+  
+    setTransactions([newRecord, ...transactions]);
+    setAmount("");
+    setError("");
+  
+    // 2. إرسال البيانات للسحابة في الخلفية
+    const { data, error: dbError } = await supabase
+      .from("transactions")
+      .insert([{ type: finalType, amount: baseAmount, category, account: selectedAccount, date: newRecord.date }])
+      .select();
+  
+    if (dbError) {
+      setError("فشل الحفظ في السحابة: " + dbError.message);
     } else if (data && data.length > 0) {
-      setTransactions([data[0], ...transactions]);
-      setAmount("");
-      setError("");
+      // 3. استبدال المؤقت بالحقيقي القادم من قاعدة البيانات
+      setTransactions(prev => prev.map(t => t.id === tempId ? data[0] : t));
     }
   }
 
