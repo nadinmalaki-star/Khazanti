@@ -23,26 +23,31 @@
             text-align: center;
         }
 
-        /* الهيدر أو اللوغو بالأعلى */
+        /* الهيدر واللوغو الذهبي */
         header {
             width: 100%;
             padding: 20px 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
         .logo {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 900;
             color: #c9a961;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 2px 10px rgba(201, 169, 97, 0.3);
         }
         .company-subtitle {
             font-size: 13px;
-            color: #f2ede2;
-            opacity: 0.7;
-            letter-spacing: 1px;
+            color: #c9a961;
+            opacity: 0.85;
+            letter-spacing: 0.5px;
+            font-weight: 500;
         }
 
         /* المحتوى الرئيسي والبطاقة */
@@ -52,48 +57,51 @@
             background: linear-gradient(135deg, #1b3936, #16302d);
             border: 1px solid #274442;
             border-radius: 20px;
-            padding: 30px;
+            padding: 35px 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             margin: auto;
         }
         h1 {
             color: #c9a961;
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 900;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         p {
             font-size: 14px;
-            opacity: 0.8;
-            line-height: 1.6;
+            opacity: 0.85;
+            line-height: 1.7;
             margin-bottom: 25px;
         }
+        
+        /* زر الدخول التفاعلي الذهبي */
         .btn {
             display: inline-block;
             width: 100%;
-            padding: 12px;
-            background: #c9a961;
+            padding: 14px;
+            background: linear-gradient(135deg, #dfc075, #c9a961);
             color: #0e1a1a;
             border: none;
             border-radius: 12px;
-            font-weight: bold;
+            font-weight: 900;
             font-size: 15px;
             text-decoration: none;
             cursor: pointer;
-            transition: 0.3s;
-            box-shadow: 0 4px 12px rgba(201, 169, 97, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(201, 169, 97, 0.4);
         }
         .btn:hover {
-            opacity: 0.9;
+            opacity: 0.95;
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(201, 169, 97, 0.6);
         }
 
-        /* الـ Footer والشروط والأحكام بالأسفل */
+        /* الـ Footer وروابط الشروط */
         footer {
             width: 100%;
             padding: 15px 0;
             font-size: 13px;
-            opacity: 0.7;
+            opacity: 0.8;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -103,42 +111,113 @@
             display: flex;
             gap: 15px;
         }
-        footer a {
+        footer button, footer a {
+            background: none;
+            border: none;
             color: #c9a961;
             text-decoration: none;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 13px;
             transition: 0.2s;
         }
-        footer a:hover {
+        footer button:hover, footer a:hover {
             text-decoration: underline;
+        }
+
+        /* نافذة الشروط والأحكام (Modal) لتفتح بشكل صحيح */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: linear-gradient(135deg, #1b3936, #16302d);
+            border: 1px solid #c9a961;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 450px;
+            width: 100%;
+            text-align: right;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            color: #f2ede2;
+            position: relative;
+        }
+        .modal-box h3 {
+            color: #c9a961;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+        .modal-box p {
+            font-size: 12.5px;
+            line-height: 1.8;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+        .close-btn {
+            background: #c9a961;
+            color: #0e1a1a;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
 <body>
 
-    <!-- اللوغو واسم الشركة في الأعلى -->
+    <!-- اللوغو الذهبي واسم الشركة في الأعلى -->
     <header>
-        <a href="#" class="logo">خِزنتي ☁️</a>
-        <span class="company-subtitle">من منتجات شركة أثر</span>
+        <a href="#" class="logo"><span>✨</span> خِزنتي ☁️</a>
+        <span class="company-subtitle">من منتجات شركة أثر 🛡️</span>
     </header>
 
     <!-- المحتوى الرئيسي وزر التوجيه للتطبيق الحقيقي -->
     <div class="main-content">
-        <h1>أهلاً بكِ في خِزنتي</h1>
-        <p>نظامك الذكي لإدارة المصاريف، الأرصدة، والديون بكفاءة وسهولة تامة عبر السحابة.</p>
+        <h1>💎 أهلاً بكِ في خِزنتي</h1>
+        <p>نظامك الذكي والأكثر أماناً لإدارة المصاريف، الأرصدة، والديون بكفاءة وسهولة تامة عبر السحابة.</p>
         
         <!-- زر التوجيه لتطبيق الـ React الفعلي على Vercel -->
-        <a href="https://khazanti-git-main-my-projects-da5c.vercel.app/" class="btn">تسجيل الدخول / فتح التطبيق 🚀</a>
+        <a href="https://khazanti-git-main-my-projects-da5c.vercel.app/" class="btn">🚀 تسجيل الدخول / فتح التطبيق</a>
     </div>
 
-    <!-- الـ Footer والشروط والأحكام في الأسفل -->
+    <!-- الـ Footer والشروط والأحكام في الأسفل (مع ربط زر الشروط لتفتح نافذة حقيقية) -->
     <footer>
         <div class="footer-links">
-            <a href="#">الشروط والأحكام</a>
+            <button onclick="openModal()">📜 الشروط والأحكام</button>
             <span>•</span>
-            <a href="#">سياسة الخصوصية</a>
+            <span style="color: #c9a961;">🔐 سياسة الخصوصية</span>
         </div>
         <p>جميع الحقوق محفوظة © 2026 شركة أثر | خِزنتي</p>
     </footer>
+
+    <!-- نافذة الشروط والأحكام المنبثقة -->
+    <div id="termsModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3>📜 الشروط والأحكام وسياسة الخصوصية</h3>
+            <p><strong>1. حماية البيانات:</strong> نلتزم في شركة أثر بحماية كافة بياناتك المالية والمعلومات المسجلة على منصة "خزنتي" بتشفير سحابة عالي الأمان.</p>
+            <p><strong>2. الاستخدام المهني:</strong> التطبيق مصمم لمساعدتك بكفاءة عالية في تتبع الأرصدة والديون والعمليات اليومية.</p>
+            <button class="close-btn" onclick="closeModal()">فهمت، إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('termsModal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('termsModal').style.display = 'none';
+        }
+    </style>
 
 </body>
 </html>
