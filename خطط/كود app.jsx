@@ -180,40 +180,28 @@ export default function App() {
   }, [transactions]);
 
   // دوال التعامل مع المصادقة
-// دوال التعامل مع المصادقة (المُحدثة)
   async function handleAuth(e) {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError('');
 
-    try {
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-          setAuthError(error.message);
-        } else {
-          // إذا كان الحساب يتطلب تفعيل البريد أو تم تسجيل الدخول مباشرة
-          if (data.session) {
-            setSession(data.session);
-          } else {
-            alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.');
-            setIsSignUp(false);
-          }
-        }
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setAuthError(error.message);
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          setAuthError(error.message);
-        } else if (data.session) {
-          // تحديث الجلسة والانتقال الفوري للوحة التحكم
-          setSession(data.session);
-        }
+        alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.');
+        setIsSignUp(false);
       }
-    } catch (err) {
-      setAuthError('حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.');
-    } finally {
-      setAuthLoading(false);
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setAuthError(error.message);
+      } else {
+        setSession(data.session);
+      }
     }
+    setAuthLoading(false);
   }
 
   async function fetchData() {
