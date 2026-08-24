@@ -1,264 +1,479 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خزنتي - لوحة المتابعة المالية</title>
-    <!-- استيراد مكتبة Supabase عبر CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        /* تنسيق بسيط لإخفاء/إظهار صفحات الدخول واللوحة */
-        .hidden { display: none !important; }
-        .auth-container { max-width: 400px; margin: 100px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
-        .auth-container input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        .auth-container button { width: 100%; padding: 10px; background: #2c3e50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خزنتي | KHZNTI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/icon.png" />
+<style>
+  :root{
+    --emerald-950:#061E17;
+    --emerald-900:#0A2A20;
+    --emerald-850:#0E3327;
+    --emerald-800:#123B2D;
+    --emerald-700:#1B4E3B;
+    --gold:#D4AF37;
+    --gold-light:#EBCF7E;
+    --gold-dim:#8B7530;
+    --cream:#F3EEDF;
+    --muted:#9FB8AC;
+    --hairline: rgba(212,175,55,0.28);
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  html,body{
+    background:var(--emerald-950);
+    color:var(--cream);
+    font-family:'Tajawal', sans-serif;
+    scroll-behavior:smooth;
+  }
+
+  body{
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(212,175,55,0.08), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(212,175,55,0.06), transparent 60%),
+      var(--emerald-950);
+  }
+
+  .wrap{max-width:960px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- Header & Login Button ---------- */
+  .site-header{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 24px 0 0;
+  }
+  .login-btn{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family:'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--emerald-950);
+    background: var(--gold);
+    padding: 10px 22px;
+    border-radius: 999px;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+    transition: all 0.3s ease;
+    border: 1px solid var(--gold-light);
+    cursor: pointer;
+  }
+  .login-btn:hover{
+    background: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  }
+
+  /* ---------- Divider ---------- */
+  .hairline{
+    height:1px;
+    background:linear-gradient(to left, transparent, var(--hairline) 15%, var(--hairline) 85%, transparent);
+    margin:0 auto;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    padding:50px 0 60px;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:'';
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(212,175,55,0.035) 0px, rgba(212,175,55,0.035) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(90deg, rgba(212,175,55,0.035) 0px, rgba(212,175,55,0.035) 1px, transparent 1px, transparent 64px);
+    mask-image:linear-gradient(to bottom, black, transparent 85%);
+    pointer-events:none;
+  }
+  .hero-inner{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:40px;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:13px;
+    color:var(--gold-light); letter-spacing:0.5px;
+    border:1px solid var(--hairline); border-radius:999px;
+    padding:7px 16px;
+    background:rgba(212,175,55,0.06);
+  }
+  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--gold); box-shadow:0 0 8px var(--gold);}
+
+  .brand-name{
+    font-family:'Cairo', sans-serif;
+    font-weight:900;
+    font-size:clamp(48px, 8vw, 76px);
+    line-height:1.05;
+    margin-top:18px;
+    background:linear-gradient(180deg, var(--cream) 20%, var(--gold-light) 130%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .brand-en{
+    font-family:'Cairo', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:6px;
+    color:var(--gold-dim);
+    margin-top:6px;
+  }
+  .tagline{
+    font-size:19px;
+    color:var(--muted);
+    margin-top:22px;
+    max-width:420px;
+    line-height:1.9;
+  }
+
+  /* ---------- Signature: Safe Dial ---------- */
+  .dial-stage{
+    position:relative;
+    width:260px; height:260px;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dial-glow{
+    position:absolute; inset:-30px;
+    background:radial-gradient(circle, rgba(212,175,55,0.16), transparent 65%);
+    filter:blur(4px);
+  }
+
+  /* ---------- Section shell ---------- */
+  section{ padding:64px 0; }
+  .section-head{ margin-bottom:36px; }
+  .kicker{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:13px;
+    color:var(--gold); letter-spacing:0.5px; margin-bottom:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .kicker::after{ content:''; flex:1; height:1px; background:var(--hairline); }
+  .section-title{
+    font-family:'Cairo', sans-serif; font-weight:800; font-size:32px;
+    color:var(--cream);
+  }
+  .lede{
+    color:var(--muted); font-size:16.5px; line-height:2; max-width:680px; margin-top:16px;
+  }
+
+  /* ---------- Identity / color guide ---------- */
+  .identity-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:32px;
+  }
+  .swatch-card{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:24px;
+    background:linear-gradient(160deg, var(--emerald-850), var(--emerald-900));
+  }
+  .swatch{
+    width:44px; height:44px; border-radius:10px; margin-bottom:16px;
+    box-shadow:0 6px 20px -6px rgba(0,0,0,0.5);
+  }
+  .swatch.green{ background:linear-gradient(160deg,#1B4E3B,#0A2A20); border:1px solid var(--hairline); }
+  .swatch.gold{ background:linear-gradient(160deg,var(--gold-light),var(--gold)); }
+  .swatch-name{ font-family:'Cairo', sans-serif; font-weight:700; font-size:16px; color:var(--cream); }
+  .swatch-hex{ font-family:'Cairo', sans-serif; font-size:12px; color:var(--gold-dim); letter-spacing:1px; margin-top:2px; }
+  .swatch-desc{ color:var(--muted); font-size:14.5px; line-height:1.85; margin-top:12px; }
+
+  /* ---------- Feature grid ---------- */
+  .feature-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px;
+  }
+  .feature-card{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:22px 24px;
+    background:rgba(212,175,55,0.03);
+    transition:border-color .25s ease, background .25s ease;
+  }
+  .feature-card h4{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:16px; color:var(--gold-light); margin-bottom:8px;
+  }
+  .feature-card p{ color:var(--muted); font-size:14.5px; line-height:1.85; }
+
+  /* ---------- Roadmap ---------- */
+  .roadmap{
+    display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px;
+  }
+  .road-card{
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    padding:30px;
+    background:linear-gradient(160deg, var(--emerald-850), var(--emerald-950));
+    position:relative;
+    overflow:hidden;
+  }
+  .road-card::before{
+    content:'';
+    position:absolute; top:-40%; left:-20%;
+    width:220px; height:220px;
+    background:radial-gradient(circle, rgba(212,175,55,0.10), transparent 70%);
+  }
+  .road-tag{
+    font-family:'Cairo', sans-serif; font-weight:800; font-size:12px;
+    color:var(--gold); letter-spacing:1px; margin-bottom:10px;
+  }
+  .road-card h3{
+    font-family:'Cairo', sans-serif; font-weight:800; font-size:21px; color:var(--cream); margin-bottom:12px;
+  }
+  .road-card p{ color:var(--muted); font-size:14.5px; line-height:1.9; }
+
+  /* ---------- Closing ---------- */
+  .closing{
+    text-align:center;
+    padding:90px 0 70px;
+  }
+  .closing-line{
+    font-family:'Cairo', sans-serif; font-weight:800;
+    font-size:clamp(24px, 4vw, 34px);
+    color:var(--cream);
+    line-height:1.7;
+    max-width:640px;
+    margin:0 auto;
+  }
+  .closing-line .accent{ color:var(--gold); }
+  .closing-mark{
+    margin-top:34px;
+    font-family:'Cairo', sans-serif; font-weight:900; font-size:15px;
+    letter-spacing:4px; color:var(--gold-dim);
+  }
+
+  footer{
+    border-top:1px solid var(--hairline);
+    padding:28px 0 40px;
+    text-align:center;
+    color:var(--gold-dim);
+    font-family:'Cairo', sans-serif;
+    font-size:12.5px;
+    letter-spacing:1px;
+  }
+  footer .foot-tagline{ margin-bottom:10px; }
+  footer .foot-credit{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    color:var(--muted); font-size:11.5px; letter-spacing:0.5px;
+  }
+  footer .foot-credit .athar-mark{
+    color:var(--gold-light); font-weight:700;
+  }
+  footer .foot-copyright{
+    margin-top:6px; color:rgba(159,184,172,0.5); font-size:10.5px; letter-spacing:0.5px;
+  }
+
+  @media (max-width:720px){
+    .hero-inner{ flex-direction:column-reverse; text-align:center; }
+    .tagline{ margin-inline:auto; }
+    .dial-stage{ width:190px; height:190px; }
+    .identity-grid, .feature-grid, .roadmap{ grid-template-columns:1fr; }
+    .site-header { justify-content: center; }
+  }
+</style>
 </head>
 <body>
 
-    <!-- 1. شاشة تسجيل الدخول (تظهر افتراضياً إذا لم يكن هناك مسجل دخول) -->
-    <div id="auth-section" class="auth-container">
-        <h2>🔒 تسجيل الدخول إلى خزنتي</h2>
-        <form id="loginForm">
-            <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
-            <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
-            <button type="submit">دخول</button>
-        </form>
+  <div class="wrap">
+    <!-- Header with Login Button on the side -->
+    <header class="site-header">
+      <button class="login-btn" id="openLoginModal">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+        <span id="loginBtnText">تسجيل الدخول</span>
+      </button>
+    </header>
+
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> بوابة مالية سحابية</div>
+          <div class="brand-name">خزنتي</div>
+          <div class="brand-en">K H Z N T I</div>
+          <p class="tagline">بوابتك الذكية للتحكم المالي والأمان السحابي. فخامة العمل المصرفي، بسهولة التقنية الحديثة.</p>
+        </div>
+
+        <div class="dial-stage" style="display: flex; align-items: center; justify-content: center;">
+          <div class="dial-glow"></div>
+          <div class="logo-wrapper" style="display: flex; justify-content: center; align-items: center; position: relative; z-index: 2;">
+            <div style="width: 230px; height: 230px; border-radius: 50%; padding: 4px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center;">
+              <img src="logo.png.png" alt="شعار خزنتي" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- قسم الهوية والألوان -->
+    <section>
+      <div class="section-head">
+        <div class="kicker">هوية البصرية</div>
+        <h2 class="section-title">فخامة المستثمر وأمان المصارف</h2>
+        <p class="lede">تجمع لوحة ألوان خزنتي بين عراقة الزمرد الداكن وبريق الذهب الخالص، لتعكس شعوراً بالثقة المطلقة والخصوصية التامة.</p>
+      </div>
+      <div class="identity-grid">
+        <div class="swatch-card">
+          <div class="swatch green"></div>
+          <div class="swatch-name">الزمرد المصرفي العميق</div>
+          <div class="swatch-hex"></div>
+          <div class="swatch-desc">يمثل الاستقرار، والأمان المؤسسي، والهدوء الثقة المالي.</div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch gold"></div>
+          <div class="swatch-name">الذهب السيادي</div>
+          <div class="swatch-hex"></div>
+          <div class="swatch-desc">يرمز إلى القيمة الرفيعة، والتدقيق المالي العالي، والموثوقية المطلقة.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- قسم المميزات -->
+    <section>
+      <div class="section-head">
+        <div class="kicker">القدرات الأساسية</div>
+        <h2 class="section-title">إدارة مالية مصممة لأصحاب القرار</h2>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>تتبع السيولة والتدفقات</h4>
+          <p>رؤية فورية وشاملة للحركات النقدية والأرصدة لضمان اتخاذ قرارات مالية دقيقة.</p>
+        </div>
+        <div class="feature-card">
+          <h4>تقارير بصرية ذكية</h4>
+          <p>تحليلات مترابطة ومبسطة تسهل قراءة المؤشرات المالية دون تعقيد.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- خارطة الطريق -->
+    <section>
+      <div class="section-head">
+        <div class="kicker">المسار المستقبلي</div>
+        <h2 class="section-title">خارطة طريق التطور</h2>
+      </div>
+      <div class="roadmap">
+        <div class="road-card">
+          <div class="road-tag">المرحلة الأولى</div>
+          <h3>التأسيس والإطلاق الأولي</h3>
+          <p>بناء الأساسات البرمجية وتفعيل واجهات الإدارة المالية الأساسية بأعلى معايير الأمان السحابي.</p>
+        </div>
+        <div class="road-card">
+          <div class="road-tag">المرحلة الثانية</div>
+          <h3>الذكاء المالي المتقدم</h3>
+          <p>إدمج أدوات تحليل التنبؤ بالسيولة وربط المؤشرات الذكية لتوفير استشارات تلقائية دقيقة.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="hairline"></div>
+
+    <!-- الخاتمة -->
+    <div class="closing">
+      <div class="closing-line">
+        اجعل مالك يتحرك بذكاء، وثقة، و<span class="accent">أمان تام</span>.
+      </div>
+      <div class="closing-mark">KHZNTI &bull; خزنتي</div>
     </div>
 
-    <!-- 2. لوحة التحكم المالية (تكون مخفية ولن تظهر إلا بعد تسجيل الدخول) -->
-    <div id="dashboard-section" class="container hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>📊 لوحة تحكم خزينتي</h1>
-            <button id="logout-btn" style="padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="logout()">تسجيل الخروج 🚪</button>
-        </div>
-        <p>مرحباً بكِ يا نادين، متابعة أموالكِ أصبحت أسهل وأكثر دقة.</p>
+  </div>
 
-        <!-- صندوق الملخص المالي (4 بطاقات) -->
-        <div class="summary-cards">
-            <div class="card income">
-                <h3>إجمالي الدخل</h3>
-                <p id="total-income">جاري التحميل...</p>
-            </div>
-            <div class="card expenses">
-                <h3>إجمالي المصروفات</h3>
-                <p id="total-expenses">جاري التحميل...</p>
-            </div>
-            <div class="card net">
-                <h3>صافي الرصيد</h3>
-                <p id="net-balance">جاري التحميل...</p>
-            </div>
-            <div class="card ratio">
-                <h3>نسبة الصرف</h3>
-                <p id="spending-rate">جاري التحميل...</p>
-            </div>
-        </div>
-
-        <!-- نموذج إضافة معاملة مالية جديدة -->
-        <div class="form-section">
-            <h3>➕ إضافة حركة مالية جديدة</h3>
-            <form id="transaction-form" onsubmit="addTransaction(event)">
-                <input type="text" id="description" placeholder="وصف المعاملة (مثل: راتب، فاتورة...)" required>
-                <input type="number" id="amount" placeholder="المبلغ" step="0.01" required>
-                <select id="type" required>
-                    <option value="دخل">دخل</option>
-                    <option value="مصروف">مصروف</option>
-                </select>
-                <input type="date" id="date" required>
-                <button type="submit">حفظ الحركة</button>
-            </form>
-        </div>
-
-        <!-- قسم التقارير وأزرار الفلترة الزمنية -->
-        <div class="filter-section" style="margin: 20px 0; display: flex; gap: 10px; align-items: center;">
-            <span>🔍 تصفية حسب الفترات:</span>
-            <button onclick="filterTransactions('all')" class="filter-btn active">الكل</button>
-            <button onclick="filterTransactions('daily')" class="filter-btn">اليوم</button>
-            <button onclick="filterTransactions('monthly')" class="filter-btn">الشهر الحالي</button>
-            <button onclick="filterTransactions('yearly')" class="filter-btn">السنة الحالية</button>
-        </div>
-
-        <!-- جدول الحركات التفصيلية -->
-        <div class="table-section">
-            <h3>📋 سجل الحركات المالية</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>الرقم</th>
-                        <th>التاريخ</th>
-                        <th>النوع</th>
-                        <th>المبلغ</th>
-                        <th>الوصف</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody id="transactions-table-body">
-                    <!-- سيتم تعبئة البيانات هنا تلقائياً -->
-                </tbody>
-            </table>
-        </div>
+  <!-- Footer -->
+  <footer>
+    <div class="wrap">
+       <div class="wrap">
+      <div class="foot-tagline"><div class="foot-tagline">  خزنتي - بوابتك الذكية للتحكم المالي والأمان السحابي</div>
+      <div class="foot-credit">تصميم وتطوير <span class="athar-mark">أثر</span> استوديو رقمي</div>
+      <div class="foot-copyright">&copy; 2026 أثر. جميع الحقوق محفوظة.</div>
     </div>
+  </footer>
 
-    <!-- كود الجافاسكريبت بالكامل -->
-    <script>
-        // إعدادات Supabase (تأكدي من وضع بياناتك الصحيحة هنا)
-        const SUPABASE_URL = "https://nygfcqlvxogxytwwgbjt.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55Z2ZjcWx2eG9neHl0d3dnYmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTEyNTksImV4cCI6MjEwMjgyNzI1OX0.8siHLjdgPREeCDKM2ggHW_JrMmalh2n9Qlz4XuWnGRI";
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <!-- نافذة تسجيل الدخول المنبثقة (Login Modal) -->
+  <div id="loginModalContainer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999; justify-content: center; align-items: center; font-family: 'Cairo', sans-serif;">
+    <div style="background: #0d231b; border: 1px solid #D4AF37; border-radius: 20px; padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); position: relative; text-align: right; direction: rtl;">
+      
+      <!-- زر إغلاق النافذة (X) -->
+      <button id="closeLoginModal" style="position: absolute; top: 20px; left: 20px; background: none; border: none; color: #FFE082; font-size: 24px; cursor: pointer; transition: transform 0.2s;">&times;</button>
+      
+      <!-- عنوان النافذة -->
+      <h2 style="color: #FFE082; font-size: 24px; font-weight: 700; margin-bottom: 8px; text-align: center;">تسجيل الدخول</h2>
+      <p style="color: #a3b8b0; font-size: 14px; margin-bottom: 30px; text-align: center;">مرحباً بكِ مجدداً في بوابة خزنتي المالية</p>
+      
+      <!-- نموذج تسجيل الدخول -->
+      <form id="loginForm">
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 8px; font-weight: 600;">البريد الإلكتروني</label>
+          <input type="email" id="loginEmail" required placeholder="name@example.com" style="width: 100%; padding: 12px 16px; background: #071913; border: 1px solid #1f4537; border-radius: 10px; color: #fff; font-size: 14px; outline: none;">
+        </div>
+        
+        <div style="margin-bottom: 25px;">
+          <label style="display: block; color: #FFE082; font-size: 13px; margin-bottom: 8px; font-weight: 600;">كلمة المرور</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" style="width: 100%; padding: 12px 16px; background: #071913; border: 1px solid #1f4537; border-radius: 10px; color: #fff; font-size: 14px; outline: none;">
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #FFF2B2, #D4AF37, #996515); border: none; border-radius: 10px; color: #071913; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(212,175,55,0.3); transition: opacity 0.2s;">دخول</button>
+      </form>
+    </div>
+  </div>
 
-        let allTransactions = [];
+  <!-- البرمجة المسؤولة عن فتح وإغلاق وعملية تسجيل الدخول -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('loginModalContainer');
+      const openBtn = document.getElementById('openLoginModal');
+      const closeBtn = document.getElementById('closeLoginModal');
+      const loginForm = document.getElementById('loginForm');
 
-        // التحقق من حالة الدخول عند فتح الصفحة مباشرة
-        async function checkUserSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                // إذا كان مسجلاً، أخفِ شاشة الدخول وأظهر لوحة التحكم وحمّل البيانات
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                fetchFinancialSummary();
-            } else {
-                // إذا لم يكن مسجلاً، أظهر شاشة الدخول وأخفِ اللوحة
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('dashboard-section').classList.add('hidden');
-            }
-        }
-
-        // تنفيذ عملية تسجيل الدخول
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password,
-                });
-
-                if (error) {
-                    alert('خطأ في تسجيل الدخول: ' + error.message);
-                    return;
-                }
-
-                // بعد النجاح، إعادة تحميل حالة الجلسة لعرض اللوحة
-                checkUserSession();
-            } catch (err) {
-                console.error('Login error:', err);
-            }
+      // فتح وإغلاق النافذة المنبثقة
+      if (openBtn && modal && closeBtn) {
+        openBtn.addEventListener('click', function() {
+          modal.style.display = 'flex';
         });
 
-        // زر تسجيل الخروج
-        async function logout() {
-            await supabase.auth.signOut();
-            checkUserSession();
-        }
+        closeBtn.addEventListener('click', function() {
+          modal.style.display = 'none';
+        });
 
-        async function fetchFinancialSummary() {
-            try {
-                const response = await fetch('/summary-db');
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    const summary = result.financial_summary;
-                    
-                    document.getElementById('total-income').innerText = summary.total_income + " 💵";
-                    document.getElementById('total-expenses').innerText = summary.total_expenses + " 📉";
-                    document.getElementById('net-balance').innerText = summary.net_balance + " 🎯";
-                    document.getElementById('spending-rate').innerText = summary.spending_rate + " % 📊";
-                    
-                    allTransactions = result.transactions_details;
-                    displayTransactions(allTransactions);
-                }
-            } catch (error) {
-                console.error("خطأ في الاتصال بالـ API:", error);
-            }
-        }
+        window.addEventListener('click', function(e) {
+          if (e.target === modal) {
+            modal.style.display = 'none';
+          }
+        });
+      }
 
-        function displayTransactions(transactions) {
-            const tableBody = document.getElementById('transactions-table-body');
-            tableBody.innerHTML = ""; 
-            
-            transactions.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.id}</td>
-                    <td>${item.date || 'غير محدد'}</td>
-                    <td class="${item.type === 'دخل' ? 'text-income' : 'text-expense'}">${item.type}</td>
-                    <td>${item.amount}</td>
-                    <td>${item.description || 'بدون وصف'}</td>
-                    <td><button class="delete-btn" onclick="deleteTransaction(${item.id})">حذف 🗑️</button></td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
+      // معالجة إرسال نموذج تسجيل الدخول والانتقال للوحة التحكم
+      if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+          e.preventDefault(); // منع إعادة تحميل الصفحة الافتراضي
+          
+          const email = document.getElementById('loginEmail').value;
+          const password = document.getElementById('loginPassword').value;
 
-        function filterTransactions(period) {
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const currentMonth = String(today.getMonth() + 1).padStart(2, '0');
-            const currentDate = today.toISOString().split('T')[0];
+          // حفظ حالة الدخول مؤقتاً للتأكد من انتقال واجهة React
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('userEmail', email);
 
-            let filtered = allTransactions;
+          // إخفاء النافذة
+          if (modal) {
+            modal.style.display = 'none';
+          }
 
-            if (period === 'daily') {
-                filtered = allTransactions.filter(item => item.date === currentDate);
-            } else if (period === 'monthly') {
-                filtered = allTransactions.filter(item => item.date && item.date.startsWith(`${currentYear}-${currentMonth}`));
-            } else if (period === 'yearly') {
-                filtered = allTransactions.filter(item => item.date && item.date.startsWith(`${currentYear}`));
-            }
-
-            displayTransactions(filtered);
-        }
-
-        async function addTransaction(event) {
-            event.preventDefault();
-            const description = document.getElementById('description').value;
-            const amount = parseFloat(document.getElementById('amount').value);
-            const type = document.getElementById('type').value;
-            const date = document.getElementById('date').value;
-            
-            try {
-                const response = await fetch('/add-transaction', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ description, amount, type, date })
-                });
-                
-                const result = await response.json();
-                if (result.status === "success") {
-                    document.getElementById('transaction-form').reset();
-                    fetchFinancialSummary();
-                } else {
-                    alert("حدث خطأ أثناء الحفظ");
-                }
-            } catch (error) {
-                console.error("خطأ:", error);
-            }
-        }
-
-        async function deleteTransaction(id) {
-            if (!confirm("هل أنتِ متأكدة من رغبتكِ في حذف هذه الحركة؟")) return;
-            
-            try {
-                const response = await fetch(`/delete-transaction/${id}`, {
-                    method: 'DELETE',
-                });
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    fetchFinancialSummary();
-                } else {
-                    alert("فشل في حذف الحركة");
-                }
-            } catch (error) {
-                console.error("خطأ:", error);
-            }
-        }
-
-        // فحص حالة الجلسة أول ما تحمّل الصفحة
-        checkUserSession();
-    </script>
+          // إعادة تحميل الصفحة لتظهر لوحة التحكم فوراً
+          window.location.reload();
+        });
+      }
+    });
+  </script>
+  
 </body>
 </html>
