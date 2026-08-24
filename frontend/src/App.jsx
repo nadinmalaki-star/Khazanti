@@ -57,32 +57,16 @@ export default function App() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // حالات التطبيق الأساسية
-  const [activeTab, setActiveTab] = useState("transactions"); 
-  const [transactions, setTransactions] = useState([]);
-  const [debts, setDebts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("مبيعات");
-  const [selectedAccount, setSelectedAccount] = useState("الصندوق (كاش)");
-  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
-  const [searchQuery, setSearchQuery] = useState(""); 
-  const [error, setError] = useState("");
-  const [currency, setCurrency] = useState("ILS");
-  const [themeKey, setThemeKey] = useState("emerald");
-
-  const [deletedItem, setDeletedItem] = useState(null);
-  const [undoTimer, setUndoTimer] = useState(null);
-
-  const [debtType, setDebtType] = useState("لي عند الناس"); 
-  const [debtName, setDebtName] = useState("");
-  const [debtAmount, setDebtAmount] = useState("");
-
-  const currentTheme = THEMES[themeKey];
-
-  // مراقبة الجلسة من سحابة Supabase
+  // مراقبة الجلسة والتحقق من الـ LocalStorage لتجاوز شاشة الدخول فوراً
   useEffect(() => {
+    // التحقق هل تم تسجيل الدخول مسبقاً عبر الـ HTML أو السحابة
+    const localLoggedIn = localStorage.getItem('isLoggedIn');
+    if (localLoggedIn === 'true') {
+      setSession({ user: { email: localStorage.getItem('userEmail') || 'user' } });
+      setAuthLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthLoading(false);
