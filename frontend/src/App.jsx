@@ -566,6 +566,7 @@ export default function App() {
 
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
+  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -601,13 +602,13 @@ export default function App() {
 
             {/* دوائر الألوان والثيمات */}
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              {/* 1. لون الموف الفاخر */}
+              {/* 1. دائرة ثيم الموف الفاخر (يمكنك ربطها بحفظ ثيم خاص أو إضافة "purple" للـ THEMES) */}
               <div 
-                onClick={() => setThemeColor("#9430f2")}
-                style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#6b46c1", cursor: "pointer", border: themeColor === "#6b46c1" ? "2px solid #fff" : "1px solid #274442" }} 
+                onClick={() => setThemeKey("purple")}
+                style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#6b46c1", cursor: "pointer", border: themeKey === "purple" ? "2px solid #fff" : "1px solid #274442" }} 
                 title="ثيم الموف الفاخر"
               />
-              {/* 2. باقي الثيمات الموجودة عندك */}
+              {/* 2. باقي الثيمات الموجودة لديك */}
               {Object.keys(THEMES).map((th) => (
                 <div 
                   key={th} 
