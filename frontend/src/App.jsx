@@ -167,14 +167,26 @@ export default function App() {
 
   async function fetchData() {
     setLoading(true);
+    
+    // 1. جلب المستخدم الحالي أولاً
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      setLoading(false);
+      return;
+    }
+
+    // 2. جلب الحركات الخاصة بالمستخدم فقط
     const { data: txData } = await supabase
       .from("transactions")
       .select("*")
+      .eq("user_id", user.id)
       .order("id", { ascending: false });
 
+    // 3. جلب الديون الخاصة بالمستخدم فقط (تأكدي من اسم الجدول: debts أو debt)
     const { data: debtData } = await supabase
-      .from("debts")
+      .from("debts") // إذا كان اسم الجدول عندك في سحابة Supabase هو debt بدون s، قومي بتعديلها هنا
       .select("*")
+      .eq("user_id", user.id)
       .order("id", { ascending: false });
 
     setTransactions(txData || []);
@@ -188,6 +200,14 @@ export default function App() {
       setError("أدخلي مبلغ صحيح");
       return;
     }
+
+    // 1. جلب المستخدم الحالي أولاً للتأكد من تسجيل الدخول
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      setError("يجب تسجيل الدخول أولاً لإضافة الحركات");
+      return;
+    }
+
     const baseAmount = num / exchangeRate;
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
@@ -199,16 +219,25 @@ export default function App() {
       amount: baseAmount, 
       category,
       account: selectedAccount,
-      date: transactionDate || new Date().toISOString().split("T")[0]
+      date: transactionDate || new Date().toISOString().split("T")[0],
+      user_id: user.id // ربط المؤقت أيضاً احتياطياً
     };
   
     setTransactions([newRecord, ...transactions]);
     setAmount("");
     setError("");
   
+    // 2. إرسال البيانات مع الـ user_id إلى جدول transactions في Supabase
     const { data, error: dbError } = await supabase
       .from("transactions")
-      .insert([{ type: finalType, amount: baseAmount, category, account: selectedAccount, date: newRecord.date }])
+      .insert([{ 
+        type: finalType, 
+        amount: baseAmount, 
+        category, 
+        account: selectedAccount, 
+        date: newRecord.date,
+        user_id: user.id // <--- الربط الأساسي مع اليوزر الحالي هنا
+      }])
       .select();
   
     if (dbError) {
@@ -750,27 +779,33 @@ export default function App() {
 
         {activeTab === "debts" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>إدارة الديون والذمم</div>
-            <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>قسم الديون جاهز للاستخدام.</div>
-          </div>
-        )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
+              <button 
+                onClick={() => setShowAddDebtModal(true)} 
+                style={{ background: "#c9a961", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
+              >
+                + إضافة دين جديد
+              </button>
+            </div>
 
-        {activeTab === "accounts" && (
-          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>أرصدة الخزائن والحسابات</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between" }}>
-                <span>💵 الصندوق (كاش)</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{currencySymbol}{cashBalance.toFixed(2)}</span>
-              </div>
-              <div style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between" }}>
-                <span>🏦 حساب البنك</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{currencySymbol}{bankBalance.toFixed(2)}</span>
-              </div>
+            {/* عرض قائمة الديون */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "10px" }}>
+              {debts.length === 0 ? (
+                <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
+              ) : (
+                debts.map(d => (
+                  <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name || d.person_name}</div>
+                      <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#c9a961" }}>
+                      {currencySymbol}{Number(d.amount).toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
