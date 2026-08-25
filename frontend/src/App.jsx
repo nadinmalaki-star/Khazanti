@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// إعداد اتصال Supabase (يتم استبدال المفاتيح بالقيم الفعلية للربط السحابي)
-const supabaseUrl = "https://your-supabase-url.supabase.co";
-const supabaseKey = "your-supabase-anon-key";
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from "./supabase";
 
 // العملات المتاحة
 const CURRENCIES = {
