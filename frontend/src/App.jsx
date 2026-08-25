@@ -78,16 +78,26 @@ export default function App() {
   const currentTheme = THEMES[themeKey];
 
   useEffect(() => {
-    // التحقق من الجلسة الحالية عند فتح التطبيق
+    // 1. التحقق من وجود جلسة نشطة للمستخدم الحالي
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setIsLoggedIn(true);
+        // المستخدم لديه حساب مسجل ودخل مسبقاً
+        fetchData(); 
+      } else {
+        // مستخدم جديد أو لم يسجل دخوله بعد، نعرض له شاشة تسجيل الدخول / إنشاء حساب
+        setLoading(false);
+        // يمكنك توجيهه لصفحة الـ Auth هنا إذا كانت منفصلة
       }
     });
 
-    // الاستماع لأي تغيرات في حالة تسجيل الدخول
+    // 2. الاستماع لتغييرات حالة المصادقة (تسجيل دخول / خروج)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
+      if (session) {
+        fetchData();
+      } else {
+        setTransactions([]);
+        setDebts([]);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -813,5 +823,73 @@ export default function App() {
 
       </div>
     </div>
+    {activeTab === "debts" && (
+          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+            {/* محتوى تبويب الديون وزر الإضافة */}
+          </div>
+        )}
+
+      </div>
+    </div>
+
+    {/* ===== كود نافذة إضافة الدين (Modal) يوضع هنا تماماً ===== */}
+    {showAddDebtModal && (
+      <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+        <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 15 }}>إضافة دين جديد</div>
+          
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>اسم الشخص / الجهة</label>
+            <input 
+              type="text" 
+              value={debtName} 
+              onChange={(e) => setDebtName(e.target.value)} 
+              placeholder="أدخلي الاسم..." 
+              style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
+            <input 
+              type="number" 
+              value={debtAmount} 
+              onChange={(e) => setDebtAmount(e.target.value)} 
+              placeholder="0.00" 
+              style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 15 }}>
+            <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
+            <select 
+              value={debtType} 
+              onChange={(e) => setDebtType(e.target.value)}
+              style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+            >
+              <option value="دين له">دين له (فلوس لي عند الناس)</option>
+              <option value="دين عليه">دين عليه (فلوس للناس عندي)</option>
+            </select>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button 
+              onClick={() => setShowAddDebtModal(false)}
+              style={{ background: "transparent", color: currentTheme.text, border: `1px solid ${currentTheme.border}`, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}
+            >
+              إلغاء
+            </button>
+            <button 
+              onClick={handleSaveDebt}
+              style={{ background: "#c9a961", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
+            >
+              حفظ الدين
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
   );
 }
+  
