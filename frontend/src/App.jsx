@@ -52,10 +52,12 @@ const THEMES = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginSuccess, setLoginSuccess] = useState("");
 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -259,33 +261,47 @@ export default function App() {
     setUndoTimer(null);
   }
 
-  const handleLoginSubmit = async (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
+    setLoginSuccess("");
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
+      if (authMode === "login") {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password: loginPassword,
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data.session) {
-        setIsLoggedIn(true);
-        setShowLoginModal(false);
-        setLoginEmail("");
-        setLoginPassword("");
+        if (data.session) {
+          setIsLoggedIn(true);
+          setShowLoginModal(false);
+          setLoginEmail("");
+          setLoginPassword("");
+        }
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email: loginEmail,
+          password: loginPassword,
+        });
+
+        if (error) throw error;
+
+        if (data.user) {
+          setLoginSuccess("تم إنشاء الحساب بنجاح! يجدر التحقق من بريدك إن تطلب الأمر أو يمكنك تسجيل الدخول الآن.");
+          setAuthMode("login");
+        }
       }
     } catch (err) {
-      setLoginError("خطأ في البريد الإلكتروني أو كلمة المرور: " + err.message);
+      setLoginError("حدث خطأ: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // الشاشة الترحيبية الكاملة (Landing Page)
   if (!isLoggedIn) {
     return (
       <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "30px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -294,20 +310,26 @@ export default function App() {
           * { box-sizing: border-box; }
         `}</style>
 
-        {/* الشريط العلوي */}
         <div style={{ width: "100%", maxWidth: "1000px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "50px" }}>
           <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 }}>
             ✦ بوابة مالية 
           </div>
-          <button 
-            onClick={() => setShowLoginModal(true)}
-            style={{ background: "transparent", border: "1px solid #c9a961", color: "#c9a961", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
-          >
-            تسجيل الدخول
-          </button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button 
+              onClick={() => { setAuthMode("login"); setShowLoginModal(true); }}
+              style={{ background: "transparent", border: "1px solid #c9a961", color: "#c9a961", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+            >
+              تسجيل الدخول
+            </button>
+            <button 
+              onClick={() => { setAuthMode("signup"); setShowLoginModal(true); }}
+              style={{ background: "#c9a961", border: "none", color: "#0e1a1a", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+            >
+              حساب جديد
+            </button>
+          </div>
         </div>
 
-        {/* ترويسة الواجهة واللوجو */}
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
           <div style={{ width: "100px", height: "100px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #c9a961", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)", overflow: "hidden" }}>
             <img 
@@ -319,121 +341,63 @@ export default function App() {
           <h1 style={{ fontSize: "52px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
         </div>
 
-        {/* قسم الهوية البصرية: لغة الألوان والرمز */}
         <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
           <div style={{ textAlign: "center", marginBottom: "30px" }}>
             <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>الهوية البصرية</div>
             <h2 style={{ fontSize: "26px", fontWeight: 900 }}>لغة الألوان والرمز</h2>
-            <p style={{ fontSize: "13px", opacity: 0.7 }}>هوية بصرية بنظام فاخر ومصرفي - كل لون ورمز اختر ليعكس الموثوقية والأمان.</p>
+            <p style={{ fontSize: "13px", opacity: 0.7 }}>هوية بصرية بنظام فاخر ومصرفي - كل لون ورمز اختر ليُعكس الموثوقية والأمان.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
               <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الأخضر الداكن</h3>
-              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى المال والثروة والاستقرار المالي، ويؤحي بيئة عمل مصرفية آمنة وهادئة.</p>
+              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى المال والثروة والاستقرار المالي، ويُوحي بيئة عمل مصرفية آمنة وهادئة.</p>
             </div>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
               <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الذهبي الدافي المصرفي</h3>
               <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى الفخامة والقيمة المالية والاحترافية وتستخدم لإبراز العناصر الأساسية.</p>
             </div>
           </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>قرص الخزنة الدائري</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>يرمز إلى التحكم المطلق والأمان التام، كخزنة حقيقية تحفظ أسرارك بعيداً عن المتطفلين.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>سهم النمو الصاعد</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>يرمز إلى الاستثمار وتزايد الأرباح والتقدم المالي المستمر نحو الأفضل.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>الأيقونات الداخلية</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>رموز خطية نقية بلون ذهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
-            </div>
-          </div>
         </div>
 
-        {/* قسم من نحن */}
-        <div style={{ width: "100%", maxWidth: "800px", textAlign: "center", marginBottom: "60px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "30px" }}>
-          <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>من نحن</div>
-          <h2 style={{ fontSize: "24px", fontWeight: 900, marginBottom: "15px" }}>أكثر من مجرد سجل مصروفات</h2>
-          <p style={{ fontSize: "14px", opacity: 0.85, lineHeight: "1.8", margin: 0 }}>
-            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل هويته البصرية الراقية وبنيته التقنية المتقدمة، نجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
-          </p>
-        </div>
-
-        {/* قسم التأسيس الذكي والأمان */}
-        <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
-          <div style={{ textAlign: "center", marginBottom: "25px" }}>
-            <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>المرحلة الحالية</div>
-            <h2 style={{ fontSize: "24px", fontWeight: 900 }}>التأسيس الذكي والأمان</h2>
-            <p style={{ fontSize: "13px", opacity: 0.7 }}>حجر الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
-              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>عزل تام للبيانات</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>بيئة سحابية محمية ومستقلة لكل مستخدم، تضمن سرية معلوماته المالية.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
-              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>إدارة مرنة للحركات</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
-              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>تصنيفات عملية</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>مصممة لتناسب الاحتياجات الواقعية لأجور تجار مصارف، تشغيلية واحتياجات يومية.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
-              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>تجربة ويب تقدمية (PWA)</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>تطبيق سريع وخفيف يعمل مع المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* قسم طموحات المستقبل */}
-        <div style={{ width: "100%", maxWidth: "800px", marginBottom: "60px" }}>
-          <div style={{ textAlign: "center", marginBottom: "25px" }}>
-            <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>طموحات المستقبل</div>
-            <h2 style={{ fontSize: "24px", fontWeight: 900 }}>نحو آفاق مالية متقدمة</h2>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>Business</div>
-              <h4 style={{ fontSize: "16px", margin: "6px 0" }}>المرحلة الاحترافية</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>أدوات متقدمة لإدارة السيولة والتدفقات النقدية تلبي احتياجات التجار والمستقلين.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>Pro</div>
-              <h4 style={{ fontSize: "16px", margin: "6px 0" }}>المرحلة التوسعية</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>شاشة أسعار العملات والمؤشرات المالية المباشرة، مع تقارير ورسوم بيانية تحليلية دقيقة.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* الشعار الختامي والزر */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "20px" }}>تحكم بأموالك اليوم.. وابن مستقبلك المالي بثقة.</h2>
           
-          <button 
-            onClick={() => setShowLoginModal(true)}
-            style={{
-              background: "linear-gradient(135deg, #c9a961, #b8974f)",
-              color: "#16302d",
-              border: "none",
-              padding: "14px 36px",
-              fontSize: "18px",
-              fontWeight: "bold",
-              borderRadius: "14px",
-              cursor: "pointer",
-              boxShadow: "0 8px 20px rgba(201, 169, 97, 0.3)",
-              transition: "all 0.3s ease",
-              marginBottom: "15px"
-            }}
-          >
-            تسجيل الدخول / دخول النظام
-          </button>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "15px" }}>
+            <button 
+              onClick={() => { setAuthMode("login"); setShowLoginModal(true); }}
+              style={{
+                background: "transparent",
+                border: "2px solid #c9a961",
+                color: "#c9a961",
+                padding: "12px 28px",
+                fontSize: "16px",
+                fontWeight: "bold",
+                borderRadius: "14px",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+              }}
+            >
+              تسجيل الدخول
+            </button>
+            <button 
+              onClick={() => { setAuthMode("signup"); setShowLoginModal(true); }}
+              style={{
+                background: "linear-gradient(135deg, #c9a961, #b8974f)",
+                color: "#16302d",
+                border: "none",
+                padding: "12px 28px",
+                fontSize: "16px",
+                fontWeight: "bold",
+                borderRadius: "14px",
+                cursor: "pointer",
+                boxShadow: "0 8px 20px rgba(201, 169, 97, 0.3)",
+                transition: "all 0.3s ease",
+              }}
+            >
+              إنشاء حساب جديد
+            </button>
+          </div>
 
           <div style={{ marginBottom: "20px" }}>
             <button
@@ -454,20 +418,35 @@ export default function App() {
           </div>
         </div>
 
-        {/* الـ Footer */}
-        <footer style={{ fontSize: "11px", opacity: 0.6, textAlign: "center", color: "#f2ede2", marginTop: "20px", lineHeight: "1.6" }}>
-          KHZNTI - بوابتك الذكية للتحكم المالي والأمان السحابي<br />
-          تصميم وتطوير - أثر - استوديو رقمي<br />
-          © أثر 2026 جميع الحقوق محفوظة.
-        </footer>
-
-        {/* نافذة تسجيل الدخول */}
         {showLoginModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
-              <h3 style={{ margin: "0 0 20px", color: "#c9a961" }}>تسجيل الدخول</h3>
-              {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px" }}>{loginError}</div>}
-              <form onSubmit={handleLoginSubmit}>
+              
+              <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
+                <button 
+                  type="button"
+                  onClick={() => setAuthMode("login")}
+                  style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#c9a961" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+                >
+                  تسجيل الدخول
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setAuthMode("signup")}
+                  style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "signup" ? "#c9a961" : "transparent", color: authMode === "signup" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+                >
+                  حساب جديد
+                </button>
+              </div>
+
+              <h3 style={{ margin: "0 0 15px", color: "#c9a961", fontSize: "18px" }}>
+                {authMode === "login" ? "تسجيل الدخول إلى حسابك" : "إنشاء حساب جديد"}
+              </h3>
+
+              {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{loginError}</div>}
+              {loginSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{loginSuccess}</div>}
+              
+              <form onSubmit={handleAuthSubmit}>
                 <div style={{ marginBottom: "15px" }}>
                   <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
                   <input 
@@ -475,6 +454,7 @@ export default function App() {
                     value={loginEmail} 
                     onChange={(e) => setLoginEmail(e.target.value)} 
                     required 
+                    placeholder="name@example.com"
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
                   />
                 </div>
@@ -485,19 +465,21 @@ export default function App() {
                     value={loginPassword} 
                     onChange={(e) => setLoginPassword(e.target.value)} 
                     required 
+                    placeholder="••••••••"
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
                   />
                 </div>
                 <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => setShowLoginModal(false)} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
-                  <button type="submit" style={{ background: "#c9a961", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>دخول</button>
+                  <button type="submit" style={{ background: "#c9a961", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+                    {authMode === "login" ? "دخول" : "إنشاء الحساب"}
+                  </button>
                 </div>
               </form>
             </div>
           </div>
         )}
 
-        {/* نافذة سياسة الخصوصية */}
         {showPrivacyModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
@@ -515,7 +497,6 @@ export default function App() {
     );
   }
 
-  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -538,7 +519,7 @@ export default function App() {
                 <button key={th} onClick={() => setThemeKey(th)} style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }} />
               ))}
             </div>
-            <button onClick={() => setIsLoggedIn(false)} title="تسجيل الخروج" style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, borderRadius: 8, padding: "2px 6px", fontSize: "10px", color: currentTheme.text, cursor: "pointer" }}>خروج</button>
+            <button onClick={() => supabase.auth.signOut()} title="تسجيل الخروج" style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, borderRadius: 8, padding: "2px 6px", fontSize: "10px", color: currentTheme.text, cursor: "pointer" }}>خروج</button>
           </div>
         </div>
 
@@ -616,7 +597,7 @@ export default function App() {
                 {transactions.length === 0 ? (
                   <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد حركات مسجلة.</div>
                 ) : (
-                  transactions.map(t => (
+                  transactions.filter(t => t.category.includes(searchQuery) || (t.account && t.account.includes(searchQuery))).map(t => (
                     <div key={t.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
                       <div>
                         <span style={{ fontWeight: 700 }}>{t.category}</span>
