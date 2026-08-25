@@ -483,12 +483,9 @@ export default function App() {
           KHZNTI — بوابتك الذكية للتحكم المالي والأمان السحابي<br />
           تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
         </div>
-      </div>
-    );
-  }
 
-     {/* Modal تسجيل الدخول / حساب جديد */}
-      {showLoginModal && (
+       {/* Modal تسجيل الدخول / حساب جديد */}
+        {showLoginModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
               
@@ -563,6 +560,9 @@ export default function App() {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
 
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
