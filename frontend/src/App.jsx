@@ -241,7 +241,7 @@ export default function App() {
         {/* الشريط العلوي */}
         <div style={{ width: "100%", maxWidth: "1000px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "50px" }}>
           <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 }}>
-            ✦ بوابة مالية سحابية
+            ✦ بوابة مالية 
           </div>
           <button 
             onClick={() => setShowLoginModal(true)}
@@ -253,32 +253,33 @@ export default function App() {
 
         {/* ترويسة الواجهة واللوجو */}
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
-          <div style={{ width: "100px", height: "100px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #c9a961", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
-            <span style={{ fontSize: "44px" }}>📈</span>
-          </div>
-          <h1 style={{ fontSize: "52px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
-          <div style={{ fontSize: "14px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace", marginBottom: "20px" }}>K H Z N T I</div>
-          <p style={{ fontSize: "16px", opacity: 0.85, lineHeight: "1.8", maxWidth: "600px", margin: "0 auto" }}>
-            بوابتك الذكية للتحكم المالي والأمان السحابي، فخامة العمل المصرفي، بسهولة التقنية الحديثة.
-          </p>
+        <div style={{ width: "100px", height: "100px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #c9a961", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+        <img 
+        src="/logo.png.png" 
+        alt="شعار خزنتي" 
+        style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+        />
         </div>
+       <h1 style={{ fontSize: "52px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
 
+        <div class="wrap"></div>
+        
         {/* قسم الهوية البصرية: لغة الألوان والرمز */}
         <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
           <div style={{ textAlign: "center", marginBottom: "30px" }}>
             <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>الهوية البصرية</div>
             <h2 style={{ fontSize: "26px", fontWeight: 900 }}>لغة الألوان والرمز</h2>
-            <p style={{ fontSize: "13px", opacity: 0.7 }}>هوية بصرية بنظام "فينتك" فاخر ومصرفي - كل لون ورمز اختر ليعكس الموثوقية والأمان.</p>
+            <p style={{ fontSize: "13px", opacity: 0.7 }}>هوية بصرية بنظام فاخر ومصرفي - كل لون ورمز اختر ليعكس الموثوقية والأمان.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
-              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>DARK EMERALD</div>
+              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}></div>
               <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الأخضر الداكن</h3>
               <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى المال والثروة والاستقرار المالي، ويؤحي بيئة عمل مصرفية آمنة وهادئة.</p>
             </div>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
-              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>D4AF37#</div>
+              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}></div>
               <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الذهبي الدافي المصرفي</h3>
               <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى الفخامة والقيمة المالية والاحترافية وتستخدم لإبراز العناصر الأساسية.</p>
             </div>
@@ -286,35 +287,39 @@ export default function App() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>قرمز الخزنة الداخلي</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>رموز لتحكم المتساقط وأمان الفائز، خزنة حقيقية تحفظ أسرار بيئتنا من المتسلقين.</p>
+              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>قرص الخزنة الدائري</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>يرمز إلى التحكم المطلق والأمان التام، كخزنة حقيقية تحفظ أسرارك بعيداً عن المتطفلين.</p>
             </div>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
               <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>سهم النمو الصاعد</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>بروز الاستثمار وازدياد الأرباح والتقدم المالي المستمر نحو الأفضل.</p>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>يرمز إلى الاستثمار وتزايد الأرباح والتقدم المالي المستمر نحو الأفضل.</p>
             </div>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
               <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>الأيقونات الداخلية</h4>
-              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>رموز كحتية نقية بلون دهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>رموز خطية نقية بلون ذهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
             </div>
           </div>
         </div>
+
+        <div class="wrap"></div>
 
         {/* قسم من نحن */}
         <div style={{ width: "100%", maxWidth: "800px", textAlign: "center", marginBottom: "60px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "30px" }}>
           <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>من نحن</div>
           <h2 style={{ fontSize: "24px", fontWeight: 900, marginBottom: "15px" }}>أكثر من مجرد سجل مصروفات</h2>
           <p style={{ fontSize: "14px", opacity: 0.85, lineHeight: "1.8", margin: 0 }}>
-            "خِزنتي" منصة مالية ذكية مخصصة حصرياً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية، بفضل هوية البصرية الراقية وبينية التقنية المتقدمة، تجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
+            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل هويته البصرية الراقية وبنيته التقنية المتقدمة، نجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
           </p>
         </div>
+
+        <div class="wrap"></div>
 
         {/* قسم التأسيس الذكي والأمان */}
         <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>المرحلة الحالية</div>
             <h2 style={{ fontSize: "24px", fontWeight: 900 }}>التأسيس الذكي والأمان</h2>
-            <p style={{ fontSize: "13px", opacity: 0.7 }}>حجز الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
+            <p style={{ fontSize: "13px", opacity: 0.7 }}>حجر الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
@@ -336,6 +341,8 @@ export default function App() {
             </div>
           </div>
         </div>
+        
+        <div class="wrap"></div>
 
         {/* قسم طموحات المستقبل */}
         <div style={{ width: "100%", maxWidth: "800px", marginBottom: "60px" }}>
@@ -357,6 +364,8 @@ export default function App() {
             </div>
           </div>
         </div>
+        
+        <div class="wrap"></div>
 
         {/* الشعار الختامي والزر */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
@@ -365,15 +374,58 @@ export default function App() {
             onClick={() => setShowLoginModal(true)}
             style={{ background: "linear-gradient(135deg, #c9a961, #b08d44)", color: "#0e1a1a", border: "none", padding: "14px 40px", borderRadius: "14px", fontWeight: 900, fontSize: "15px", cursor: "pointer", boxShadow: "0 8px 20px rgba(201,169,97,0.3)" }}
           >
-            ابدأ الآن مجاناً 🚀
+         {/* --- هنا نهاية محتوى واجهة الترحيب وقبل الـ Footer --- */}
+
+        {/* 1. زر تسجيل الدخول */}
+        <button 
+          onClick={() => setShowLoginModal(true)}
+          style={{
+            background: "linear-gradient(135deg, #c9a961, #b8974f)",
+            color: "#16302d",
+            border: "none",
+            padding: "14px 36px",
+            fontSize: "18px",
+            fontWeight: "bold",
+            borderRadius: "14px",
+            cursor: "pointer",
+            boxShadow: "0 8px 20px rgba(201, 169, 97, 0.3)",
+            transition: "all 0.3s ease",
+            marginBottom: "15px"
+          }}
+        >
+          تسجيل الدخول / دخول النظام
+        </button>
+
+       {/* 2. رابط سياسة الخصوصية تحته مباشرة */}
+        <div style={{ marginBottom: "30px" }}>
+          <button
+            onClick={() => setShowPrivacyModal(true)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#c9a961",
+              fontSize: "14px",
+              cursor: "pointer",
+              textDecoration: "underline",
+              fontFamily: "inherit",
+              opacity: 0.9
+            }}
+          >
+            سياسة الخصوصية وشروط الاستخدام
           </button>
         </div>
 
-        <div style={{ fontSize: "11px", opacity: 0.6, textAlign: "center" }}>
+        {/* الـ Footer الصحيح */}
+        <footer style={{ fontSize: "11px", opacity: 0.6, textAlign: "center", color: "#f2ede2", marginTop: "20px" }}>
           KHZNTI - بوابتك الذكية للتحكم المالي والأمان السحابي<br />
-          تصميم وتطوير ⟡ استوديو رقمي<br />
-          © 2026 جميع الحقوق محفوظة.
-        </div>
+          تصميم وتطوير - أثر - استوديو رقمي<br />
+          © أثر 2026 جميع الحقوق محفوظة.
+        </footer>
+
+      </div> {/* نهاية الحاوية الرئيسية لواجهة الترحيب */}
+    </div>
+  ); 
+}
 
         {/* نافذة تسجيل الدخول (Login Modal) */}
         {showLoginModal && (
