@@ -801,11 +801,17 @@ export default function App() {
                       <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
                     </div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#c9a961" }}>
-                      {currencySymbol}{Number(d.amount).toFixed(2)}
+                      {currencySymbol} 
+                      {Number(d.amount).toFixed(2)}
                     </span>
                   </div>
                 ))
               )}
             </div>
           </div>
-        );
+        )}
+
+      </div>
+    </div>
+  );
+}
