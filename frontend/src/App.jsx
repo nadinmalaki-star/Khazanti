@@ -563,9 +563,7 @@ export default function App() {
       </div>
     );
   }
-
-  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
-  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
+  
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
@@ -582,7 +580,7 @@ export default function App() {
         {/* --- القسم العلوي: الثيمات والعملات --- */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
           
-          {/* جهة اليسار: زر الخروج ودوائر الألوان والثيمات */}
+          {/* جهة اليسار: زر الخروج ودوائر الثيمات الأصلية */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <button 
               onClick={() => supabase.auth.signOut()} 
@@ -600,15 +598,8 @@ export default function App() {
               تسجيل الخروج
             </button>
 
-            {/* دوائر الألوان والثيمات */}
+            {/* دوائر الثيمات الأصلية فقط */}
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              {/* 1. دائرة ثيم الموف الفاخر (يمكنك ربطها بحفظ ثيم خاص أو إضافة "purple" للـ THEMES) */}
-              <div 
-                onClick={() => setThemeKey("purple")}
-                style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#6b46c1", cursor: "pointer", border: themeKey === "purple" ? "2px solid #fff" : "1px solid #274442" }} 
-                title="ثيم الموف الفاخر"
-              />
-              {/* 2. باقي الثيمات الموجودة لديك */}
               {Object.keys(THEMES).map((th) => (
                 <div 
                   key={th} 
