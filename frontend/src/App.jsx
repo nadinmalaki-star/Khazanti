@@ -59,7 +59,7 @@ export default function App() {
 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("طعام");
@@ -75,7 +75,6 @@ export default function App() {
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
 
-  // المتغيرات الخاصة بالديون التي كانت مفقودة وتسبب خطأ الشاشة السوداء:
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [debtName, setDebtName] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
@@ -84,23 +83,21 @@ export default function App() {
   const currentTheme = THEMES[themeKey];
 
   useEffect(() => {
-    // 1. التحقق من وجود جلسة نشطة للمستخدم الحالي
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        // المستخدم لديه حساب مسجل ودخل مسبقاً
-        fetchData(); 
+        setIsLoggedIn(true);
+        fetchData();
       } else {
-        // مستخدم جديد أو لم يسجل دخوله بعد، نعرض له شاشة تسجيل الدخول / إنشاء حساب
         setLoading(false);
-        // يمكنك توجيهه لصفحة الـ Auth هنا إذا كانت منفصلة
       }
     });
 
-    // 2. الاستماع لتغييرات حالة المصادقة (تسجيل دخول / خروج)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
+        setIsLoggedIn(true);
         fetchData();
       } else {
+        setIsLoggedIn(false);
         setTransactions([]);
         setDebts([]);
       }
@@ -108,12 +105,6 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchData();
-    }
-  }, [isLoggedIn]);
 
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
@@ -143,64 +134,23 @@ export default function App() {
   );
 
   const totalBalance = cashBalance + bankBalance;
-  
-  const totalIncome = useMemo(
-    () => transactions.filter((t) => t.type === "دخل" || t.type === "مبيعات").reduce((s, t) => s + Number(t.amount), 0) * exchangeRate,
-    [transactions, exchangeRate]
-  );
-  
-  const totalExpense = useMemo(
-    () => transactions.filter((t) => t.type === "مصروف" || t.type === "شراء").reduce((s, t) => s + Number(t.amount), 0) * exchangeRate,
-    [transactions, exchangeRate]
-  );
-
-  const filteredTransactions = useMemo(() => {
-    let result = transactions;
-    if (searchQuery.trim()) {
-      result = transactions.filter(t => 
-        t.category.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (t.account && t.account.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        t.amount.toString().includes(searchQuery) ||
-        (t.date && t.date.includes(searchQuery))
-      );
-    } else {
-      return transactions.slice(0, 10); 
-    }
-    return result;
-  }, [transactions, searchQuery]);
-
-  const categoryBreakdown = useMemo(() => {
-    const totals = {};
-    const expenseTxs = transactions.filter((t) => t.type === "مصروف" || t.type === "شراء");
-    const rawExpenseTotal = expenseTxs.reduce((s, t) => s + Number(t.amount), 0);
-
-    expenseTxs.forEach((t) => {
-      totals[t.category] = (totals[t.category] || 0) + Number(t.amount);
-    });
-
-    return { totals, rawExpenseTotal };
-  }, [transactions]);
 
   async function fetchData() {
     setLoading(true);
-    
-    // 1. جلب المستخدم الحالي أولاً
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       setLoading(false);
       return;
     }
 
-    // 2. جلب الحركات الخاصة بالمستخدم فقط
     const { data: txData } = await supabase
       .from("transactions")
       .select("*")
       .eq("user_id", user.id)
       .order("id", { ascending: false });
 
-    // 3. جلب الديون الخاصة بالمستخدم فقط (تأكدي من اسم الجدول: debts أو debt)
     const { data: debtData } = await supabase
-      .from("debts") // إذا كان اسم الجدول عندك في سحابة Supabase هو debt بدون s، قومي بتعديلها هنا
+      .from("debts")
       .select("*")
       .eq("user_id", user.id)
       .order("id", { ascending: false });
@@ -217,49 +167,72 @@ export default function App() {
       return;
     }
 
-    // 1. جلب المستخدم الحالي أولاً للتأكد من تسجيل الدخول
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      setError("يجب تسجيل الدخول أولاً لإضافة الحركات");
+      setError("يجب تسجيل الدخول أولاً");
       return;
     }
 
     const baseAmount = num / exchangeRate;
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
-  
-    const tempId = Date.now();
+
     const newRecord = { 
-      id: tempId,
       type: finalType, 
       amount: baseAmount, 
       category,
       account: selectedAccount,
       date: transactionDate || new Date().toISOString().split("T")[0],
-      user_id: user.id // ربط المؤقت أيضاً احتياطياً
+      user_id: user.id
     };
-  
-    setTransactions([newRecord, ...transactions]);
-    setAmount("");
-    setError("");
-  
-    // 2. إرسال البيانات مع الـ user_id إلى جدول transactions في Supabase
+
     const { data, error: dbError } = await supabase
       .from("transactions")
-      .insert([{ 
-        type: finalType, 
-        amount: baseAmount, 
-        category, 
-        account: selectedAccount, 
-        date: newRecord.date,
-        user_id: user.id // <--- الربط الأساسي مع اليوزر الحالي هنا
-      }])
+      .insert([newRecord])
       .select();
-  
+
     if (dbError) {
-      setError("فشل الحفظ في السحابة: " + dbError.message);
-    } else if (data && data.length > 0) {
-      setTransactions(prev => prev.map(t => t.id === tempId ? data[0] : t));
+      setError("فشل الحفظ: " + dbError.message);
+    } else if (data) {
+      setTransactions(prev => [data[0], ...prev]);
+      setAmount("");
+      setError("");
+    }
+  }
+
+  async function handleSaveDebt() {
+    const num = parseFloat(debtAmount);
+    if (!debtName.trim() || !num || num <= 0) {
+      alert("الرجاء إدخال اسم الشخص والمبلغ بشكل صحيح");
+      return;
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      alert("يجب تسجيل الدخول أولاً");
+      return;
+    }
+
+    const baseAmount = num / exchangeRate;
+    const newDebt = {
+      name: debtName,
+      amount: baseAmount,
+      type: debtType,
+      user_id: user.id
+    };
+
+    const { data, error: dbError } = await supabase
+      .from("debts")
+      .insert([newDebt])
+      .select();
+
+    if (dbError) {
+      alert("فشل حفظ الدين: " + dbError.message);
+    } else {
+      if (data) setDebts(prev => [data[0], ...prev]);
+      setShowAddDebtModal(false);
+      setDebtName("");
+      setDebtAmount("");
     }
   }
 
@@ -286,13 +259,13 @@ export default function App() {
     setUndoTimer(null);
   }
 
-    const handleLoginSubmit = async (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
     setLoading(true);
 
     try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
       });
@@ -312,7 +285,7 @@ export default function App() {
     }
   };
 
-  // واجهة الترحيب الكاملة (Landing Page) بتفاصيلها الكاملة كما في الفيديو
+  // الشاشة الترحيبية الكاملة (Landing Page)
   if (!isLoggedIn) {
     return (
       <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "30px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -488,11 +461,12 @@ export default function App() {
           © أثر 2026 جميع الحقوق محفوظة.
         </footer>
 
-        {/* نافذة تسجيل الدخول (داخل الحاوية الرئيسية بأمان) */}
+        {/* نافذة تسجيل الدخول */}
         {showLoginModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
               <h3 style={{ margin: "0 0 20px", color: "#c9a961" }}>تسجيل الدخول</h3>
+              {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px" }}>{loginError}</div>}
               <form onSubmit={handleLoginSubmit}>
                 <div style={{ marginBottom: "15px" }}>
                   <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
@@ -523,7 +497,7 @@ export default function App() {
           </div>
         )}
 
-        {/* نافذة سياسة الخصوصية (داخل الحاوية الرئيسية بأمان) */}
+        {/* نافذة سياسة الخصوصية */}
         {showPrivacyModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
@@ -537,17 +511,16 @@ export default function App() {
             </div>
           </div>
         )}
-
-      </div> // نهاية الـ div الرئيسي الوحيد لصفحة الترحيب
+      </div>
     );
   }
 
+  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
         * { box-sizing: border-box; }
-        input:focus, button:focus, select:focus { outline: 2px solid ${currentTheme.accent}; outline-offset: 2px; }
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
@@ -577,7 +550,7 @@ export default function App() {
         {deletedItem && (
           <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
             <span>تم حذف الحركة. هل تريد التراجع؟</span>
-            <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#c9a961", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع (Undo)</button>
+            <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#c9a961", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع</button>
           </div>
         )}
 
@@ -585,7 +558,6 @@ export default function App() {
           {[
             { id: "transactions", label: "📊 العمليات" },
             { id: "debts", label: "🤝 الديون" },
-            { id: "accounts", label: "🏦 الخزائن" },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: activeTab === tab.id ? currentTheme.accent : "transparent", color: activeTab === tab.id ? "#0e1a1a" : currentTheme.text, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               {tab.label}
@@ -603,7 +575,67 @@ export default function App() {
             <div>🏦 البنك: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{bankBalance.toFixed(2)}</span></div>
           </div>
         </div>
-        {/* تبويب الديون والذمم */}
+
+        {activeTab === "transactions" && (
+          <>
+            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>تسجيل عملية جديدة</div>
+              {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
+              
+              <input 
+                type="number" 
+                value={amount} 
+                onChange={(e) => setAmount(e.target.value)} 
+                placeholder="المبلغ..." 
+                style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
+              />
+
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
+                  {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.key}</option>)}
+                </select>
+                <select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
+                  <option value="الصندوق (كاش)">الصندوق (كاش)</option>
+                  <option value="حساب البنك">حساب البنك</option>
+                </select>
+              </div>
+
+              <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
+            </div>
+
+            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>سجل الحركات</div>
+              <input 
+                type="text" 
+                value={searchQuery} 
+                onChange={(e) => setSearchQuery(e.target.value)} 
+                placeholder="بحث في الحركات..." 
+                style={{ width: "100%", padding: "8px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box", fontSize: "12px" }}
+              />
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto" }}>
+                {transactions.length === 0 ? (
+                  <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد حركات مسجلة.</div>
+                ) : (
+                  transactions.map(t => (
+                    <div key={t.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
+                      <div>
+                        <span style={{ fontWeight: 700 }}>{t.category}</span>
+                        <div style={{ fontSize: "10px", opacity: 0.6 }}>{t.account} - {t.date}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ color: t.type === "دخل" || t.type === "مبيعات" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
+                          {t.type === "دخل" || t.type === "مبيعات" ? "+" : "-"} {currencySymbol} {(Number(t.amount) * exchangeRate).toFixed(2)}
+                        </span>
+                        <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "14px" }}>×</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
         {activeTab === "debts" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -616,19 +648,18 @@ export default function App() {
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {debts.length === 0 ? (
                 <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
               ) : (
                 debts.map((d) => (
                   <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name || d.person_name}</div>
+                      <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
                       <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
                     </div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#c9a961" }}>
-                      {currencySymbol}
-                      {Number(d.amount).toFixed(2)}
+                      {currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}
                     </span>
                   </div>
                 ))
@@ -637,7 +668,6 @@ export default function App() {
           </div>
         )}
 
-        {/* نافذة إضافة الدين (Modal) */}
         {showAddDebtModal && (
           <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
@@ -654,16 +684,16 @@ export default function App() {
                 />
               </div>
 
-      <div style={{ marginBottom: 10 }}>
-        <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
-        <input
-          type="number"
-          value={debtAmount}
-          onChange={(e) => setDebtAmount(e.target.value)}
-          placeholder="0.00"
-          style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
-        />
-      </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
+                <input
+                  type="number"
+                  value={debtAmount}
+                  onChange={(e) => setDebtAmount(e.target.value)}
+                  placeholder="0.00"
+                  style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+                />
+              </div>
 
               <div style={{ marginBottom: 15 }}>
                 <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
@@ -694,6 +724,7 @@ export default function App() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
