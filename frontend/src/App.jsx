@@ -52,8 +52,10 @@ const THEMES = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false); // <--- أضيفي هذا السطر هنا
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState(""); // لرسائل خطأ تسجيل الدخول
 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -74,6 +76,22 @@ export default function App() {
   const [undoTimer, setUndoTimer] = useState(null);
 
   const currentTheme = THEMES[themeKey];
+
+  useEffect(() => {
+    // التحقق من الجلسة الحالية عند فتح التطبيق
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+      }
+    });
+
+    // الاستماع لأي تغيرات في حالة تسجيل الدخول
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -223,10 +241,30 @@ export default function App() {
     setUndoTimer(null);
   }
 
-  const handleLoginSubmit = (e) => {
+  const const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    setIsLoggedIn(true);
-    setShowLoginModal(false);
+    setLoginError("");
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) throw error;
+
+      if (data.session) {
+        setIsLoggedIn(true);
+        setShowLoginModal(false);
+        setLoginEmail("");
+        setLoginPassword("");
+      }
+    } catch (err) {
+      setLoginError("خطأ في البريد الإلكتروني أو كلمة المرور: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // واجهة الترحيب الكاملة (Landing Page) بتفاصيلها الكاملة كما في الفيديو
@@ -360,7 +398,6 @@ export default function App() {
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "20px" }}>تحكم بأموالك اليوم.. وابن مستقبلك المالي بثقة.</h2>
           
-          {/* 1. زر تسجيل الدخول */}
           <button 
             onClick={() => setShowLoginModal(true)}
             style={{
@@ -380,7 +417,6 @@ export default function App() {
             تسجيل الدخول / دخول النظام
           </button>
 
-          {/* 2. رابط سياسة الخصوصية تحته مباشرة */}
           <div style={{ marginBottom: "20px" }}>
             <button
               onClick={() => setShowPrivacyModal(true)}
@@ -400,14 +436,64 @@ export default function App() {
           </div>
         </div>
 
-        {/* الـ Footer الصحيح */}
+        {/* الـ Footer */}
         <footer style={{ fontSize: "11px", opacity: 0.6, textAlign: "center", color: "#f2ede2", marginTop: "20px", lineHeight: "1.6" }}>
           KHZNTI - بوابتك الذكية للتحكم المالي والأمان السحابي<br />
           تصميم وتطوير - أثر - استوديو رقمي<br />
           © أثر 2026 جميع الحقوق محفوظة.
         </footer>
 
-      </div>
+        {/* نافذة تسجيل الدخول (داخل الحاوية الرئيسية بأمان) */}
+        {showLoginModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
+              <h3 style={{ margin: "0 0 20px", color: "#c9a961" }}>تسجيل الدخول</h3>
+              <form onSubmit={handleLoginSubmit}>
+                <div style={{ marginBottom: "15px" }}>
+                  <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
+                  <input 
+                    type="email" 
+                    value={loginEmail} 
+                    onChange={(e) => setLoginEmail(e.target.value)} 
+                    required 
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+                  />
+                </div>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>كلمة المرور</label>
+                  <input 
+                    type="password" 
+                    value={loginPassword} 
+                    onChange={(e) => setLoginPassword(e.target.value)} 
+                    required 
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                  <button type="button" onClick={() => setShowLoginModal(false)} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
+                  <button type="submit" style={{ background: "#c9a961", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>دخول</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* نافذة سياسة الخصوصية (داخل الحاوية الرئيسية بأمان) */}
+        {showPrivacyModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
+              <h3 style={{ margin: "0 0 15px", color: "#c9a961" }}>سياسة الخصوصية وشروط الاستخدام</h3>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9 }}>
+                نحن في منصة "خزنتي" نلتزم بحماية خصوصية بياناتك المالية والشخصية بأعلى معايير الأمان والسحابة المشفرة. جميع بياناتك مفصولة تماماً ومحمية ولا يتم مشاركتها مطلقاً.
+              </p>
+              <div style={{ textAlign: "left", marginTop: "20px" }}>
+                <button onClick={() => setShowPrivacyModal(false)} style={{ background: "#c9a961", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>إغلاق</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div> // نهاية الـ div الرئيسي الوحيد لصفحة الترحيب
     ); 
   }
 
