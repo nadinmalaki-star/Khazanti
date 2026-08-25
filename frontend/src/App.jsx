@@ -618,27 +618,31 @@ export default function App() {
           </div>
 
           {/* جهة اليمين: أزرار العملات */}
-          <div style={{ display: "flex", gap: "6px" }}>
-            {["د.أ", "$", "₪"].map((curr) => (
-              <button
-                key={curr}
-                onClick={() => setCurrency(curr)}
-                style={{
-                  background: currency === curr ? "#D4AF37" : "#16302d",
-                  border: "1px solid #274442",
-                  color: currency === curr ? "#0e1a1a" : "#f2ede2",
-                  padding: "6px 12px",
-                  borderRadius: "8px",
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                {curr}
-              </button>
-            ))}
-          </div>
-
+          {/* جهة اليمين: أزرار العملات (بشكل آمن ومباشر) */}
+        <div style={{ display: "flex", gap: "6px" }}>
+        {["د.أ", "$", "₪"].map((curr) => (
+        <button
+        key={curr}
+        onClick={() => {
+          if (typeof setCurrency === 'function') {
+            setCurrency(curr);
+          }
+        }}
+        style={{
+          background: currency === curr ? "#D4AF37" : "#16302d",
+          border: "1px solid #274442",
+          color: currency === curr ? "#0e1a1a" : "#f2ede2",
+          padding: "6px 12px",
+          borderRadius: "8px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        }}
+      >
+        {curr}
+      </button>
+    ))}
+  </div>
         </div>
 
         {/* 🔻 هنا يبدأ باقي محتوى لوحة التحكم الخاص بك (الرصيد، المعاملات، الإدخالات، إلخ) */}
