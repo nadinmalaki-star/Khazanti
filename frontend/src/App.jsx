@@ -603,7 +603,7 @@ export default function App() {
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               {/* 1. لون الموف الفاخر */}
               <div 
-                onClick={() => setThemeColor("#6b46c1")}
+                onClick={() => setThemeColor("#9430f2")}
                 style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#6b46c1", cursor: "pointer", border: themeColor === "#6b46c1" ? "2px solid #fff" : "1px solid #274442" }} 
                 title="ثيم الموف الفاخر"
               />
