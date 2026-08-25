@@ -52,7 +52,7 @@ const THEMES = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [authMode, setAuthMode] = useState("login");
+  const [authMode, setAuthMode] = useState("login"); // "login" أو "signup"
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -136,6 +136,24 @@ export default function App() {
   );
 
   const totalBalance = cashBalance + bankBalance;
+
+  // دالة تصدير الحركات إلى CSV
+  function exportToCSV() {
+    if (transactions.length === 0) {
+      alert("لا توجد حركات للتصدير");
+      return;
+    }
+    const headers = "ID,Type,Category,Account,Amount,Date\n";
+    const rows = transactions.map(t => `${t.id},${t.type},${t.category},${t.account || "الصندوق (كاش)"},${t.amount},${t.date}`).join("\n");
+    const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `khezneti_transactions_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 
   async function fetchData() {
     setLoading(true);
@@ -302,6 +320,7 @@ export default function App() {
     }
   };
 
+  // الشاشة الترحيبية الكاملة (Landing Page)
   if (!isLoggedIn) {
     return (
       <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "30px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -497,11 +516,16 @@ export default function App() {
     );
   }
 
+  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
         * { box-sizing: border-box; }
+        select option {
+          background-color: #16302d !important;
+          color: #f2ede2 !important;
+        }
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
@@ -584,8 +608,41 @@ export default function App() {
               <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
             </div>
 
+            {/* قسم الشارت التحليلي للمصاريف */}
+            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📊 الشارت التحليلي للمصاريف حسب الفئة</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {CATEGORIES.filter(c => c.type === "مصروف").map(cat => {
+                  const catTotal = transactions
+                    .filter(t => t.category === cat.key)
+                    .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
+                  
+                  const allExpensesTotal = transactions
+                    .filter(t => t.type === "مصروف" || t.type === "شراء")
+                    .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
+
+                  const percentage = allExpensesTotal > 0 ? (catTotal / allExpensesTotal) * 100 : 0;
+
+                  return (
+                    <div key={cat.key} style={{ fontSize: "11px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span>{cat.icon} {cat.key}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{catTotal.toFixed(2)} ({percentage.toFixed(0)}%)</span>
+                      </div>
+                      <div style={{ width: "100%", background: currentTheme.cardBg, height: 6, borderRadius: 3, overflow: "hidden", border: `1px solid ${currentTheme.border}` }}>
+                        <div style={{ width: `${percentage}%`, background: currentTheme.accent, height: "100%", transition: "width 0.3s ease" }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>سجل الحركات</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>سجل الحركات</div>
+                <button onClick={exportToCSV} style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.accent, padding: "4px 10px", borderRadius: 8, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>📥 تصدير Excel</button>
+              </div>
               <input 
                 type="text" 
                 value={searchQuery} 
