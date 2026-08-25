@@ -52,7 +52,7 @@ const THEMES = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [authMode, setAuthMode] = useState("login"); // "login" أو "signup"
+  const [authMode, setAuthMode] = useState("login");
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -137,7 +137,6 @@ export default function App() {
 
   const totalBalance = cashBalance + bankBalance;
 
-  // دالة تصدير الحركات إلى CSV
   function exportToCSV() {
     if (transactions.length === 0) {
       alert("لا توجد حركات للتصدير");
@@ -309,7 +308,7 @@ export default function App() {
         if (error) throw error;
 
         if (data.user) {
-          setLoginSuccess("تم إنشاء الحساب بنجاح! يجدر التحقق من بريدك إن تطلب الأمر أو يمكنك تسجيل الدخول الآن.");
+          setLoginSuccess("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
           setAuthMode("login");
         }
       }
@@ -320,18 +319,19 @@ export default function App() {
     }
   };
 
-  // الشاشة الترحيبية الكاملة (Landing Page)
+  // الشاشة الترحيبية المحدثة بالكامل حسب الوصف المطلوب
   if (!isLoggedIn) {
     return (
-      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "30px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
           * { box-sizing: border-box; }
         `}</style>
 
-        <div style={{ width: "100%", maxWidth: "1000px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "50px" }}>
-          <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 }}>
-            ✦ بوابة مالية 
+        {/* شريط التنصيب العلوي */}
+        <div style={{ width: "100%", maxWidth: "900px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px" }}>
+          <div style={{ background: "#16302d", border: "1px solid #274442", color: "#c9a961", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 }}>
+            ✦ بوابة مالية ذكية
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button 
@@ -349,87 +349,113 @@ export default function App() {
           </div>
         </div>
 
+        {/* الهيدر الرئيسي والشعار */}
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
-          <div style={{ width: "100px", height: "100px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #c9a961", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+          <div style={{ width: "110px", height: "110px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #D4AF37", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.6)", overflow: "hidden" }}>
             <img 
               src="/logo.png.png" 
               alt="شعار خزنتي" 
               style={{ width: "100%", height: "100%", objectFit: "cover" }} 
             />
           </div>
-          <h1 style={{ fontSize: "52px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
+          <h1 style={{ fontSize: "50px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
+          <p style={{ fontSize: "18px", color: "#c9a961", fontWeight: 500, margin: 0 }}>بوابتك الذكية للتحكم المالي والأمان السحابي</p>
         </div>
 
-        <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
-          <div style={{ textAlign: "center", marginBottom: "30px" }}>
-            <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>الهوية البصرية</div>
-            <h2 style={{ fontSize: "26px", fontWeight: 900 }}>لغة الألوان والرمز</h2>
-            <p style={{ fontSize: "13px", opacity: 0.7 }}>هوية بصرية بنظام فاخر ومصرفي - كل لون ورمز اختر ليُعكس الموثوقية والأمان.</p>
+        {/* قسم من نحن */}
+        <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.3)" }}>
+          <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
+          <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>أكثر من مجرد سجل مصروفات</h2>
+          <p style={{ fontSize: "15px", opacity: 0.9, lineHeight: "1.8", maxWidth: "700px", margin: "0 auto" }}>
+            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل هويته البصرية الراقية وبنيته التقنية المتقدمة، نجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
+          </p>
+        </div>
+
+        {/* لغة الألوان والرمز */}
+        <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
+          <div style={{ textAlign: "center", marginBottom: "25px" }}>
+            <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>الهوية البصرية</div>
+            <h2 style={{ fontSize: "24px", fontWeight: 900 }}>لغة الألوان والرمز</h2>
+            <p style={{ fontSize: "14px", opacity: 0.8 }}>هوية بصرية بطابع "فينتك" فاخر ومصرفي — كل لون ورمز اختير ليعكس الموثوقية والأمان.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
-              <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الأخضر الداكن</h3>
-              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى المال والثروة والاستقرار المالي، ويُوحي بيئة عمل مصرفية آمنة وهادئة.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <div style={{ fontSize: "13px", color: "#D4AF37", fontWeight: 700 }}>DARK EMERALD</div>
+              <h3 style={{ fontSize: "17px", margin: "6px 0" }}>الأخضر الداكن</h3>
+              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6", margin: 0 }}>يرمز إلى المال والثروة والاستقرار المالي، ويوثّق بيئة عمل مصرفية آمنة وهادئة.</p>
             </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
-              <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الذهبي الدافي المصرفي</h3>
-              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى الفخامة والقيمة المالية والاحترافية وتستخدم لإبراز العناصر الأساسية.</p>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <div style={{ fontSize: "13px", color: "#D4AF37", fontWeight: 700 }}>#D4AF37</div>
+              <h3 style={{ fontSize: "17px", margin: "6px 0" }}>الذهبي الدافئ المصقول</h3>
+              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6", margin: 0 }}>يرمز إلى الفخامة والقيمة العالية والاحترافية، ويُستخدم لإبراز العناصر الأساسية.</p>
             </div>
           </div>
         </div>
 
+        {/* المرحلة الحالية */}
+        <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px" }}>
+          <div style={{ textAlign: "center", marginBottom: "25px" }}>
+            <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>المرحلة الحالية</div>
+            <h2 style={{ fontSize: "24px", fontWeight: 900, margin: 0 }}>التأسيس الذكي والآمن</h2>
+            <p style={{ fontSize: "14px", opacity: 0.8, marginTop: "5px" }}>حجر الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
+            <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>🔒 عزل تام للبيانات</h4>
+              <p style={{ fontSize: "13px", opacity: 0.8, margin: 0, lineHeight: "1.5" }}>بيئة سحابية محمية ومستقلة لكل مستخدم، تضمن سرية معلوماته المالية.</p>
+            </div>
+            <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>⚡ إدارة مرنة للحركات</h4>
+              <p style={{ fontSize: "13px", opacity: 0.8, margin: 0, lineHeight: "1.5" }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
+            </div>
+            <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>🗂️ تصنيفات عملية</h4>
+              <p style={{ fontSize: "13px", opacity: 0.8, margin: 0, lineHeight: "1.5" }}>مصممة لتناسب الاحتياجات الواقعية: أجور، إيجار، مصاريف تشغيلية، واحتياجات يومية.</p>
+            </div>
+            <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>📱 تجربة ويب تقدمية (PWA)</h4>
+              <p style={{ fontSize: "13px", opacity: 0.8, margin: 0, lineHeight: "1.5" }}>تطبيق سريع وخفيف يعمل من المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* طموحات المستقبل */}
+        <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
+          <div style={{ textAlign: "center", marginBottom: "25px" }}>
+            <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>طموحات المستقبل</div>
+            <h2 style={{ fontSize: "24px", fontWeight: 900, margin: 0 }}>نحو آفاق مالية متقدمة</h2>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "25px" }}>
+              <div style={{ background: "#D4AF37", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة التوسعية Pro</div>
+              <p style={{ fontSize: "13px", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>شاشة أسعار العملات والمؤشرات المالية المباشرة، مع تقارير ورسوم بيانية تحليلية دقيقة.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "25px" }}>
+              <div style={{ background: "#D4AF37", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة الاحترافية Business</div>
+              <p style={{ fontSize: "13px", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>أدوات متقدمة لإدارة السيولة والتدفقات النقدية، تلبي احتياجات التجار والمستقلين.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* زر الدعوة للتسجيل والختام */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "20px" }}>تحكم بأموالك اليوم.. وابن مستقبلك المالي بثقة.</h2>
+          <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "20px" }}>تحكم بأموالك اليوم.. وابنِ مستقبلك المالي بثقة.</h2>
           
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "15px" }}>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "20px" }}>
             <button 
               onClick={() => { setAuthMode("login"); setShowLoginModal(true); }}
               style={{
                 background: "transparent",
-                border: "2px solid #c9a961",
-                color: "#c9a961",
+                border: "2px solid #D4AF37",
+                color: "#D4AF37",
                 padding: "12px 28px",
-                fontSize: "16px",
+                fontSize: "15px",
                 fontWeight: "bold",
                 borderRadius: "14px",
                 cursor: "pointer",
-                transition: "all 0.3s ease",
-              }}
-            >
-              تسجيل الدخول
-            </button>
-            <button 
-              onClick={() => { setAuthMode("signup"); setShowLoginModal(true); }}
-              style={{
-                background: "linear-gradient(135deg, #c9a961, #b8974f)",
-                color: "#16302d",
-                border: "none",
-                padding: "12px 28px",
-                fontSize: "16px",
-                fontWeight: "bold",
-                borderRadius: "14px",
-                cursor: "pointer",
-                boxShadow: "0 8px 20px rgba(201, 169, 97, 0.3)",
-                transition: "all 0.3s ease",
-              }}
-            >
-              إنشاء حساب جديد
-            </button>
-          </div>
-
-          <div style={{ marginBottom: "20px" }}>
-            <button
-              onClick={() => setShowPrivacyModal(true)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#c9a961",
-                fontSize: "14px",
-                cursor: "pointer",
-                textDecoration: "underline",
-                fontFamily: "inherit",
-                opacity: 0.9
               }}
             >
               سياسة الخصوصية وشروط الاستخدام
@@ -437,28 +463,34 @@ export default function App() {
           </div>
         </div>
 
+        {/* الفوتر */}
+        <div style={{ textAlign: "center", opacity: 0.6, fontSize: "12px", borderTop: "1px solid #274442", width: "100%", maxWidth: "850px", paddingTop: "20px" }}>
+          تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
+        </div>
+
+        {/* Modal تسجيل الدخول / حساب جديد */}
         {showLoginModal && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-            <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
               
               <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
                 <button 
                   type="button"
                   onClick={() => setAuthMode("login")}
-                  style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#c9a961" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+                  style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#D4AF37" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
                 >
                   تسجيل الدخول
                 </button>
                 <button 
                   type="button"
                   onClick={() => setAuthMode("signup")}
-                  style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "signup" ? "#c9a961" : "transparent", color: authMode === "signup" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+                  style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "signup" ? "#D4AF37" : "transparent", color: authMode === "signup" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
                 >
                   حساب جديد
                 </button>
               </div>
 
-              <h3 style={{ margin: "0 0 15px", color: "#c9a961", fontSize: "18px" }}>
+              <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "18px" }}>
                 {authMode === "login" ? "تسجيل الدخول إلى حسابك" : "إنشاء حساب جديد"}
               </h3>
 
@@ -490,7 +522,7 @@ export default function App() {
                 </div>
                 <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => setShowLoginModal(false)} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
-                  <button type="submit" style={{ background: "#c9a961", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+                  <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
                     {authMode === "login" ? "دخول" : "إنشاء الحساب"}
                   </button>
                 </div>
@@ -500,14 +532,14 @@ export default function App() {
         )}
 
         {showPrivacyModal && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-            <div style={{ background: "#16302d", border: "1px solid #c9a961", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
-              <h3 style={{ margin: "0 0 15px", color: "#c9a961" }}>سياسة الخصوصية وشروط الاستخدام</h3>
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+            <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
+              <h3 style={{ margin: "0 0 15px", color: "#D4AF37" }}>سياسة الخصوصية وشروط الاستخدام</h3>
               <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9 }}>
                 نحن في منصة "خزنتي" نلتزم بحماية خصوصية بياناتك المالية والشخصية بأعلى معايير الأمان والسحابة المشفرة. جميع بياناتك مفصولة تماماً ومحمية ولا يتم مشاركتها مطلقاً.
               </p>
               <div style={{ textAlign: "left", marginTop: "20px" }}>
-                <button onClick={() => setShowPrivacyModal(false)} style={{ background: "#c9a961", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>إغلاق</button>
+                <button onClick={() => setShowPrivacyModal(false)} style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>إغلاق</button>
               </div>
             </div>
           </div>
@@ -553,9 +585,9 @@ export default function App() {
         </div>
 
         {deletedItem && (
-          <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
+          <div style={{ background: "#D4AF37", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
             <span>تم حذف الحركة. هل تريد التراجع؟</span>
-            <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#c9a961", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع</button>
+            <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#D4AF37", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع</button>
           </div>
         )}
 
@@ -608,7 +640,7 @@ export default function App() {
               <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
             </div>
 
-            {/* قسم الشارت التحليلي للمصاريف */}
+            {/* الشارت التحليلي للمصاريف */}
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📊 الشارت التحليلي للمصاريف حسب الفئة</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -680,7 +712,7 @@ export default function App() {
               <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
               <button
                 onClick={() => setShowAddDebtModal(true)}
-                style={{ background: "#c9a961", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
+                style={{ background: "#D4AF37", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
               >
                 + إضافة دين جديد
               </button>
@@ -696,7 +728,7 @@ export default function App() {
                       <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
                       <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
                     </div>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#c9a961" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37" }}>
                       {currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}
                     </span>
                   </div>
@@ -754,7 +786,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={handleSaveDebt}
-                  style={{ background: "#c9a961", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
+                  style={{ background: "#D4AF37", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
                 >
                   حفظ الدين
                 </button>
