@@ -252,7 +252,7 @@ export default function App() {
       <div className="auth-container" style={{ background: currentTheme.bg, color: currentTheme.text, minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: 16, direction: "rtl" }}>
         <div className="auth-card" style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: 24, width: "100%", maxWidth: 360, textAlign: "center" }}>
           <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 8, color: currentTheme.accent }}>خِزنتي</h1>
-          <p style={{ fontSize: 12, opacity: 0.7, marginBottom: 20 }}>منصة سحابية لإدارة السيولة والمصروفات</p>
+          <p style={{ fontSize: 12, opacity: 0.7, marginBottom: 20 }}>منصة لإدارة السيولة والمصروفات</p>
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div className="auth-input-group">
               <input 
@@ -274,7 +274,7 @@ export default function App() {
             </div>
             {authError && <div style={{ color: "#d97f6b", fontSize: 11 }}>{authError}</div>}
             <button type="submit" className="auth-btn" style={{ background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: 10, fontWeight: 900, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
-              دخول 🚀
+              دخول 
             </button>
           </form>
 
@@ -283,7 +283,7 @@ export default function App() {
             onClick={() => setShowPrivacyModal(true)} 
             style={{ background: "transparent", border: "none", color: currentTheme.accent, fontSize: 11, cursor: "pointer", marginTop: 16, textDecoration: "underline" }}
           >
-            شروط الخصوصية والأحكام 🔒
+            شروط الخصوصية والأحكام 
           </button>
         </div>
 
@@ -333,10 +333,10 @@ export default function App() {
           <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
           <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 8 }}>
             <button onClick={handleLogout} className="auth-btn" style={{ background: 'transparent', border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: '4px 10px', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>
-              تسجيل الخروج 🚪
+              تسجيل الخروج
             </button>
             <button onClick={() => setShowPrivacyModal(true)} style={{ background: 'transparent', border: `1px solid ${currentTheme.border}`, color: currentTheme.accent, padding: '4px 10px', borderRadius: 8, fontSize: 11, cursor: 'pointer' }}>
-              الخصوصية 🔒
+              الخصوصية 
             </button>
           </div>
         </div>
