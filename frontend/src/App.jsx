@@ -833,6 +833,7 @@ export default function App() {
     </div>
 
     {/* ===== كود نافذة إضافة الدين (Modal) يوضع هنا تماماً ===== */}
+    {/* نافذة إضافة الدين */}
     {showAddDebtModal && (
       <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
         <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
@@ -890,6 +891,6 @@ export default function App() {
       </div>
     )}
 
-  );
+  </div>  {/* إغلاق الحاوية الرئيسية */}
+);
 }
-  
