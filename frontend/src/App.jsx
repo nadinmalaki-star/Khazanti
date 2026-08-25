@@ -677,163 +677,104 @@ export default function App() {
           </div>
         </div>
 
-        {activeTab === "transactions" && (
-          <>
-            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>تسجيل عملية جديدة</div>
-              {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
-              
-              <input 
-                type="number" 
-                value={amount} 
-                onChange={(e) => setAmount(e.target.value)} 
-                placeholder="المبلغ..." 
-                style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
-              />
+       {activeTab === "transactions" && (
+  <>
+    {/* نموذج تسجيل عملية جديدة */}
+    <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>تسجيل عملية جديدة</div>
+      {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
+      
+      <input 
+        type="number" 
+        value={amount} 
+        onChange={(e) => setAmount(e.target.value)} 
+        placeholder="المبلغ..." 
+        style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
+      />
 
-              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
-                  {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.key}</option>)}
-                </select>
-                <select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
-                  <option value="الصندوق (كاش)">الصندوق (كاش)</option>
-                  <option value="حساب البنك">حساب البنك</option>
-                </select>
+      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
+          {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.key}</option>)}
+        </select>
+        <select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
+          <option value="الصندوق (كاش)">الصندوق (كاش)</option>
+          <option value="حساب البنك">حساب البنك</option>
+        </select>
+      </div>
+
+      <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
+    </div>
+
+    {/* الشارت التحليلي للمصاريف */}
+    <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📊 الشارت التحليلي للمصاريف حسب الفئة</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {CATEGORIES.filter(c => c.type === "مصروف").map(cat => {
+          const catTotal = transactions
+            .filter(t => t.category === cat.key)
+            .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
+          
+          const allExpensesTotal = transactions
+            .filter(t => t.type === "مصروف" || t.type === "شراء")
+            .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
+
+          const percentage = allExpensesTotal > 0 ? (catTotal / allExpensesTotal) * 100 : 0;
+
+          return (
+            <div key={cat.key} style={{ fontSize: "11px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                <span>{cat.icon} {cat.key}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{catTotal.toFixed(2)} ({percentage.toFixed(0)}%)</span>
               </div>
-
-              <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
-            </div>
-
-            {/* --- هُنا مكان عرض العمليات السابقة وزر الحذف 🗑️ --- */}
-            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>سجل العمليات السابقة</div>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {transactions.length === 0 ? (
-                  <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد عمليات مسجلة حتى الآن.</div>
-                ) : (
-                  transactions.map((item) => (
-                    <div 
-                      key={item.id} 
-                      style={{ 
-                        background: currentTheme.cardBg, 
-                        padding: 12, 
-                        borderRadius: 12, 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center", 
-                        color: currentTheme.text 
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: "13px" }}>{item.category}</div>
-                        <div style={{ fontSize: "11px", opacity: 0.7 }}>{item.account || selectedAccount}</div>
-                      </div>
-
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37" }}>
-                          {currencySymbol} {(Number(item.amount) * exchangeRate).toFixed(2)}
-                        </span>
-                        
-                        {/* زر الحذف الواضح */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (typeof deleteTransaction === 'function') {
-                              deleteTransaction(item.id);
-                            }
-                          }}
-                          title="حذف العملية"
-                          style={{
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer",
-                            fontSize: "18px",
-                            padding: "4px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            opacity: 0.85,
-                          }}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div style={{ width: "100%", background: currentTheme.cardBg, height: 6, borderRadius: 3, overflow: "hidden", border: `1px solid ${currentTheme.border}` }}>
+                <div style={{ width: `${percentage}%`, background: currentTheme.accent, height: "100%", transition: "width 0.3s ease" }}></div>
               </div>
             </div>
-          </>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* سجل الحركات الموحد مع البحث وزر الحذف */}
+    <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>سجل الحركات</div>
+        <button onClick={exportToCSV} style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.accent, padding: "4px 10px", borderRadius: 8, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>📥 تصدير Excel</button>
+      </div>
+
+      <input 
+        type="text" 
+        value={searchQuery} 
+        onChange={(e) => setSearchQuery(e.target.value)} 
+        placeholder="بحث في الحركات..." 
+        style={{ width: "100%", padding: "8px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box", fontSize: "12px" }}
+      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto" }}>
+        {transactions.length === 0 ? (
+          <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد حركات مسجلة.</div>
+        ) : (
+          transactions.filter(t => t.category.includes(searchQuery) || (t.account && t.account.includes(searchQuery))).map(t => (
+            <div key={t.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
+              <div>
+                <span style={{ fontWeight: 700 }}>{t.category}</span>
+                <div style={{ fontSize: "10px", opacity: 0.6 }}>{t.account} - {t.date}</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ color: t.type === "دخل" || t.type === "مبيعات" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
+                  {t.type === "دخل" || t.type === "مبيعات" ? "+" : "-"} {currencySymbol} {(Number(t.amount) * exchangeRate).toFixed(2)}
+                </span>
+                <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "14px" }} title="حذف الحركة">🗑️</button>
+              </div>
+            </div>
+          ))
         )}
+      </div>
+    </div>
+  </>
+)}
 
-            {/* الشارت التحليلي للمصاريف */}
-            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📊 الشارت التحليلي للمصاريف حسب الفئة</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {CATEGORIES.filter(c => c.type === "مصروف").map(cat => {
-                  const catTotal = transactions
-                    .filter(t => t.category === cat.key)
-                    .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
-                  
-                  const allExpensesTotal = transactions
-                    .filter(t => t.type === "مصروف" || t.type === "شراء")
-                    .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
-
-                  const percentage = allExpensesTotal > 0 ? (catTotal / allExpensesTotal) * 100 : 0;
-
-                  return (
-                    <div key={cat.key} style={{ fontSize: "11px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                        <span>{cat.icon} {cat.key}</span>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{catTotal.toFixed(2)} ({percentage.toFixed(0)}%)</span>
-                      </div>
-                      <div style={{ width: "100%", background: currentTheme.cardBg, height: 6, borderRadius: 3, overflow: "hidden", border: `1px solid ${currentTheme.border}` }}>
-                        <div style={{ width: `${percentage}%`, background: currentTheme.accent, height: "100%", transition: "width 0.3s ease" }}></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>سجل الحركات</div>
-                <button onClick={exportToCSV} style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.accent, padding: "4px 10px", borderRadius: 8, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>📥 تصدير Excel</button>
-              </div>
-              <input 
-                type="text" 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
-                placeholder="بحث في الحركات..." 
-                style={{ width: "100%", padding: "8px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box", fontSize: "12px" }}
-              />
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 200, overflowY: "auto" }}>
-                {transactions.length === 0 ? (
-                  <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد حركات مسجلة.</div>
-                ) : (
-                  transactions.filter(t => t.category.includes(searchQuery) || (t.account && t.account.includes(searchQuery))).map(t => (
-                    <div key={t.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
-                      <div>
-                        <span style={{ fontWeight: 700 }}>{t.category}</span>
-                        <div style={{ fontSize: "10px", opacity: 0.6 }}>{t.account} - {t.date}</div>
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ color: t.type === "دخل" || t.type === "مبيعات" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
-                          {t.type === "دخل" || t.type === "مبيعات" ? "+" : "-"} {currencySymbol} {(Number(t.amount) * exchangeRate).toFixed(2)}
-                        </span>
-                        <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "14px" }}>×</button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === "debts" && (
+{activeTab === "debts" && (
   <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
@@ -853,8 +794,20 @@ export default function App() {
           <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
-              <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
+              <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type === "له" ? "دين لنا (على الآخرين)" : "دين علينا (للآخرين)"}</div>
             </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ color: d.type === "له" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
+                {currencySymbol} {Number(d.amount).toFixed(2)}
+              </span>
+              <button onClick={() => removeDebt(d.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "14px" }} title="حذف الدين">🗑️</button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
 
             {/* جهة اليسار: المبلغ مع زر الحذف الإضافي */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
