@@ -704,6 +704,69 @@ export default function App() {
               <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
             </div>
 
+            {/* --- هُنا مكان عرض العمليات السابقة وزر الحذف 🗑️ --- */}
+            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>سجل العمليات السابقة</div>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {transactions.length === 0 ? (
+                  <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد عمليات مسجلة حتى الآن.</div>
+                ) : (
+                  transactions.map((item) => (
+                    <div 
+                      key={item.id} 
+                      style={{ 
+                        background: currentTheme.cardBg, 
+                        padding: 12, 
+                        borderRadius: 12, 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center", 
+                        color: currentTheme.text 
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "13px" }}>{item.category}</div>
+                        <div style={{ fontSize: "11px", opacity: 0.7 }}>{item.account || selectedAccount}</div>
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37" }}>
+                          {currencySymbol} {(Number(item.amount) * exchangeRate).toFixed(2)}
+                        </span>
+                        
+                        {/* زر الحذف الواضح */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof deleteTransaction === 'function') {
+                              deleteTransaction(item.id);
+                            }
+                          }}
+                          title="حذف العملية"
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            fontSize: "18px",
+                            padding: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: 0.85,
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
             {/* الشارت التحليلي للمصاريف */}
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📊 الشارت التحليلي للمصاريف حسب الفئة</div>
@@ -771,35 +834,92 @@ export default function App() {
         )}
 
         {activeTab === "debts" && (
-          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
-              <button
-                onClick={() => setShowAddDebtModal(true)}
-                style={{ background: "#D4AF37", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
-              >
-                + إضافة دين جديد
-              </button>
+  <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
+      <button
+        onClick={() => setShowAddDebtModal(true)}
+        style={{ background: "#D4AF37", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
+      >
+        + إضافة دين جديد
+      </button>
+    </div>
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {debts.length === 0 ? (
+        <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
+      ) : (
+        debts.map((d) => (
+          <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
+              <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {debts.length === 0 ? (
-                <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
-              ) : (
-                debts.map((d) => (
-                  <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
-                      <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
-                    </div>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37" }}>
-                      {currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}
-                    </span>
-                  </div>
-                ))
-              )}
+            {/* جهة اليسار: المبلغ مع زر الحذف الإضافي */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37" }}>
+                {currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}
+              </span>
+              
+              {/* زر حذف الدين */}
+              <button
+                onClick={() => {
+                  if (typeof deleteDebt === 'function') {
+                    deleteDebt(d.id);
+                  }
+                }}
+                title="إلغاء/حذف الدين"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  padding: "4px",
+                  opacity: 0.8,
+                }}
+              >
+                🗑️
+              </button>
             </div>
           </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
+
+{activeTab === "wallets" && (
+  <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>إدارة الخزائن والحسابات</div>
+    
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* بطاقة الكاش */}
+      <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: "14px" }}>💵 الكاش (النقد اليدوي)</div>
+          <div style={{ fontSize: "11px", opacity: 0.7 }}>المحفظة النقدية اليومية</div>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
+          {/* ضعي هنا المتغير الخاص بأرصدة الكاش عندك */}
+          {currencySymbol} {((cashBalance || 0) * exchangeRate).toFixed(2)}
+        </span>
+      </div>
+
+      {/* بطاقة البنك */}
+      <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: "14px" }}>🏦 الحساب البنكي</div>
+          <div style={{ fontSize: "11px", opacity: 0.7 }}>الرصيد المحول في البنك</div>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
+          {/* ضعي هنا المتغير الخاص بأرصدة البنك عندك */}
+          {currencySymbol} {((bankBalance || 0) * exchangeRate).toFixed(2)}
+        </span>
+      </div>
+    </div>
+  </div>
+)}
         )}
 
         {showAddDebtModal && (
