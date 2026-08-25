@@ -659,6 +659,7 @@ export default function App() {
           {[
             { id: "transactions", label: "📊 العمليات" },
             { id: "debts", label: "🤝 الديون" },
+            { id: "wallets", label: "🏦 الخزائن" },
           ].map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: activeTab === tab.id ? currentTheme.accent : "transparent", color: activeTab === tab.id ? "#0e1a1a" : currentTheme.text, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               {tab.label}
