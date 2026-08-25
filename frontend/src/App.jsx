@@ -381,12 +381,12 @@ export default function App() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px", marginBottom: "25px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", color: "#D4AF37", fontWeight: 700 }}>DARK EMERALD</div>
+              <div style={{ fontSize: "13px", color: "#D4AF37", fontWeight: 700 }}></div>
               <h3 style={{ fontSize: "17px", margin: "6px 0", color: "#f2ede2" }}>الأخضر الداكن</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى المال والثروة والاستقرار المالي، ويوثّق بيئة عمل مصرفية آمنة وهادئة.</p>
             </div>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", color: "#D4AF37", fontWeight: 700 }}>D4AF37#</div>
+              <div style={{ fontSize: "13px", color: "#D4AF37", fontWeight: 700 }}></div>
               <h3 style={{ fontSize: "17px", margin: "6px 0", color: "#f2ede2" }}>الذهبي الدافئ المصقول</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى الفخامة والقيمة العالية والاحترافية، ويُستخدم لإبراز العناصر الأساسية.</p>
             </div>
@@ -419,19 +419,19 @@ export default function App() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>🔒 عزل تام للبيانات</h4>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}> عزل تام للبيانات</h4>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بيئة سحابية محمية ومستقلة لكل مستخدم، تضمن سرية معلوماته المالية.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>⚡ إدارة مرنة للحركات</h4>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}> إدارة مرنة للحركات</h4>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>🗂️ تصنيفات عملية</h4>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}> تصنيفات عملية</h4>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>مصممة لتناسب الاحتياجات الواقعية: أجور، إيجار، مصاريف تشغيلية، واحتياجات يومية.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>📱 تجربة ويب تقدمية (PWA)</h4>
+              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}> تجربة ويب تقدمية (PWA)</h4>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تطبيق سريع وخفيف يعمل من المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
             </div>
           </div>
@@ -485,7 +485,7 @@ export default function App() {
         </div>
       </div>
 
-      
+
         {/* Modal تسجيل الدخول / حساب جديد */}
         {showLoginModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
