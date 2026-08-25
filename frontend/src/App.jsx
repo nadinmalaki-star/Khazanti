@@ -241,13 +241,13 @@ export default function App() {
     setUndoTimer(null);
   }
 
-  const const handleLoginSubmit = async (e) => {
+    const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
       });
