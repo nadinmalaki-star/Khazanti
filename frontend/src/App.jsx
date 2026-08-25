@@ -533,59 +533,6 @@ export default function App() {
         )}
 
       </div> // نهاية الـ div الرئيسي الوحيد لصفحة الترحيب
-    ); 
-  }
-
-        {/* نافذة تسجيل الدخول (Login Modal) */}
-        {showLoginModal && (
-          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "16px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "24px", padding: "30px", width: "100%", maxWidth: "400px", position: "relative", boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }}>
-              <button 
-                onClick={() => setShowLoginModal(false)}
-                style={{ position: "absolute", top: "20px", left: "20px", background: "transparent", border: "none", color: "#f2ede2", fontSize: "18px", cursor: "pointer" }}
-              >
-                ✕
-              </button>
-
-              <div style={{ textAlign: "center", marginBottom: "24px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: 900, marginBottom: "8px" }}>تسجيل الدخول</h2>
-                <p style={{ fontSize: "12px", opacity: 0.7 }}>مرحباً بك مجدداً في بوابة خزنتي المالية</p>
-              </div>
-
-              <form onSubmit={handleLoginSubmit}>
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: "#c9a961", marginBottom: "6px", fontWeight: 700 }}>البريد الإلكتروني</label>
-                  <input 
-                    type="email" 
-                    required
-                    placeholder="name@example.com" 
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    style={{ width: "100%", background: "#0c1a18", border: "1px solid #274442", borderRadius: "12px", padding: "12px", color: "#f2ede2", fontSize: "13px" }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: "24px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: "#c9a961", marginBottom: "6px", fontWeight: 700 }}>كلمة المرور</label>
-                  <input 
-                    type="password" 
-                    required
-                    placeholder="********" 
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    style={{ width: "100%", background: "#0c1a18", border: "1px solid #274442", borderRadius: "12px", padding: "12px", color: "#f2ede2", fontSize: "13px", fontFamily: "monospace" }}
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  style={{ width: "100%", background: "linear-gradient(135deg, #c9a961, #b08d44)", color: "#0e1a1a", border: "none", borderRadius: "12px", padding: "12px", fontWeight: 900, fontSize: "14px", cursor: "pointer" }}
-                >
-                  دخول
-                </button>
-              </form>
-            </div>
-          </div>
     );
   }
 
@@ -650,232 +597,98 @@ export default function App() {
             <div>🏦 البنك: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{bankBalance.toFixed(2)}</span></div>
           </div>
         </div>
-
-     
-
-{activeTab === "transactions" && (
-  <>
-    <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-      <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 12, border: `1px solid ${currentTheme.border}`, textAlign: "center" }}>
-        <div style={{ fontSize: 10, opacity: 0.7 }}>إجمالي الدخل</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#6fbf9a", fontFamily: "'IBM Plex Mono', monospace" }}>+{currencySymbol}{totalIncome.toFixed(0)}</div>
-      </div>
-      <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 12, border: `1px solid ${currentTheme.border}`, textAlign: "center" }}>
-        <div style={{ fontSize: 10, opacity: 0.7 }}>إجمالي المصاريف</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#d97f6b", fontFamily: "'IBM Plex Mono', monospace" }}>-{currencySymbol}{totalExpense.toFixed(0)}</div>
-      </div>
-    </div>
-
-    {categoryBreakdown.rawExpenseTotal > 0 && (
-      <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 14, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8, opacity: 0.9 }}>📊 توزيع المصاريف حسب الفئة:</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {Object.entries(categoryBreakdown.totals).map(([catKey, rawVal]) => {
-            const totalInCurr = rawVal * exchangeRate;
-            const percentage = ((rawVal / categoryBreakdown.rawExpenseTotal) * 100).toFixed(0);
-            const catInfo = CATEGORIES.find((c) => c.key === catKey);
-            return (
-              <div key={catKey} style={{ fontSize: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                  <span>{catInfo?.icon} {catKey}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#d97f6b", fontWeight: 600 }}>{currencySymbol}{totalInCurr.toFixed(0)} ({percentage}%)</span>
-                </div>
-                <div style={{ width: "100%", background: "#0c1a18", height: 6, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ width: `${percentage}%`, background: "#d97f6b", height: "100%" }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    )}
-
-    <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>تسجيل حركة مالية جديدة</div>
-
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>الحساب:</div>
-          <select
-            value={selectedAccount}
-            onChange={(e) => setSelectedAccount(e.target.value)}
-            style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12 }}
-          >
-            <option value="الصندوق (كاش)">الصندوق (كاش)</option>
-            <option value="حساب البنك">حساب البنك</option>
-          </select>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>التاريخ:</div>
-          <input
-            type="date"
-            value={transactionDate}
-            onChange={(e) => setTransactionDate(e.target.value)}
-            style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "7px 8px", color: currentTheme.text, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}
-          />
-        </div>
-      </div>
-
-      <input type="number" inputMode="decimal" placeholder={`المبلغ بـ ${CURRENCIES[currency].name}`} value={amount} onChange={(e) => setAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", color: currentTheme.text, fontSize: 15, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
-
-      <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 6 }}>اختر التصنيف:</div>
-      
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 10, color: "#6fbf9a", fontWeight: 700, marginBottom: 4 }}>🟢 دخل:</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {CATEGORIES.filter(c => c.type === "دخل").map((c) => (
-            <button key={c.key} onClick={() => setCategory(c.key)} style={{ padding: "6px 10px", borderRadius: 14, border: `1px solid ${category === c.key ? currentTheme.accent : currentTheme.border}`, background: category === c.key ? currentTheme.accent : currentTheme.cardBg, color: category === c.key ? "#0e1a1a" : currentTheme.text, fontSize: 11, cursor: "pointer" }}>
-              {c.icon} {c.key}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: "#d97f6b", fontWeight: 700, marginBottom: 4 }}>🔴 مصروف (يشمل المشتريات):</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {CATEGORIES.filter(c => c.type === "مصروف").map((c) => (
-            <button key={c.key} onClick={() => setCategory(c.key)} style={{ padding: "6px 10px", borderRadius: 14, border: `1px solid ${category === c.key ? currentTheme.accent : currentTheme.border}`, background: category === c.key ? currentTheme.accent : currentTheme.cardBg, color: category === c.key ? "#0e1a1a" : currentTheme.text, fontSize: 11, cursor: "pointer" }}>
-              {c.icon} {c.key}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && <div style={{ color: "#d97f6b", fontSize: 12, marginBottom: 8 }}>{error}</div>}
-
-      <button onClick={addTransaction} style={{ width: "100%", background: "#6fbf9a", color: "#0e1a1a", border: "none", borderRadius: 12, padding: "10px 0", fontWeight: 900, fontSize: 13, cursor: "pointer" }}>
-        ➕ حفظ الحركة في السحابة
-      </button>
-    </div>
-
-    <div style={{ marginBottom: 12 }}>
-      <input 
-        type="text" 
-        placeholder="🔍 ابحث في الحركات (بالتاريخ، الفئة، الحساب، أو المبلغ)..." 
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        style={{ width: "100%", background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", color: currentTheme.text, fontSize: 12 }}
-      />
-      {!searchQuery && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, textAlign: "center" }}>يتم عرض آخر 10 حركات فقط لتجنب الازدحام (استخدم البحث للوصول للباقي)</div>}
-    </div>
-
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-      {filteredTransactions.map((t) => {
-        const cat = CATEGORIES.find((c) => c.key === t.category);
-        const converted = Number(t.amount) * exchangeRate;
-        const isIncome = t.type === "دخل" || t.type === "مبيعات";
-        return (
-          <div key={t.id} style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>{cat?.icon || "✨"} {t.category}</div>
-              <div style={{ fontSize: 10, opacity: 0.6, display: "flex", gap: 8 }}>
-                <span>📅 {t.date || "بدون تاريخ"}</span>
-                <span>🏦 {t.account || "الصندوق (كاش)"}</span>
-              </div>
+        {/* تبويب الديون والذمم */}
+        {activeTab === "debts" && (
+          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
+              <button
+                onClick={() => setShowAddDebtModal(true)}
+                style={{ background: "#c9a961", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
+              >
+                + إضافة دين جديد
+              </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: isIncome ? "#6fbf9a" : "#d97f6b", fontFamily: "'IBM Plex Mono', monospace" }}>
-                  {isIncome ? "+" : "-"}{currencySymbol}{converted.toFixed(2)}
-                </div>
-              </div>
-              <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: currentTheme.text, opacity: 0.5, cursor: "pointer", fontSize: 14 }}>🗑️</button>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "10px" }}>
+              {debts.length === 0 ? (
+                <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
+              ) : (
+                debts.map((d) => (
+                  <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name || d.person_name}</div>
+                      <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#c9a961" }}>
+                      {currencySymbol}
+                      {Number(d.amount).toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        );
-      })}
-    </div>
-  </>
-)}
+        )}
 
-{activeTab === "debts" && (
-  <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
-      <button 
-        onClick={() => setShowAddDebtModal(true)} 
-        style={{ background: "#c9a961", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
-      >
-        + إضافة دين جديد
-      </button>
-    </div>
+        {/* نافذة إضافة الدين (Modal) */}
+        {showAddDebtModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 15 }}>إضافة دين جديد</div>
 
-    {/* عرض قائمة الديون */}
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "10px" }}>
-      {debts.length === 0 ? (
-        <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
-      ) : (
-        debts.map(d => (
-          <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name || d.person_name}</div>
-              <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type}</div>
-            </div>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#c9a961" }}>
-              {currencySymbol} 
-              {Number(d.amount).toFixed(2)}
-            </span>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-)}
-
-{/* نافذة إضافة الدين (Modal) */}
-{showAddDebtModal && (
-  <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-    <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 15 }}>إضافة دين جديد</div>
-      
-      <div style={{ marginBottom: 10 }}>
-        <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>اسم الشخص / الجهة</label>
-        <input 
-          type="text" 
-          value={debtName} 
-          onChange={(e) => setDebtName(e.target.value)} 
-          placeholder="أدخلي الاسم..." 
-          style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
-        />
-      </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>اسم الشخص / الجهة</label>
+                <input
+                  type="text"
+                  value={debtName}
+                  onChange={(e) => setDebtName(e.target.value)}
+                  placeholder="أدخلي الاسم..."
+                  style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+                />
+              </div>
 
       <div style={{ marginBottom: 10 }}>
         <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
-        <input 
-          type="number" 
-          value={debtAmount} 
-          onChange={(e) => setDebtAmount(e.target.value)} 
-          placeholder="0.00" 
+        <input
+          type="number"
+          value={debtAmount}
+          onChange={(e) => setDebtAmount(e.target.value)}
+          placeholder="0.00"
           style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
         />
       </div>
 
-      <div style={{ marginBottom: 15 }}>
-        <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
-        <select 
-          value={debtType} 
-          onChange={(e) => setDebtType(e.target.value)}
-          style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
-        >
-          <option value="دين له">دين له (فلوس لي عند الناس)</option>
-          <option value="دين عليه">دين عليه (فلوس للناس عندي)</option>
-        </select>
-      </div>
+              <div style={{ marginBottom: 15 }}>
+                <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
+                <select
+                  value={debtType}
+                  onChange={(e) => setDebtType(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+                >
+                  <option value="دين له">دين له (فلوس لي عند الناس)</option>
+                  <option value="دين عليه">دين عليه (فلوس للناس عندي)</option>
+                </select>
+              </div>
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <button 
-          onClick={() => setShowAddDebtModal(false)}
-          style={{ background: "transparent", color: currentTheme.text, border: `1px solid ${currentTheme.border}`, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}
-        >
-          إلغاء
-        </button>
-        <button 
-          onClick={handleSaveDebt}
-          style={{ background: "#c9a961", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
-        >
-          حفظ الدين
-        </button>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setShowAddDebtModal(false)}
+                  style={{ background: "transparent", color: currentTheme.text, border: `1px solid ${currentTheme.border}`, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleSaveDebt}
+                  style={{ background: "#c9a961", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
+                >
+                  حفظ الدين
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  )}
+  );
+}
