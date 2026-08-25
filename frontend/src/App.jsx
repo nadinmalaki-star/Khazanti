@@ -565,6 +565,7 @@ export default function App() {
   }
 
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
+  // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -577,10 +578,10 @@ export default function App() {
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
-        {/* --- القسم العلوي: الثيمات والعملات (تم التعديل والترتيب) --- */}
+        {/* --- القسم العلوي: الثيمات والعملات --- */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
           
-          {/* جهة اليسار: زر الخروج ودوائر الألوان (مع إضافة الموف الفاخر والثيمات القديمة) */}
+          {/* جهة اليسار: زر الخروج ودوائر الألوان والثيمات */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <button 
               onClick={() => supabase.auth.signOut()} 
@@ -600,7 +601,7 @@ export default function App() {
 
             {/* دوائر الألوان والثيمات */}
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              {/* 1. لون الموف الجديد */}
+              {/* 1. لون الموف الفاخر */}
               <div 
                 onClick={() => setThemeColor("#6b46c1")}
                 style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#6b46c1", cursor: "pointer", border: themeColor === "#6b46c1" ? "2px solid #fff" : "1px solid #274442" }} 
@@ -624,7 +625,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* جهة اليمين: أزرار العملات (برمز كبير وواضح باستخدام map) */}
+          {/* جهة اليمين: أزرار العملات */}
           <div style={{ display: "flex", gap: "6px" }}>
             {["د.أ", "$", "₪"].map((curr) => (
               <button
@@ -636,7 +637,7 @@ export default function App() {
                   color: currency === curr ? "#0e1a1a" : "#f2ede2",
                   padding: "6px 12px",
                   borderRadius: "8px",
-                  fontSize: "16px", // رمز العملة أصبح واضحاً ومرتباً
+                  fontSize: "16px",
                   fontWeight: "bold",
                   cursor: "pointer",
                 }}
@@ -645,7 +646,10 @@ export default function App() {
               </button>
             ))}
           </div>
+
         </div>
+
+        {/* 🔻 هنا يبدأ باقي محتوى لوحة التحكم الخاص بك (الرصيد، المعاملات، الإدخالات، إلخ) */}
 
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, marginBottom: 2 }}> بوابتك الذكية للتحكم المالي </div>
