@@ -123,7 +123,7 @@ export default function Landing({ onLoginSuccess }) {
         </div>
       </section>
 
-      {/* التذييل / Footer مع رابط سياسة الخصوصية */}
+      {/* التذييل / Footer */}
       <footer style={{ padding: '40px 24px', borderTop: '1px solid rgba(212, 175, 55, 0.2)', textAlign: 'center', fontSize: '13px', color: '#9CA3AF' }}>
         <p style={{ margin: '0 0 6px 0', color: '#D4AF37', fontWeight: 'bold', fontSize: '15px' }}>KHZNTI • خزنتي</p>
         <p style={{ margin: '0 0 14px 0' }}>خزنتي - بوابتك الذكية للتحكم المالي والأمان السحابي</p>
@@ -153,23 +153,41 @@ export default function Landing({ onLoginSuccess }) {
       {/* نافذة تسجيل الدخول المنبثقة (Modal) */}
       {showLoginModal && (
         <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, backdropFilter: 'blur(5px)'
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(5px)'
         }}>
           <div style={{
-            backgroundColor: '#041E15', borderRadius: '16px',
+            backgroundColor: '#041E15',
+            borderRadius: '16px',
             border: '1px solid rgba(212, 175, 55, 0.4)',
-            width: '90%', maxWidth: '440px', padding: '36px',
-            position: 'relative', boxShadow: '0 10px 40px rgba(0,0,0,0.6)'
-          }}>
+            width: '90%',
+            maxWidth: '440px',
+            padding: '36px',
+            position: 'relative',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.6)'
+          }>
+            {/* زر الإغلاق */}
             <button
               onClick={() => setShowLoginModal(false)}
               style={{
-                position: 'absolute', top: '16px', left: '16px',
-                background: 'none', border: 'none', color: '#D4AF37',
-                fontSize: '20px', cursor: 'pointer', fontWeight: 'bold'
+                position: 'absolute',
+                top: '16px',
+                left: '16px',
+                background: 'none',
+                border: 'none',
+                color: '#D4AF37',
+                fontSize: '20px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
               }}
             >
               ✕
@@ -186,12 +204,21 @@ export default function Landing({ onLoginSuccess }) {
                   البريد الإلكتروني
                 </label>
                 <input
-                  type="email" required placeholder="name@example.com"
-                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  required
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px 16px', backgroundColor: '#03140F',
-                    border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px',
-                    color: '#FFFFFF', fontSize: '14px', outline: 'none', boxSizing: 'border-box'
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#03140F',
+                    border: '1px solid rgba(212, 175, 55, 0.3)',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -201,12 +228,21 @@ export default function Landing({ onLoginSuccess }) {
                   كلمة المرور
                 </label>
                 <input
-                  type="password" required placeholder="••••••••"
-                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   style={{
-                    width: '100%', padding: '12px 16px', backgroundColor: '#03140F',
-                    border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px',
-                    color: '#FFFFFF', fontSize: '14px', outline: 'none', boxSizing: 'border-box'
+                    width: '100%',
+                    padding: '12px 16px',
+                    backgroundColor: '#03140F',
+                    border: '1px solid rgba(212, 175, 55, 0.3)',
+                    borderRadius: '8px',
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -214,10 +250,17 @@ export default function Landing({ onLoginSuccess }) {
               <button
                 type="submit"
                 style={{
-                  width: '100%', padding: '14px', backgroundColor: '#D4AF37',
-                  color: '#06281E', border: 'none', borderRadius: '12px',
-                  fontSize: '15px', fontWeight: '900', cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)'
+                  width: '100%',
+                  padding: '14px',
+                  backgroundColor: '#D4AF37',
+                  color: '#06281E',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '15px',
+                  fontWeight: '900',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(212, 175, 55, 0.3)',
+                  transition: 'all 0.3s ease'
                 }}
               >
                 دخول
@@ -230,25 +273,43 @@ export default function Landing({ onLoginSuccess }) {
       {/* نافذة سياسة الخصوصية المنبثقة (Modal) */}
       {showPrivacyModal && (
         <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, backdropFilter: 'blur(5px)'
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(5px)'
         }}>
           <div style={{
-            backgroundColor: '#041E15', borderRadius: '16px',
+            backgroundColor: '#041E15',
+            borderRadius: '16px',
             border: '1px solid rgba(212, 175, 55, 0.4)',
-            width: '90%', maxWidth: '600px', maxHeight: '80vh',
-            overflowY: 'auto', padding: '36px',
-            position: 'relative', boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            padding: '36px',
+            position: 'relative',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
             textAlign: 'right'
           }}>
             <button
               onClick={() => setShowPrivacyModal(false)}
               style={{
-                position: 'absolute', top: '16px', left: '16px',
-                background: 'none', border: 'none', color: '#D4AF37',
-                fontSize: '20px', cursor: 'pointer', fontWeight: 'bold'
+                position: 'absolute',
+                top: '16px',
+                left: '16px',
+                background: 'none',
+                border: 'none',
+                color: '#D4AF37',
+                fontSize: '20px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
               }}
             >
               ✕
@@ -280,9 +341,14 @@ export default function Landing({ onLoginSuccess }) {
               <button
                 onClick={() => setShowPrivacyModal(false)}
                 style={{
-                  padding: '10px 28px', backgroundColor: '#D4AF37',
-                  color: '#06281E', border: 'none', borderRadius: '8px',
-                  fontSize: '14px', fontWeight: 'bold', cursor: 'pointer'
+                  padding: '10px 28px',
+                  backgroundColor: '#D4AF37',
+                  color: '#06281E',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
                 }}
               >
                 إغلاق
