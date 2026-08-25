@@ -52,10 +52,10 @@ const THEMES = {
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false); // <--- أضيفي هذا السطر هنا
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState(""); // لرسائل خطأ تسجيل الدخول
+  const [loginError, setLoginError] = useState("");
 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -74,6 +74,12 @@ export default function App() {
 
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
+
+  // المتغيرات الخاصة بالديون التي كانت مفقودة وتسبب خطأ الشاشة السوداء:
+  const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [debtName, setDebtName] = useState("");
+  const [debtAmount, setDebtAmount] = useState("");
+  const [debtType, setDebtType] = useState("دين له");
 
   const currentTheme = THEMES[themeKey];
 
