@@ -353,7 +353,7 @@ export default function App() {
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
           <div style={{ width: "110px", height: "110px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #D4AF37", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.6)", overflow: "hidden" }}>
             <img 
-              src="/logo.png" 
+              src="/logo.png.png" 
               alt="شعار خزنتي" 
               style={{ width: "100%", height: "100%", objectFit: "cover" }} 
             />
