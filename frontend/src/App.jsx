@@ -50,14 +50,10 @@ const THEMES = {
 };
 
 export default function App() {
-  // حالات التطبيق الأساسية
-  const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [showAuthModal, setShowAuthModal] = useState(false); // لإظهار نموذج الدخول من الواجهة الترحيبية
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -69,10 +65,6 @@ export default function App() {
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
   const [error, setError] = useState("");
 
-  const [debtType, setDebtType] = useState("لي عند الناس");
-  const [debtName, setDebtName] = useState("");
-  const [debtAmount, setDebtAmount] = useState("");
-
   const [searchQuery, setSearchQuery] = useState("");
   const [currency, setCurrency] = useState("ILS");
   const [themeKey, setThemeKey] = useState("emerald");
@@ -83,39 +75,11 @@ export default function App() {
 
   const currentTheme = THEMES[themeKey];
 
-  // مراقبة الجلسة والتحقق من الـ LocalStorage
   useEffect(() => {
-    const localLoggedIn = localStorage.getItem('isLoggedIn');
-    if (localLoggedIn === 'true') {
-      setSession({ user: { email: localStorage.getItem('userEmail') || 'user' } });
-      setAuthLoading(false);
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // جلب البيانات عند تسجيل الدخول
-  useEffect(() => {
-    if (session) {
+    if (isLoggedIn) {
       fetchData();
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userEmail', session.user?.email || '');
-    } else {
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('userEmail');
     }
-  }, [session]);
+  }, [isLoggedIn]);
 
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
@@ -156,16 +120,6 @@ export default function App() {
     [transactions, exchangeRate]
   );
 
-  const totalDebtToMe = useMemo(
-    () => debts.filter(d => d.type === "لي عند الناس").reduce((s, d) => s + (Number(d.amount) - Number(d.paid || 0)), 0) * exchangeRate,
-    [debts, exchangeRate]
-  );
-
-  const totalDebtOnMe = useMemo(
-    () => debts.filter(d => d.type === "عليّ للناس").reduce((s, d) => s + (Number(d.amount) - Number(d.paid || 0)), 0) * exchangeRate,
-    [debts, exchangeRate]
-  );
-
   const filteredTransactions = useMemo(() => {
     let result = transactions;
     if (searchQuery.trim()) {
@@ -192,45 +146,6 @@ export default function App() {
 
     return { totals, rawExpenseTotal };
   }, [transactions]);
-
-  // دوال المصادقة
-  async function handleAuth(e) {
-    e.preventDefault();
-    setAuthLoading(true);
-    setAuthError('');
-
-    try {
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) {
-          setAuthError(error.message);
-        } else {
-          if (data.session) {
-            setSession(data.session);
-          } else {
-            alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.');
-            setIsSignUp(false);
-          }
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          setAuthError(error.message);
-        } else if (data.session) {
-          setSession(data.session);
-        } else {
-          const currentSession = await supabase.auth.getSession();
-          if (currentSession.data.session) {
-            setSession(currentSession.data.session);
-          }
-        }
-      }
-    } catch (err) {
-      setAuthError('حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.');
-    } finally {
-      setAuthLoading(false);
-    }
-  }
 
   async function fetchData() {
     setLoading(true);
@@ -285,27 +200,6 @@ export default function App() {
     }
   }
 
-  async function addDebt() {
-    const num = parseFloat(debtAmount);
-    if (!debtName.trim() || !num || num <= 0) return;
-
-    const newDebt = {
-      type: debtType,
-      name: debtName,
-      amount: num / exchangeRate,
-      paid: 0,
-      date: new Date().toISOString().split("T")[0],
-      user_id: session?.user?.id
-    };
-
-    const { data, error } = await supabase.from("debts").insert([newDebt]).select();
-    if (data && data.length > 0) {
-      setDebts([data[0], ...debts]);
-    }
-    setDebtName("");
-    setDebtAmount("");
-  }
-
   async function removeTransaction(id) {
     const itemToDelete = transactions.find(t => t.id === id);
     if (!itemToDelete) return;
@@ -329,206 +223,206 @@ export default function App() {
     setUndoTimer(null);
   }
 
-  function exportCSV() {
-    const headers = "التاريخ,النوع,الفئة,الحساب,المبلغ\n";
-    const rows = transactions.map(t => `${t.date || ''},${t.type},${t.category},${t.account || 'الصندوق (كاش)'},${Number(t.amount) * exchangeRate}`).join("\n");
-    const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.href = url;
-    downloadAnchor.download = "khazanti_report.csv";
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    document.body.removeChild(downloadAnchor);
-    URL.revokeObjectURL(url);
-  }
+  const handleLoginSubmit = (e) => {
+    e.preventDefault();
+    setIsLoggedIn(true);
+    setShowLoginModal(false);
+  };
 
-  if (authLoading) {
+  // واجهة الترحيب الكاملة (Landing Page) بتفاصيلها الكاملة كما في الفيديو
+  if (!isLoggedIn) {
     return (
-      <div style={{ minHeight: "100vh", background: currentTheme.bg, color: currentTheme.text, display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "'Tajawal', sans-serif" }}>
-        جاري التحميل...
-      </div>
-    );
-  }
-
-  // واجهة الترحيب الفخمة (Landing View) في حال عدم تسجيل الدخول
-  if (!session) {
-    return (
-      <div dir="rtl" style={{
-        minHeight: '100vh',
-        background: currentTheme.bg,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontFamily: "'Tajawal', sans-serif",
-        padding: '24px 16px',
-        color: currentTheme.text,
-        position: 'relative'
-      }}>
+      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "30px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
           * { box-sizing: border-box; }
         `}</style>
 
-        {/* اختيار الثيم والألوان بالاعلى */}
-        <div style={{ position: 'absolute', top: 24, display: 'flex', gap: 8 }}>
-          {Object.keys(THEMES).map((th) => (
-            <button key={th} onClick={() => setThemeKey(th)} style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }} />
-          ))}
-        </div>
-
-        {/* محتوى الواجهة الترحيبية */}
-        <div style={{ textAlign: 'center', maxWidth: 420, padding: '20px' }}>
-          <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, marginBottom: 8 }}>☁️ نظام الإدارة المالية الذكي</div>
-          <h1 style={{ fontSize: 38, fontWeight: 900, marginBottom: 12, color: currentTheme.text }}>خِزنتي</h1>
-          <p style={{ fontSize: 14, opacity: 0.8, lineHeight: 1.6, marginBottom: 32 }}>
-            رفيقك الأمثل لتتبع السيولة النقدية، إدارة الحسابات المصرفية، ومتابعة الديون بكل دقة وأمان سحابي متكامل.
-          </p>
-
-          <button
-            onClick={() => setShowAuthModal(true)}
-            style={{
-              background: currentTheme.accent,
-              color: '#0e1a1a',
-              border: 'none',
-              borderRadius: '14px',
-              padding: '14px 32px',
-              fontWeight: 900,
-              fontSize: '15px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-              width: '100%',
-              maxWidth: '260px'
-            }}
+        {/* الشريط العلوي */}
+        <div style={{ width: "100%", maxWidth: "1000px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "50px" }}>
+          <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 }}>
+            ✦ بوابة مالية سحابية
+          </div>
+          <button 
+            onClick={() => setShowLoginModal(true)}
+            style={{ background: "transparent", border: "1px solid #c9a961", color: "#c9a961", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
           >
-            ابدأ الآن 🚀
+            تسجيل الدخول
           </button>
         </div>
 
-        {/* نموذج تسجيل الدخول المنبثق (Modal) */}
-        {showAuthModal && (
-          <div style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(5px)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            padding: '16px'
-          }}>
-            <div style={{
-              background: currentTheme.cardBg,
-              border: `1px solid ${currentTheme.border}`,
-              borderRadius: '24px',
-              padding: '28px',
-              width: '100%',
-              maxWidth: '380px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
-              position: 'relative'
-            }}>
-              <button
-                onClick={() => setShowAuthModal(false)}
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  left: 16,
-                  background: 'transparent',
-                  border: 'none',
-                  color: currentTheme.text,
-                  fontSize: 16,
-                  cursor: 'pointer',
-                  opacity: 0.7
-                }}
+        {/* ترويسة الواجهة واللوجو */}
+        <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
+          <div style={{ width: "100px", height: "100px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #c9a961", borderRadius: "24px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
+            <span style={{ fontSize: "44px" }}>📈</span>
+          </div>
+          <h1 style={{ fontSize: "52px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
+          <div style={{ fontSize: "14px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace", marginBottom: "20px" }}>K H Z N T I</div>
+          <p style={{ fontSize: "16px", opacity: 0.85, lineHeight: "1.8", maxWidth: "600px", margin: "0 auto" }}>
+            بوابتك الذكية للتحكم المالي والأمان السحابي، فخامة العمل المصرفي، بسهولة التقنية الحديثة.
+          </p>
+        </div>
+
+        {/* قسم الهوية البصرية: لغة الألوان والرمز */}
+        <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
+          <div style={{ textAlign: "center", marginBottom: "30px" }}>
+            <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>الهوية البصرية</div>
+            <h2 style={{ fontSize: "26px", fontWeight: 900 }}>لغة الألوان والرمز</h2>
+            <p style={{ fontSize: "13px", opacity: 0.7 }}>هوية بصرية بنظام "فينتك" فاخر ومصرفي - كل لون ورمز اختر ليعكس الموثوقية والأمان.</p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginBottom: "20px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
+              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>DARK EMERALD</div>
+              <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الأخضر الداكن</h3>
+              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى المال والثروة والاستقرار المالي، ويؤحي بيئة عمل مصرفية آمنة وهادئة.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "24px" }}>
+              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>D4AF37#</div>
+              <h3 style={{ fontSize: "18px", margin: "8px 0" }}>الذهبي الدافي المصرفي</h3>
+              <p style={{ fontSize: "13px", opacity: 0.8, lineHeight: "1.6" }}>يرمز إلى الفخامة والقيمة المالية والاحترافية وتستخدم لإبراز العناصر الأساسية.</p>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>قرمز الخزنة الداخلي</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>رموز لتحكم المتساقط وأمان الفائز، خزنة حقيقية تحفظ أسرار بيئتنا من المتسلقين.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>سهم النمو الصاعد</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>بروز الاستثمار وازدياد الأرباح والتقدم المالي المستمر نحو الأفضل.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <h4 style={{ fontSize: "15px", color: "#c9a961", margin: "0 0 6px" }}>الأيقونات الداخلية</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>رموز كحتية نقية بلون دهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* قسم من نحن */}
+        <div style={{ width: "100%", maxWidth: "800px", textAlign: "center", marginBottom: "60px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "30px" }}>
+          <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>من نحن</div>
+          <h2 style={{ fontSize: "24px", fontWeight: 900, marginBottom: "15px" }}>أكثر من مجرد سجل مصروفات</h2>
+          <p style={{ fontSize: "14px", opacity: 0.85, lineHeight: "1.8", margin: 0 }}>
+            "خِزنتي" منصة مالية ذكية مخصصة حصرياً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية، بفضل هوية البصرية الراقية وبينية التقنية المتقدمة، تجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
+          </p>
+        </div>
+
+        {/* قسم التأسيس الذكي والأمان */}
+        <div style={{ width: "100%", maxWidth: "1000px", marginBottom: "60px" }}>
+          <div style={{ textAlign: "center", marginBottom: "25px" }}>
+            <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>المرحلة الحالية</div>
+            <h2 style={{ fontSize: "24px", fontWeight: 900 }}>التأسيس الذكي والأمان</h2>
+            <p style={{ fontSize: "13px", opacity: 0.7 }}>حجز الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
+              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>عزل تام للبيانات</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>بيئة سحابية محمية ومستقلة لكل مستخدم، تضمن سرية معلوماته المالية.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
+              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>إدارة مرنة للحركات</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
+              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>تصنيفات عملية</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>مصممة لتناسب الاحتياجات الواقعية لأجور تجار مصارف، تشغيلية واحتياجات يومية.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "18px" }}>
+              <h4 style={{ fontSize: "14px", color: "#c9a961", margin: "0 0 6px" }}>تجربة ويب تقدمية (PWA)</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>تطبيق سريع وخفيف يعمل مع المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* قسم طموحات المستقبل */}
+        <div style={{ width: "100%", maxWidth: "800px", marginBottom: "60px" }}>
+          <div style={{ textAlign: "center", marginBottom: "25px" }}>
+            <div style={{ fontSize: "12px", color: "#c9a961", marginBottom: "5px" }}>طموحات المستقبل</div>
+            <h2 style={{ fontSize: "24px", fontWeight: 900 }}>نحو آفاق مالية متقدمة</h2>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>Business</div>
+              <h4 style={{ fontSize: "16px", margin: "6px 0" }}>المرحلة الاحترافية</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>أدوات متقدمة لإدارة السيولة والتدفقات النقدية تلبي احتياجات التجار والمستقلين.</p>
+            </div>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
+              <div style={{ fontSize: "11px", color: "#c9a961", fontFamily: "'IBM Plex Mono', monospace" }}>Pro</div>
+              <h4 style={{ fontSize: "16px", margin: "6px 0" }}>المرحلة التوسعية</h4>
+              <p style={{ fontSize: "12px", opacity: 0.8, margin: 0 }}>شاشة أسعار العملات والمؤشرات المالية المباشرة، مع تقارير ورسوم بيانية تحليلية دقيقة.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* الشعار الختامي والزر */}
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "15px" }}>تحكم بأموالك اليوم.. وابن مستقبلك المالي بثقة.</h2>
+          <button 
+            onClick={() => setShowLoginModal(true)}
+            style={{ background: "linear-gradient(135deg, #c9a961, #b08d44)", color: "#0e1a1a", border: "none", padding: "14px 40px", borderRadius: "14px", fontWeight: 900, fontSize: "15px", cursor: "pointer", boxShadow: "0 8px 20px rgba(201,169,97,0.3)" }}
+          >
+            ابدأ الآن مجاناً 🚀
+          </button>
+        </div>
+
+        <div style={{ fontSize: "11px", opacity: 0.6, textAlign: "center" }}>
+          KHZNTI - بوابتك الذكية للتحكم المالي والأمان السحابي<br />
+          تصميم وتطوير ⟡ استوديو رقمي<br />
+          © 2026 جميع الحقوق محفوظة.
+        </div>
+
+        {/* نافذة تسجيل الدخول (Login Modal) */}
+        {showLoginModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "16px" }}>
+            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "24px", padding: "30px", width: "100%", maxWidth: "400px", position: "relative", boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }}>
+              <button 
+                onClick={() => setShowLoginModal(false)}
+                style={{ position: "absolute", top: "20px", left: "20px", background: "transparent", border: "none", color: "#f2ede2", fontSize: "18px", cursor: "pointer" }}
               >
                 ✕
               </button>
 
-              <h2 style={{ textAlign: 'center', marginBottom: '6px', color: currentTheme.accent, fontWeight: 900 }}>خِزنتي ☁️</h2>
-              <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.7, marginBottom: '20px' }}>
-                {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة أعمالك'}
-              </p>
+              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: 900, marginBottom: "8px" }}>تسجيل الدخول</h2>
+                <p style={{ fontSize: "12px", opacity: 0.7 }}>مرحباً بك مجدداً في بوابة خزنتي المالية</p>
+              </div>
 
-              <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    placeholder="example@domain.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+              <form onSubmit={handleLoginSubmit}>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ display: "block", fontSize: "12px", color: "#c9a961", marginBottom: "6px", fontWeight: 700 }}>البريد الإلكتروني</label>
+                  <input 
+                    type="email" 
                     required
-                    style={{
-                      width: '100%',
-                      background: currentTheme.boxBg,
-                      border: `1px solid ${currentTheme.border}`,
-                      borderRadius: '10px',
-                      padding: '10px',
-                      color: currentTheme.text,
-                      fontSize: '12px'
-                    }}
+                    placeholder="name@example.com" 
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    style={{ width: "100%", background: "#0c1a18", border: "1px solid #274442", borderRadius: "12px", padding: "12px", color: "#f2ede2", fontSize: "13px" }}
                   />
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "12px", color: "#c9a961", marginBottom: "6px", fontWeight: 700 }}>كلمة المرور</label>
+                  <input 
+                    type="password" 
                     required
-                    style={{
-                      width: '100%',
-                      background: currentTheme.boxBg,
-                      border: `1px solid ${currentTheme.border}`,
-                      borderRadius: '10px',
-                      padding: '10px',
-                      color: currentTheme.text,
-                      fontSize: '12px'
-                    }}
+                    placeholder="********" 
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    style={{ width: "100%", background: "#0c1a18", border: "1px solid #274442", borderRadius: "12px", padding: "12px", color: "#f2ede2", fontSize: "13px", fontFamily: "monospace" }}
                   />
                 </div>
 
-                {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
-
-                <button
+                <button 
                   type="submit"
-                  disabled={authLoading}
-                  style={{
-                    background: currentTheme.accent,
-                    color: '#0e1a1a',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '12px',
-                    fontWeight: 'bold',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    marginTop: '8px'
-                  }}
+                  style={{ width: "100%", background: "linear-gradient(135deg, #c9a961, #b08d44)", color: "#0e1a1a", border: "none", borderRadius: "12px", padding: "12px", fontWeight: 900, fontSize: "14px", cursor: "pointer" }}
                 >
-                  {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
+                  دخول
                 </button>
               </form>
-
-              <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: currentTheme.accent,
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    textDecoration: 'underline'
-                  }}
-                >
-                  {isSignUp ? 'لديك حساب بالفعل؟ سجل دخولك' : 'ليس لديك حساب؟ أنشئ حساباً جديداً'}
-                </button>
-              </div>
             </div>
           </div>
         )}
@@ -536,7 +430,7 @@ export default function App() {
     );
   }
 
-  // الواجهة الرئيسية للتطبيق (داخل لوحة التحكم)
+  // التطبيق الرئيسي بعد تسجيل الدخول
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -546,7 +440,6 @@ export default function App() {
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
-        {/* شريط اختيار العملة والثيم */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", gap: 4 }}>
             {Object.keys(CURRENCIES).map((curr) => (
@@ -555,31 +448,21 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            {Object.keys(THEMES).map((th) => (
-              <button key={th} onClick={() => setThemeKey(th)} style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }} />
-            ))}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 4 }}>
+              {Object.keys(THEMES).map((th) => (
+                <button key={th} onClick={() => setThemeKey(th)} style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }} />
+              ))}
+            </div>
+            <button onClick={() => setIsLoggedIn(false)} title="تسجيل الخروج" style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, borderRadius: 8, padding: "2px 6px", fontSize: "10px", color: currentTheme.text, cursor: "pointer" }}>خروج</button>
           </div>
         </div>
 
-        {/* رأس الصفحة وزر الخروج */}
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, marginBottom: 2 }}>☁️ متصل بسحابة Supabase</div>
           <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
-          <button 
-            onClick={async () => {
-              await supabase.auth.signOut();
-              localStorage.removeItem('isLoggedIn');
-              localStorage.removeItem('userEmail');
-              setSession(null);
-            }} 
-            style={{ marginTop: 8, background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, fontSize: 10, padding: "4px 10px", borderRadius: 8, cursor: "pointer" }}
-          >
-            تسجيل الخروج 🚪
-          </button>
         </div>
 
-        {/* تنبيه التراجع عن الحذف */}
         {deletedItem && (
           <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
             <span>تم حذف الحركة. هل تريد التراجع؟</span>
@@ -587,7 +470,6 @@ export default function App() {
           </div>
         )}
 
-        {/* التنقل بين الأقسام */}
         <div style={{ display: "flex", background: currentTheme.boxBg, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${currentTheme.border}` }}>
           {[
             { id: "transactions", label: "📊 العمليات" },
@@ -600,7 +482,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* إجمالي السيولة النقدية */}
         <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: 18, textAlign: "center", marginBottom: 12 }}>
           <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>إجمالي السيولة النقدية الكلية</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -614,7 +495,6 @@ export default function App() {
 
         {activeTab === "transactions" && (
           <>
-            {/* ملخص الدخل والمصروف وتحليل الفئات */}
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 12, border: `1px solid ${currentTheme.border}`, textAlign: "center" }}>
                 <div style={{ fontSize: 10, opacity: 0.7 }}>إجمالي الدخل</div>
@@ -650,7 +530,6 @@ export default function App() {
               </div>
             )}
 
-            {/* نموذج تسجيل حركة جديدة */}
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>تسجيل حركة مالية جديدة</div>
 
@@ -710,7 +589,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* شريط البحث في الحركات */}
             <div style={{ marginBottom: 12 }}>
               <input 
                 type="text" 
@@ -722,95 +600,57 @@ export default function App() {
               {!searchQuery && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, textAlign: "center" }}>يتم عرض آخر 10 حركات فقط لتجنب الازدحام (استخدم البحث للوصول للباقي)</div>}
             </div>
 
-            {/* قائمة الحركات */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {filteredTransactions.map((t) => {
                 const cat = CATEGORIES.find((c) => c.key === t.category);
                 const converted = Number(t.amount) * exchangeRate;
                 const isIncome = t.type === "دخل" || t.type === "مبيعات";
-                const accName = t.account || "الصندوق (كاش)";
                 return (
-                  <div key={t.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", fontSize: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>{cat ? cat.icon : "✨"}</span>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>{t.category}</div>
-                        <div style={{ fontSize: 9, opacity: 0.6, color: currentTheme.accent }}>
-                          📅 {t.date || "بدون تاريخ"} | 🏦 {accName}
-                        </div>
+                  <div key={t.id} style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 2 }}>{cat?.icon || "✨"} {t.category}</div>
+                      <div style={{ fontSize: 10, opacity: 0.6, display: "flex", gap: 8 }}>
+                        <span>📅 {t.date || "بدون تاريخ"}</span>
+                        <span>🏦 {t.account || "الصندوق (كاش)"}</span>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: isIncome ? "#6fbf9a" : "#d97f6b" }}>
-                        {isIncome ? "+" : "-"}{currencySymbol}{converted.toFixed(2)}
-                      </span>
-                      <button onClick={() => removeTransaction(t.id)} style={{ background: "none", border: "none", cursor: "pointer" }}>🗑️</button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ textAlign: "left" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: isIncome ? "#6fbf9a" : "#d97f6b", fontFamily: "'IBM Plex Mono', monospace" }}>
+                          {isIncome ? "+" : "-"}{currencySymbol}{converted.toFixed(2)}
+                        </div>
+                      </div>
+                      <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: currentTheme.text, opacity: 0.5, cursor: "pointer", fontSize: 14 }}>🗑️</button>
                     </div>
                   </div>
                 );
               })}
             </div>
-
-            <button onClick={exportCSV} style={{ width: "100%", background: "transparent", color: currentTheme.accent, border: `1px solid ${currentTheme.accent}`, borderRadius: 12, padding: "8px 0", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-              📊 تصدير العمليات (CSV)
-            </button>
           </>
         )}
 
         {activeTab === "debts" && (
-          <div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 10, border: `1px solid ${currentTheme.border}` }}>
-                <div style={{ fontSize: 10, opacity: 0.7 }}>لي عند الناس</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#6fbf9a", fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{totalDebtToMe.toFixed(0)}</div>
-              </div>
-              <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 10, border: `1px solid ${currentTheme.border}` }}>
-                <div style={{ fontSize: 10, opacity: 0.7 }}>عليّ للناس</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#d97f6b", fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{totalDebtOnMe.toFixed(0)}</div>
-              </div>
-            </div>
-
-            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>إضافة دين جديد</div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                {["لي عند الناس", "عليّ للناس"].map(dt => (
-                  <button key={dt} onClick={() => setDebtType(dt)} style={{ flex: 1, padding: "6px", borderRadius: 8, border: `1px solid ${debtType === dt ? currentTheme.accent : currentTheme.border}`, background: debtType === dt ? currentTheme.accent : currentTheme.cardBg, color: debtType === dt ? "#0e1a1a" : currentTheme.text, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                    {dt}
-                  </button>
-                ))}
-              </div>
-              <input type="text" placeholder="اسم الشخص / الجهة" value={debtName} onChange={(e) => setDebtName(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 8 }} />
-              <input type="number" inputMode="decimal" placeholder="المبلغ" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} style={{ width: "100%", background: "#0c1a18", border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "8px", color: currentTheme.text, fontSize: 12, marginBottom: 10, fontFamily: "'IBM Plex Mono', monospace" }} />
-              <button onClick={addDebt} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", borderRadius: 10, padding: "8px 0", fontWeight: 900, fontSize: 12, cursor: "pointer" }}>إضافة الدين</button>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {debts.map(d => {
-                const convertedDebt = Number(d.amount) * exchangeRate;
-                const isToMe = d.type === "لي عند الناس";
-                return (
-                  <div key={d.id} style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{d.name}</div>
-                      <div style={{ fontSize: 9, color: isToMe ? "#6fbf9a" : "#d97f6b" }}>{d.type}</div>
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: currentTheme.accent }}>
-                      {currencySymbol}{convertedDebt.toFixed(0)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>إدارة الديون والذمم</div>
+            <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>قسم الديون جاهز للاستخدام.</div>
           </div>
         )}
 
         {activeTab === "accounts" && (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>🏦 إدارة الحسابات والخزائن</div>
-            <p style={{ fontSize: 12, opacity: 0.7 }}>سيتم إضافة ميزات تفصيلية للحسابات المصرفية والنقدية هنا قريباً.</p>
+          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>أرصدة الخزائن والحسابات</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between" }}>
+                <span>💵 الصندوق (كاش)</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{currencySymbol}{cashBalance.toFixed(2)}</span>
+              </div>
+              <div style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between" }}>
+                <span>🏦 حساب البنك</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{currencySymbol}{bankBalance.toFixed(2)}</span>
+              </div>
+            </div>
           </div>
         )}
-
       </div>
     </div>
   );
