@@ -577,10 +577,10 @@ export default function App() {
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
-        {/* --- القسم العلوي: الثيمات والعملات --- */}
+        {/* --- القسم العلوي: الثيمات والعملات (الشكل الفخم مع أمان الـ CURRENCIES) --- */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
           
-          {/* جهة اليسار: زر الخروج ودوائر الثيمات الأصلية */}
+          {/* جهة اليسار: زر الخروج ودوائر الثيمات */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <button 
               onClick={() => supabase.auth.signOut()} 
@@ -598,7 +598,7 @@ export default function App() {
               تسجيل الخروج
             </button>
 
-            {/* دوائر الثيمات الأصلية فقط */}
+            {/* دوائر الثيمات */}
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               {Object.keys(THEMES).map((th) => (
                 <div 
@@ -617,32 +617,28 @@ export default function App() {
             </div>
           </div>
 
-          {/* جهة اليمين: أزرار العملات */}
-          {/* جهة اليمين: أزرار العملات (بشكل آمن ومباشر) */}
-        <div style={{ display: "flex", gap: "6px" }}>
-        {["د.أ", "$", "₪"].map((curr) => (
-        <button
-        key={curr}
-        onClick={() => {
-          if (typeof setCurrency === 'function') {
-            setCurrency(curr);
-          }
-        }}
-        style={{
-          background: currency === curr ? "#D4AF37" : "#16302d",
-          border: "1px solid #274442",
-          color: currency === curr ? "#0e1a1a" : "#f2ede2",
-          padding: "6px 12px",
-          borderRadius: "8px",
-          fontSize: "16px",
-          fontWeight: "bold",
-          cursor: "pointer",
-        }}
-      >
-        {curr}
-      </button>
-    ))}
-  </div>
+          {/* جهة اليمين: أزرار العملات بالشكل المرتب وبدون أخطاء الـ rate */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            {Object.keys(CURRENCIES).map((curr) => (
+              <button
+                key={curr}
+                onClick={() => setCurrency(curr)}
+                style={{
+                  background: currency === curr ? "#D4AF37" : "#16302d",
+                  border: "1px solid #274442",
+                  color: currency === curr ? "#0e1a1a" : "#f2ede2",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  fontSize: "16px", // شكل واضح ومرتب
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                {CURRENCIES[curr].symbol}
+              </button>
+            ))}
+          </div>
+
         </div>
 
         {/* 🔻 هنا يبدأ باقي محتوى لوحة التحكم الخاص بك (الرصيد، المعاملات، الإدخالات، إلخ) */}
