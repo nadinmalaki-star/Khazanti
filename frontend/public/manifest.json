@@ -1,16 +1,17 @@
 {
-  "name": "خزنتي - Khznti",
+  "name": "خزنتي",
   "short_name": "خزنتي",
+  "description": "تطبيق إدارة المصروفات الشخصية",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#16302d", // لون خلفية التطبيق عند فتحه
+  "theme_color": "#D4AF37",      // لون شريط العنوان في المتصفح
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/icon.png",        // المسار الصحيح للأيقونة داخل public
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any maskable"  // لجعل الأيقونة تبدو جيدة على كل الأشكال
     }
   ]
 }
