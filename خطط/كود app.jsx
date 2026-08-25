@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase.js";
+import './App.css';
 
 const CATEGORIES = [
   { key: "طعام", icon: "🍔", type: "مصروف" },
@@ -49,17 +50,41 @@ const THEMES = {
 };
 
 export default function App() {
-  // حالات المصادقة والتسجيل
+  // حالات التطبيق الأساسية
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [showAuthModal, setShowAuthModal] = useState(false); // لإظهار نموذج الدخول من الواجهة الترحيبية
 
-  // مراقبة الجلسة والتحقق من الـ LocalStorage لتجاوز شاشة الدخول فوراً
+  const [transactions, setTransactions] = useState([]);
+  const [debts, setDebts] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("طعام");
+  const [selectedAccount, setSelectedAccount] = useState("الصندوق (كاش)");
+  const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
+  const [error, setError] = useState("");
+
+  const [debtType, setDebtType] = useState("لي عند الناس");
+  const [debtName, setDebtName] = useState("");
+  const [debtAmount, setDebtAmount] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currency, setCurrency] = useState("ILS");
+  const [themeKey, setThemeKey] = useState("emerald");
+  const [activeTab, setActiveTab] = useState("transactions");
+
+  const [deletedItem, setDeletedItem] = useState(null);
+  const [undoTimer, setUndoTimer] = useState(null);
+
+  const currentTheme = THEMES[themeKey];
+
+  // مراقبة الجلسة والتحقق من الـ LocalStorage
   useEffect(() => {
-    // التحقق هل تم تسجيل الدخول مسبقاً عبر الـ HTML أو السحابة
     const localLoggedIn = localStorage.getItem('isLoggedIn');
     if (localLoggedIn === 'true') {
       setSession({ user: { email: localStorage.getItem('userEmail') || 'user' } });
@@ -80,10 +105,15 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // جلب البيانات عند تسجيل الدخول بنجاح
+  // جلب البيانات عند تسجيل الدخول
   useEffect(() => {
     if (session) {
       fetchData();
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userEmail', session.user?.email || '');
+    } else {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userEmail');
     }
   }, [session]);
 
@@ -163,8 +193,7 @@ export default function App() {
     return { totals, rawExpenseTotal };
   }, [transactions]);
 
-  // دوال التعامل مع المصادقة
-// دوال التعامل مع المصادقة (المُحدثة)
+  // دوال المصادقة
   async function handleAuth(e) {
     e.preventDefault();
     setAuthLoading(true);
@@ -172,10 +201,7 @@ export default function App() {
 
     try {
       if (isSignUp) {
-        console.log("محاولة إنشاء حساب...");
         const { data, error } = await supabase.auth.signUp({ email, password });
-        console.log("نتيجة إنشاء الحساب:", { data, error });
-        
         if (error) {
           setAuthError(error.message);
         } else {
@@ -187,26 +213,19 @@ export default function App() {
           }
         }
       } else {
-        console.log("محاولة تسجيل الدخول...");
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        console.log("نتيجة تسجيل الدخول:", { data, error });
-        
         if (error) {
           setAuthError(error.message);
         } else if (data.session) {
-          console.log("تم جلب الجلسة بنجاح، جاري التحديث...");
           setSession(data.session);
         } else {
-          // حالة نادرة جداً إذا لم تكن الجلسة موجودة في الـ data مباشرة
           const currentSession = await supabase.auth.getSession();
-          console.log("الجلسة الحالية من الـ Session:", currentSession);
           if (currentSession.data.session) {
             setSession(currentSession.data.session);
           }
         }
       }
     } catch (err) {
-      console.error("خطأ غير متوقع:", err);
       setAuthError('حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.');
     } finally {
       setAuthLoading(false);
@@ -240,7 +259,6 @@ export default function App() {
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
   
-    // 1. إنشاء عنصر مؤقت وتحديث الواجهة فوراً لتكون الاستجابة سريعة جداً
     const tempId = Date.now();
     const newRecord = { 
       id: tempId,
@@ -255,7 +273,6 @@ export default function App() {
     setAmount("");
     setError("");
   
-    // 2. إرسال البيانات للسحابة في الخلفية
     const { data, error: dbError } = await supabase
       .from("transactions")
       .insert([{ type: finalType, amount: baseAmount, category, account: selectedAccount, date: newRecord.date }])
@@ -264,7 +281,6 @@ export default function App() {
     if (dbError) {
       setError("فشل الحفظ في السحابة: " + dbError.message);
     } else if (data && data.length > 0) {
-      // 3. استبدال المؤقت بالحقيقي القادم من قاعدة البيانات
       setTransactions(prev => prev.map(t => t.id === tempId ? data[0] : t));
     }
   }
@@ -327,7 +343,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  // شاشة التحميل الأولية
   if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", background: currentTheme.bg, color: currentTheme.text, display: "flex", justifyContent: "center", alignItems: "center", fontFamily: "'Tajawal', sans-serif" }}>
@@ -336,157 +351,192 @@ export default function App() {
     );
   }
 
-  // شاشة تسجيل الدخول
+  // واجهة الترحيب الفخمة (Landing View) في حال عدم تسجيل الدخول
   if (!session) {
     return (
       <div dir="rtl" style={{
         minHeight: '100vh',
         background: currentTheme.bg,
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         fontFamily: "'Tajawal', sans-serif",
-        padding: '16px',
-        color: currentTheme.text
+        padding: '24px 16px',
+        color: currentTheme.text,
+        position: 'relative'
       }}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
           * { box-sizing: border-box; }
         `}</style>
-        <div style={{
-          background: currentTheme.cardBg,
-          border: `1px solid ${currentTheme.border}`,
-          borderRadius: '20px',
-          padding: '24px',
-          width: '100%',
-          maxWidth: '360px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
-        }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '8px', color: currentTheme.accent, fontWeight: 900 }}>خِزنتي ☁️</h2>
-          <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.7, marginBottom: '20px' }}>
-            {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة أعمالك'}
+
+        {/* اختيار الثيم والألوان بالاعلى */}
+        <div style={{ position: 'absolute', top: 24, display: 'flex', gap: 8 }}>
+          {Object.keys(THEMES).map((th) => (
+            <button key={th} onClick={() => setThemeKey(th)} style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }} />
+          ))}
+        </div>
+
+        {/* محتوى الواجهة الترحيبية */}
+        <div style={{ textAlign: 'center', maxWidth: 420, padding: '20px' }}>
+          <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, marginBottom: 8 }}>☁️ نظام الإدارة المالية الذكي</div>
+          <h1 style={{ fontSize: 38, fontWeight: 900, marginBottom: 12, color: currentTheme.text }}>خِزنتي</h1>
+          <p style={{ fontSize: 14, opacity: 0.8, lineHeight: 1.6, marginBottom: 32 }}>
+            رفيقك الأمثل لتتبع السيولة النقدية، إدارة الحسابات المصرفية، ومتابعة الديون بكل دقة وأمان سحابي متكامل.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
-            <input
-              type="email"
-              placeholder="example@domain.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{
-                width: '100%',
-                background: currentTheme.boxBg,
-                border: `1px solid ${currentTheme.border}`,
-                borderRadius: '10px',
-                padding: '10px',
-                color: currentTheme.text,
-                fontSize: '12px'
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                background: currentTheme.boxBg,
-                border: `1px solid ${currentTheme.border}`,
-                borderRadius: '10px',
-                padding: '10px',
-                color: currentTheme.text,
-                fontSize: '12px'
-              }}
-            />
-          </div>
-
-          {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
-
           <button
-            type="button"
-            disabled={authLoading}
-            onClick={async () => {
-              console.log("تم النقر على زر الدخول المباشر!");
-              setAuthLoading(true);
-              setAuthError('');
-
-              try {
-                if (isSignUp) {
-                  const { data, error } = await supabase.auth.signUp({ email, password });
-                  if (error) {
-                    setAuthError(error.message);
-                  } else {
-                    if (data.session) {
-                      setSession(data.session);
-                    } else {
-                      alert('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.');
-                      setIsSignUp(false);
-                    }
-                  }
-                } else {
-                  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                  if (error) {
-                    setAuthError(error.message);
-                  } else if (data.session) {
-                    setSession(data.session);
-                  } else {
-                    // فحص احتياطي للجلسة إذا لم تعود مباشرة
-                    const currentSession = await supabase.auth.getSession();
-                    if (currentSession.data.session) {
-                      setSession(currentSession.data.session);
-                    }
-                  }
-                }
-              } catch (err) {
-                console.error("خطأ:", err);
-                setAuthError('حدث خطأ غير متوقع.');
-              } finally {
-                setAuthLoading(false);
-              }
-            }}
+            onClick={() => setShowAuthModal(true)}
             style={{
               background: currentTheme.accent,
               color: '#0e1a1a',
               border: 'none',
-              borderRadius: '10px',
-              padding: '10px',
-              fontWeight: 'bold',
-              fontSize: '13px',
+              borderRadius: '14px',
+              padding: '14px 32px',
+              fontWeight: 900,
+              fontSize: '15px',
               cursor: 'pointer',
-              marginTop: '6px'
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              width: '100%',
+              maxWidth: '260px'
             }}
           >
-            {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
+            ابدأ الآن 🚀
           </button>
         </div>
 
-          <div style={{ textAlign: 'center', marginTop: '16px' }}>
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: currentTheme.accent,
-                fontSize: '11px',
-                cursor: 'pointer',
-                textDecoration: 'underline'
-              }}
-            >
-              {isSignUp ? 'لديك حساب بالفعل؟ سجل دخولك' : 'ليس لديك حساب؟ أنشئ حساباً جديداً'}
-            </button>
+        {/* نموذج تسجيل الدخول المنبثق (Modal) */}
+        {showAuthModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+            padding: '16px'
+          }}>
+            <div style={{
+              background: currentTheme.cardBg,
+              border: `1px solid ${currentTheme.border}`,
+              borderRadius: '24px',
+              padding: '28px',
+              width: '100%',
+              maxWidth: '380px',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
+              position: 'relative'
+            }}>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  left: 16,
+                  background: 'transparent',
+                  border: 'none',
+                  color: currentTheme.text,
+                  fontSize: 16,
+                  cursor: 'pointer',
+                  opacity: 0.7
+                }}
+              >
+                ✕
+              </button>
+
+              <h2 style={{ textAlign: 'center', marginBottom: '6px', color: currentTheme.accent, fontWeight: 900 }}>خِزنتي ☁️</h2>
+              <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.7, marginBottom: '20px' }}>
+                {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'سجل دخولك لمتابعة أعمالك'}
+              </p>
+
+              <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>البريد الإلكتروني</label>
+                  <input
+                    type="email"
+                    placeholder="example@domain.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      background: currentTheme.boxBg,
+                      border: `1px solid ${currentTheme.border}`,
+                      borderRadius: '10px',
+                      padding: '10px',
+                      color: currentTheme.text,
+                      fontSize: '12px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', opacity: 0.8, display: 'block', marginBottom: '4px' }}>كلمة المرور</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      background: currentTheme.boxBg,
+                      border: `1px solid ${currentTheme.border}`,
+                      borderRadius: '10px',
+                      padding: '10px',
+                      color: currentTheme.text,
+                      fontSize: '12px'
+                    }}
+                  />
+                </div>
+
+                {authError && <div style={{ color: '#d97f6b', fontSize: '11px', textAlign: 'center' }}>{authError}</div>}
+
+                <button
+                  type="submit"
+                  disabled={authLoading}
+                  style={{
+                    background: currentTheme.accent,
+                    color: '#0e1a1a',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    marginTop: '8px'
+                  }}
+                >
+                  {authLoading ? 'جاري التنفيذ...' : (isSignUp ? 'إنشاء الحساب' : 'تسجيل الدخول')}
+                </button>
+              </form>
+
+              <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: currentTheme.accent,
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  {isSignUp ? 'لديك حساب بالفعل؟ سجل دخولك' : 'ليس لديك حساب؟ أنشئ حساباً جديداً'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
-  // الواجهة الرئيسية للتطبيق
+  // الواجهة الرئيسية للتطبيق (داخل لوحة التحكم)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -496,6 +546,7 @@ export default function App() {
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
+        {/* شريط اختيار العملة والثيم */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", gap: 4 }}>
             {Object.keys(CURRENCIES).map((curr) => (
@@ -511,13 +562,16 @@ export default function App() {
           </div>
         </div>
 
+        {/* رأس الصفحة وزر الخروج */}
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, marginBottom: 2 }}>☁️ متصل بسحابة Supabase</div>
           <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
           <button 
             onClick={async () => {
               await supabase.auth.signOut();
-              window.location.reload();
+              localStorage.removeItem('isLoggedIn');
+              localStorage.removeItem('userEmail');
+              setSession(null);
             }} 
             style={{ marginTop: 8, background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, fontSize: 10, padding: "4px 10px", borderRadius: 8, cursor: "pointer" }}
           >
@@ -525,6 +579,7 @@ export default function App() {
           </button>
         </div>
 
+        {/* تنبيه التراجع عن الحذف */}
         {deletedItem && (
           <div style={{ background: "#c9a961", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
             <span>تم حذف الحركة. هل تريد التراجع؟</span>
@@ -532,6 +587,7 @@ export default function App() {
           </div>
         )}
 
+        {/* التنقل بين الأقسام */}
         <div style={{ display: "flex", background: currentTheme.boxBg, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${currentTheme.border}` }}>
           {[
             { id: "transactions", label: "📊 العمليات" },
@@ -544,44 +600,39 @@ export default function App() {
           ))}
         </div>
 
+        {/* إجمالي السيولة النقدية */}
         <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: 18, textAlign: "center", marginBottom: 12 }}>
           <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>إجمالي السيولة النقدية الكلية</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>
-            {currencySymbol} {totalBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {currencySymbol} {totalBalance.toFixed(2)}
           </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <div style={{ flex: 1, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 10 }}>
-            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>💵 صندوق الكاش</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{cashBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-          </div>
-          <div style={{ flex: 1, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 10 }}>
-            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>🏦 حساب البنك</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{bankBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <div style={{ flex: 1, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 10 }}>
-            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>📈 إجمالي الوارد</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#6fbf9a", fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{totalIncome.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-          </div>
-          <div style={{ flex: 1, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 10 }}>
-            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 2 }}>📉 إجمالي الصادر</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#d97f6b", fontFamily: "'IBM Plex Mono', monospace" }}>{currencySymbol}{totalExpense.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+          <div style={{ display: "flex", justifyContent: "space-around", marginTop: 12, fontSize: 11, opacity: 0.8 }}>
+            <div>💵 الكاش: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{cashBalance.toFixed(2)}</span></div>
+            <div>🏦 البنك: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{bankBalance.toFixed(2)}</span></div>
           </div>
         </div>
 
         {activeTab === "transactions" && (
           <>
+            {/* ملخص الدخل والمصروف وتحليل الفئات */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 12, border: `1px solid ${currentTheme.border}`, textAlign: "center" }}>
+                <div style={{ fontSize: 10, opacity: 0.7 }}>إجمالي الدخل</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#6fbf9a", fontFamily: "'IBM Plex Mono', monospace" }}>+{currencySymbol}{totalIncome.toFixed(0)}</div>
+              </div>
+              <div style={{ flex: 1, background: currentTheme.boxBg, padding: 10, borderRadius: 12, border: `1px solid ${currentTheme.border}`, textAlign: "center" }}>
+                <div style={{ fontSize: 10, opacity: 0.7 }}>إجمالي المصاريف</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#d97f6b", fontFamily: "'IBM Plex Mono', monospace" }}>-{currencySymbol}{totalExpense.toFixed(0)}</div>
+              </div>
+            </div>
+
             {categoryBreakdown.rawExpenseTotal > 0 && (
               <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 14, marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.9, marginBottom: 10 }}>📊 نسب المصاريف والمشتريات</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {Object.entries(categoryBreakdown.totals).map(([catKey, rawTotal]) => {
-                    const totalInCurr = rawTotal * exchangeRate;
-                    const percentage = Math.round((rawTotal / categoryBreakdown.rawExpenseTotal) * 100);
+                <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8, opacity: 0.9 }}>📊 توزيع المصاريف حسب الفئة:</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {Object.entries(categoryBreakdown.totals).map(([catKey, rawVal]) => {
+                    const totalInCurr = rawVal * exchangeRate;
+                    const percentage = ((rawVal / categoryBreakdown.rawExpenseTotal) * 100).toFixed(0);
                     const catInfo = CATEGORIES.find((c) => c.key === catKey);
                     return (
                       <div key={catKey} style={{ fontSize: 12 }}>
@@ -599,6 +650,7 @@ export default function App() {
               </div>
             )}
 
+            {/* نموذج تسجيل حركة جديدة */}
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>تسجيل حركة مالية جديدة</div>
 
@@ -658,6 +710,7 @@ export default function App() {
               </button>
             </div>
 
+            {/* شريط البحث في الحركات */}
             <div style={{ marginBottom: 12 }}>
               <input 
                 type="text" 
@@ -669,6 +722,7 @@ export default function App() {
               {!searchQuery && <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, textAlign: "center" }}>يتم عرض آخر 10 حركات فقط لتجنب الازدحام (استخدم البحث للوصول للباقي)</div>}
             </div>
 
+            {/* قائمة الحركات */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {filteredTransactions.map((t) => {
                 const cat = CATEGORIES.find((c) => c.key === t.category);
@@ -752,7 +806,7 @@ export default function App() {
 
         {activeTab === "accounts" && (
           <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>🏦 إدارة الحزائن والخزائن</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>🏦 إدارة الحسابات والخزائن</div>
             <p style={{ fontSize: 12, opacity: 0.7 }}>سيتم إضافة ميزات تفصيلية للحسابات المصرفية والنقدية هنا قريباً.</p>
           </div>
         )}

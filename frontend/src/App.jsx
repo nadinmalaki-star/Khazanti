@@ -547,12 +547,9 @@ export default function App() {
               </form>
             </div>
           </div>
-        )}
-      </div>
     );
   }
 
-  // التطبيق الرئيسي بعد تسجيل الدخول
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
