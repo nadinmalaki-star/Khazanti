@@ -319,7 +319,7 @@ export default function App() {
     }
   };
 
-  // الشاشة الترحيبية المحدثة بالكامل حسب الوصف المطلوب
+  // الشاشة الترحيبية المنسقة والمنظمة بالترتيب المطلوب
   if (!isLoggedIn) {
     return (
       <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -362,7 +362,7 @@ export default function App() {
           <p style={{ fontSize: "18px", color: "#c9a961", fontWeight: 500, margin: 0 }}>بوابتك الذكية للتحكم المالي والأمان السحابي</p>
         </div>
 
-        {/* قسم من نحن */}
+        {/* 1. قسم من نحن */}
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.3)" }}>
           <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
           <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>أكثر من مجرد سجل مصروفات</h2>
@@ -371,7 +371,7 @@ export default function App() {
           </p>
         </div>
 
-        {/* لغة الألوان والرمز */}
+        {/* 2. لغة الألوان والرمز */}
         <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>الهوية البصرية</div>
@@ -393,7 +393,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* المرحلة الحالية */}
+        {/* 3. المرحلة الحالية */}
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>المرحلة الحالية</div>
@@ -421,7 +421,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* طموحات المستقبل */}
+        {/* 4. طموحات المستقبل */}
         <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>طموحات المستقبل</div>
@@ -440,22 +440,40 @@ export default function App() {
           </div>
         </div>
 
-        {/* زر الدعوة للتسجيل والختام */}
+        {/* 5. الخاتمة وزر الدخول الموحد وسياسة الخصوصية */}
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "20px" }}>تحكم بأموالك اليوم.. وابنِ مستقبلك المالي بثقة.</h2>
           
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "20px" }}>
+          <div style={{ marginBottom: "20px" }}>
             <button 
               onClick={() => { setAuthMode("login"); setShowLoginModal(true); }}
               style={{
-                background: "transparent",
-                border: "2px solid #D4AF37",
-                color: "#D4AF37",
-                padding: "12px 28px",
+                background: "linear-gradient(135deg, #D4AF37, #b8974f)",
+                color: "#16302d",
+                border: "none",
+                padding: "12px 32px",
                 fontSize: "15px",
                 fontWeight: "bold",
                 borderRadius: "14px",
                 cursor: "pointer",
+                boxShadow: "0 8px 20px rgba(212, 175, 55, 0.3)",
+              }}
+            >
+              تسجيل الدخول / دخول النظام
+            </button>
+          </div>
+
+          <div>
+            <button
+              onClick={() => setShowPrivacyModal(true)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#D4AF37",
+                fontSize: "13px",
+                cursor: "pointer",
+                textDecoration: "underline",
+                fontFamily: "inherit",
               }}
             >
               سياسة الخصوصية وشروط الاستخدام
@@ -465,6 +483,7 @@ export default function App() {
 
         {/* الفوتر */}
         <div style={{ textAlign: "center", opacity: 0.6, fontSize: "12px", borderTop: "1px solid #274442", width: "100%", maxWidth: "850px", paddingTop: "20px" }}>
+          KHZNTI — بوابتك الذكية للتحكم المالي والأمان السحابي<br />
           تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
         </div>
 
