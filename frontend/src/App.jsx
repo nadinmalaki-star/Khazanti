@@ -796,40 +796,29 @@ export default function App() {
               <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
               <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type === "له" ? "دين لنا (على الآخرين)" : "دين علينا (للآخرين)"}</div>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <span style={{ color: d.type === "له" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: d.type === "له" ? "#38a169" : "#e53e3e" }}>
                 {currencySymbol} {Number(d.amount).toFixed(2)}
               </span>
-              <button onClick={() => removeDebt(d.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "14px" }} title="حذف الدين">🗑️</button>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-)}
-
-            {/* جهة اليسار: المبلغ مع زر الحذف الإضافي */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37" }}>
-                {currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}
-              </span>
-              
-              {/* زر حذف الدين */}
               <button
                 onClick={() => {
                   if (typeof deleteDebt === 'function') {
                     deleteDebt(d.id);
+                  } else if (typeof removeDebt === 'function') {
+                    removeDebt(d.id);
                   }
                 }}
-                title="إلغاء/حذف الدين"
+                title="حذف الدين"
                 style={{
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
                   fontSize: "16px",
                   padding: "4px",
-                  opacity: 0.8,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ff6b6b"
                 }}
               >
                 🗑️
@@ -854,7 +843,6 @@ export default function App() {
           <div style={{ fontSize: "11px", opacity: 0.7 }}>المحفظة النقدية اليومية</div>
         </div>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
-          {/* ضعي هنا المتغير الخاص بأرصدة الكاش عندك */}
           {currencySymbol} {((cashBalance || 0) * exchangeRate).toFixed(2)}
         </span>
       </div>
@@ -866,73 +854,71 @@ export default function App() {
           <div style={{ fontSize: "11px", opacity: 0.7 }}>الرصيد المحول في البنك</div>
         </div>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
-          {/* ضعي هنا المتغير الخاص بأرصدة البنك عندك */}
           {currencySymbol} {((bankBalance || 0) * exchangeRate).toFixed(2)}
         </span>
       </div>
     </div>
   </div>
 )}
-        )}
 
-        {showAddDebtModal && (
-          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 15 }}>إضافة دين جديد</div>
+{showAddDebtModal && (
+  <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+    <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 15 }}>إضافة دين جديد</div>
 
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>اسم الشخص / الجهة</label>
-                <input
-                  type="text"
-                  value={debtName}
-                  onChange={(e) => setDebtName(e.target.value)}
-                  placeholder="أدخلي الاسم..."
-                  style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
-                <input
-                  type="number"
-                  value={debtAmount}
-                  onChange={(e) => setDebtAmount(e.target.value)}
-                  placeholder="0.00"
-                  style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
-                />
-              </div>
-
-              <div style={{ marginBottom: 15 }}>
-                <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
-                <select
-                  value={debtType}
-                  onChange={(e) => setDebtType(e.target.value)}
-                  style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
-                >
-                  <option value="دين له">دين له (فلوس لي عند الناس)</option>
-                  <option value="دين عليه">دين عليه (فلوس للناس عندي)</option>
-                </select>
-              </div>
-
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button
-                  onClick={() => setShowAddDebtModal(false)}
-                  style={{ background: "transparent", color: currentTheme.text, border: `1px solid ${currentTheme.border}`, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={handleSaveDebt}
-                  style={{ background: "#D4AF37", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
-                >
-                  حفظ الدين
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>اسم الشخص / الجهة</label>
+        <input
+          type="text"
+          value={debtName}
+          onChange={(e) => setDebtName(e.target.value)}
+          placeholder="أدخلي الاسم..."
+          style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+        />
       </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
+        <input
+          type="number"
+          value={debtAmount}
+          onChange={(e) => setDebtAmount(e.target.value)}
+          placeholder="0.00"
+          style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 15 }}>
+        <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
+        <select
+          value={debtType}
+          onChange={(e) => setDebtType(e.target.value)}
+          style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
+        >
+          <option value="دين له">دين له (فلوس لي عند الناس)</option>
+          <option value="دين عليه">دين عليه (فلوس للناس عندي)</option>
+        </select>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <button
+          onClick={() => setShowAddDebtModal(false)}
+          style={{ background: "transparent", color: currentTheme.text, border: `1px solid ${currentTheme.border}`, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}
+        >
+          إلغاء
+        </button>
+        <button
+          onClick={handleSaveDebt}
+          style={{ background: "#D4AF37", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
+        >
+          حفظ الدين
+        </button>
+      </div>
+    </div>
+     </div>
+)}
+
+  </div>
     </div>
   );
 }
