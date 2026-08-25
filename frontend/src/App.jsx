@@ -562,8 +562,7 @@ export default function App() {
               </div>
             </div>
           </div>
-    );
-  }
+        )}
 
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
