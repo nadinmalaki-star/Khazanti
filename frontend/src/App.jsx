@@ -376,7 +376,7 @@ export default function App() {
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>الهوية البصرية</div>
             <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 8px" }}>لغة الألوان والرمز</h2>
-            <p style={{ fontSize: "14px", color: "#c9a961", opacity: 0.9, margin: 0 }}>هوية بصرية بطابع "فينتك" فاخر ومصرفي — كل لون ورمز اختير ليعكس الموثوقية والأمان.</p>
+            <p style={{ fontSize: "14px", color: "#c9a961", opacity: 0.9, margin: 0 }}>هوية بصرية بطابع فاخر ومصرفي — كل لون ورمز اختير ليعكس الموثوقية والأمان.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px", marginBottom: "25px" }}>
@@ -577,26 +577,78 @@ export default function App() {
       `}</style>
 
       <div style={{ width: "100%", maxWidth: 380 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            {Object.keys(CURRENCIES).map((curr) => (
-              <button key={curr} onClick={() => setCurrency(curr)} style={{ padding: "4px 8px", borderRadius: 8, border: `1px solid ${currency === curr ? currentTheme.accent : currentTheme.border}`, background: currency === curr ? currentTheme.accent : currentTheme.boxBg, color: currency === curr ? "#0e1a1a" : currentTheme.text, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
-                {CURRENCIES[curr].symbol}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            <div style={{ display: "flex", gap: 4 }}>
+        {/* --- القسم العلوي: الثيمات والعملات (تم التعديل والترتيب) --- */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
+          
+          {/* جهة اليسار: زر الخروج ودوائر الألوان (مع إضافة الموف الفاخر والثيمات القديمة) */}
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button 
+              onClick={() => supabase.auth.signOut()} 
+              title="تسجيل الخروج" 
+              style={{
+                background: "transparent",
+                border: `1px solid ${currentTheme.border}`,
+                color: currentTheme.text,
+                padding: "6px 12px",
+                borderRadius: "8px",
+                fontSize: "11px",
+                cursor: "pointer"
+              }}
+            >
+              تسجيل الخروج
+            </button>
+
+            {/* دوائر الألوان والثيمات */}
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              {/* 1. لون الموف الجديد */}
+              <div 
+                onClick={() => setThemeColor("#6b46c1")}
+                style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#6b46c1", cursor: "pointer", border: themeColor === "#6b46c1" ? "2px solid #fff" : "1px solid #274442" }} 
+                title="ثيم الموف الفاخر"
+              />
+              {/* 2. باقي الثيمات الموجودة عندك */}
               {Object.keys(THEMES).map((th) => (
-                <button key={th} onClick={() => setThemeKey(th)} style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }} />
+                <div 
+                  key={th} 
+                  onClick={() => setThemeKey(th)} 
+                  style={{ 
+                    width: 20, 
+                    height: 20, 
+                    borderRadius: "50%", 
+                    border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, 
+                    background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", 
+                    cursor: "pointer" 
+                  }} 
+                />
               ))}
             </div>
-            <button onClick={() => supabase.auth.signOut()} title="تسجيل الخروج" style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, borderRadius: 8, padding: "2px 6px", fontSize: "10px", color: currentTheme.text, cursor: "pointer" }}>خروج</button>
+          </div>
+
+          {/* جهة اليمين: أزرار العملات (برمز كبير وواضح باستخدام map) */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            {["د.أ", "$", "₪"].map((curr) => (
+              <button
+                key={curr}
+                onClick={() => setCurrency(curr)}
+                style={{
+                  background: currency === curr ? "#D4AF37" : "#16302d",
+                  border: "1px solid #274442",
+                  color: currency === curr ? "#0e1a1a" : "#f2ede2",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  fontSize: "16px", // رمز العملة أصبح واضحاً ومرتباً
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                {curr}
+              </button>
+            ))}
           </div>
         </div>
 
         <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, marginBottom: 2 }}>☁️ متصل بسحابة Supabase</div>
+          <div style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, marginBottom: 2 }}> بوابتك الذكية للتحكم المالي </div>
           <h1 style={{ fontSize: 24, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
         </div>
 
