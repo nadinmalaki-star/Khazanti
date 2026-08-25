@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase.js";
+import './App.css';
 
 const CATEGORIES = [
   { key: "طعام", icon: "🍔", type: "مصروف" },

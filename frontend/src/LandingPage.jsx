@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import './App.css'; // <-- استدعاء ملف الـ CSS هنا
+
 
 export default function App({ onLoginSuccess }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -37,8 +39,8 @@ export default function App({ onLoginSuccess }) {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ textAlign: 'right' }}>
-            <h1 style={{ margin: 0, fontSize: '24px', color: '#D4AF37', fontWeight: '900' }}>خِزنتي</h1>
-            <p style={{ margin: 0, fontSize: '11px', color: '#A3B899', letterSpacing: '2px', fontFamily: "'IBM Plex Mono', monospace" }}>K H Z N T I</p>
+            <h1 style={{ margin: 0, fontSize: '20px', color: '#D4AF37', fontWeight: '900' }}>خزنتي</h1>
+            <p style={{ margin: 0, fontSize: '11px', color: '#A3B899', letterSpacing: '2px', fontFamily: "'IBM Plex Mono', monospace" }}>KHZNTI</p>
           </div>
           <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'radial-gradient(circle, #0F5132 0%, #03140F 100%)', border: '1px solid #D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: '#D4AF37', fontSize: '18px' }}>⚜️</span>
@@ -65,99 +67,27 @@ export default function App({ onLoginSuccess }) {
       {/* الهوية البصرية */}
       <section style={{ padding: '48px 24px', backgroundColor: 'rgba(3, 20, 15, 0.6)', margin: '24px auto', maxWidth: '1000px', borderRadius: '16px', border: '1px solid rgba(212, 175, 55, 0.15)' }}>
         <h3 style={{ fontSize: '14px', color: '#D4AF37', marginBottom: '6px', fontWeight: 'bold', textTransform: 'uppercase' }}>الهوية البصرية</h3>
-        <h2 style={{ fontSize: '26px', color: '#FFFFFF', marginBottom: '8px', fontWeight: 'bold' }}>لغة الألوان والرمز</h2>
+        <h2 style={{ fontSize: '26px', color: '#FFFFFF', marginBottom: '12px', fontWeight: 'bold' }}>فخامة المستثمر وأمان المصارف</h2>
         <p style={{ fontSize: '15px', lineHeight: '1.8', color: '#D1D5DB', marginBottom: '28px' }}>
-          هوية بصرية بطابع "فينتك" فاخر ومصرفي — كل لون ورمز اختير ليعكس الموثوقية والأمان.
+          تجمع لوحة ألوان خزنتي بين عراقة الزمرد الداكن وبريق الذهب الخالص، لتعكس شعوراً بالثقة المطلقة والخصوصية التامة.
         </p>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
           <div style={{ padding: '24px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid #0F5132' }}>
-            <h4 style={{ color: '#FFFFFF', margin: '0 0 8px 0', fontSize: '18px' }}>الأخضر الداكن (DARK EMERALD)</h4>
-            <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>يرمز إلى المال والثروة والاستقرار المالي، ويوثّق بيئة عمل مصرفية آمنة وهادئة.</p>
+            <h4 style={{ color: '#FFFFFF', margin: '0 0 8px 0', fontSize: '18px' }}>الزمرد المصرفي العميق</h4>
+            <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>يمثل الاستقرار، والأمان المؤسسي، والهدوء والثقة المالي.</p>
           </div>
           <div style={{ padding: '24px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid #D4AF37' }}>
-            <h4 style={{ color: '#D4AF37', margin: '0 0 8px 0', fontSize: '18px' }}>الذهبي الدافئ المصقول (#D4AF37)</h4>
-            <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>يرمز إلى الفخامة والقيمة العالية والاحترافية، ويُستخدم لإبراز العناصر الأساسية.</p>
-          </div>
-          <div style={{ padding: '24px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', margin: '0 0 8px 0', fontSize: '18px' }}>قرص الخزنة الدائري والسهم</h4>
-            <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>يرمز للتحكم المطلق والأمان التام، مع سهم النمو الصاعد للاستثمار وتزايد الأرباح.</p>
-          </div>
-          <div style={{ padding: '24px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', margin: '0 0 8px 0', fontSize: '18px' }}>الأيقونات الداخلية</h4>
-            <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>رموز خطية نقية بلون ذهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
+            <h4 style={{ color: '#D4AF37', margin: '0 0 8px 0', fontSize: '18px' }}>الذهب السيادي</h4>
+            <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>يرمز إلى القيمة الرفيعة، والتدقيق المالي العالي، والموثوقية المطلقة.</p>
           </div>
         </div>
       </section>
 
-      {/* من نحن: أكثر من مجرد سجل مصروفات */}
-      <section style={{ padding: '48px 24px', maxWidth: '1000px', margin: '0 auto' }}>
-        <h3 style={{ fontSize: '14px', color: '#D4AF37', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>من نحن</h3>
-        <h2 style={{ fontSize: '28px', color: '#FFFFFF', marginBottom: '20px', fontWeight: 'bold' }}>أكثر من مجرد سجل مصروفات</h2>
-        <p style={{ fontSize: '15px', lineHeight: '1.8', color: '#D1D5DB', backgroundColor: 'rgba(3, 20, 15, 0.4)', padding: '24px', borderRadius: '12px', borderRight: '4px solid #D4AF37', margin: 0 }}>
-          "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل هويته البصرية الراقية وبنيته التقنية المتقدمة، نجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
-        </p>
-      </section>
-
-      {/* المرحلة الحالية: التأسيس الذكي والآمن */}
-      <section style={{ padding: '48px 24px', backgroundColor: 'rgba(3, 20, 15, 0.6)', margin: '24px auto', maxWidth: '1000px', borderRadius: '16px', border: '1px solid rgba(212, 175, 55, 0.15)' }}>
-        <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 'bold', textTransform: 'uppercase' }}>المرحلة الحالية</span>
-        <h3 style={{ fontSize: '26px', color: '#FFFFFF', margin: '8px 0 12px 0', fontWeight: 'bold' }}>التأسيس الذكي والآمن</h3>
-        <p style={{ fontSize: '15px', color: '#9CA3AF', marginBottom: '28px' }}>حجر الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-          <div style={{ padding: '20px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '16px', marginBottom: '8px' }}>عزل تام للبيانات</h4>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>بيئة سحابية محمية ومستقلة لكل مستخدم، تضمن سرية معلوماته المالية.</p>
-          </div>
-          <div style={{ padding: '20px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '16px', marginBottom: '8px' }}>إدارة مرنة للحركات</h4>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
-          </div>
-          <div style={{ padding: '20px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '16px', marginBottom: '8px' }}>تصنيفات عملية</h4>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>مصممة لتناسب الاحتياجات الواقعية: أجور، إيجار، مصاريف تشغيلية، واحتياجات يومية.</p>
-          </div>
-          <div style={{ padding: '20px', backgroundColor: '#03140F', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '16px', marginBottom: '8px' }}>تجربة ويب تقدمية (PWA)</h4>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>تطبيق سريع وخفيف يعمل من المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* لمحة من الداخل */}
-      <section style={{ padding: '48px 24px', maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
-        <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 'bold', textTransform: 'uppercase' }}>لمحة من الداخل</span>
-        <h3 style={{ fontSize: '26px', color: '#FFFFFF', margin: '8px 0 12px 0', fontWeight: 'bold' }}>هيك بيبدو "خزنتي" فعليًا</h3>
-        <p style={{ fontSize: '15px', color: '#9CA3AF', marginBottom: '24px', maxWidth: '700px', margin: '0 auto 24px auto' }}>
-          لقطة حقيقية من لوحة التحكم — متصلة بقاعدة بيانات سحابية، وتعرض السيولة والمصاريف لحظة بلحظة.
-        </p>
-        <div style={{ padding: '32px', backgroundColor: 'rgba(3, 20, 15, 0.8)', borderRadius: '16px', border: '1px dashed rgba(212, 175, 55, 0.4)', color: '#D4AF37', fontWeight: 'bold' }}>
-          لوحة التحكم الرئيسية — نسخة قيد التطوير
-        </div>
-      </section>
-
-      {/* طموحات المستقبل */}
-      <section style={{ padding: '48px 24px', maxWidth: '1000px', margin: '0 auto' }}>
-        <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 'bold', textTransform: 'uppercase' }}>طموحات المستقبل</span>
-        <h3 style={{ fontSize: '26px', color: '#FFFFFF', margin: '8px 0 24px 0', fontWeight: 'bold' }}>نحو آفاق مالية متقدمة</h3>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          <div style={{ padding: '24px', backgroundColor: 'rgba(3, 20, 15, 0.5)', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '16px', marginBottom: '8px' }}>المرحلة التوسعية (Pro)</h4>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>شاشة أسعار العملات والمؤشرات المالية المباشرة، مع تقارير ورسوم بيانية تحليلية دقيقة.</p>
-          </div>
-          <div style={{ padding: '24px', backgroundColor: 'rgba(3, 20, 15, 0.5)', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-            <h4 style={{ color: '#D4AF37', fontSize: '16px', marginBottom: '8px' }}>المرحلة الاحترافية (Business)</h4>
-            <p style={{ fontSize: '13px', color: '#9CA3AF', margin: 0, lineHeight: '1.6' }}>أدوات متقدمة لإدارة السيولة والتدفقات النقدية، تلبي احتياجات التجار والمستقلين.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ختامية دعوية */}
+      {/* ختامية */}
       <section style={{ padding: '48px 24px', textAlign: 'center' }}>
         <h3 style={{ fontSize: '20px', color: '#FFFFFF', fontWeight: 'bold', margin: 0 }}>
-          تحكم بأموالك اليوم.. وابنِ مستقبلك المالي بثقة.
+          اجعل مالك يتحرك بذكاء، وثقة، وأمان تام.
         </h3>
       </section>
 
@@ -178,9 +108,9 @@ export default function App({ onLoginSuccess }) {
         >
           سياسة الخصوصية وأمان البيانات
         </button>
-        <p style={{ margin: '0 0 6px 0', color: '#D4AF37', fontWeight: 'bold', fontSize: '16px' }}>خزنتي</p>
-        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#9CA3AF' }}>KHZNTI — بوابتك الذكية للتحكم المالي والأمان السحابي</p>
-        <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#D1D5DB' }}>تصميم وتطوير <strong style={{ color: '#D4AF37' }}>أثر</strong> — استوديو رقمي</p>
+        <p style={{ margin: '0 0 6px 0', color: '#D4AF37', fontWeight: 'bold', fontSize: '16px' }}>KHZNTI • خزنتي</p>
+        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#9CA3AF' }}>خزنتي - بوابتك الذكية للتحكم المالي والأمان السحابي</p>
+        <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#D1D5DB' }}>تصميم وتطوير <strong style={{ color: '#D4AF37' }}>أثر لاستوديو رقمي</strong></p>
         <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#6B7280' }}>© 2026 أثر. جميع الحقوق محفوظة.</p>
       </footer>
 
@@ -190,7 +120,6 @@ export default function App({ onLoginSuccess }) {
           <div style={{ backgroundColor: '#041E15', borderRadius: '16px', border: '1px solid rgba(212, 175, 55, 0.4)', width: '90%', maxWidth: '420px', padding: '36px', position: 'relative' }}>
             <button onClick={() => setShowLoginModal(false)} style={{ position: 'absolute', top: '16px', left: '16px', background: 'none', border: 'none', color: '#D4AF37', fontSize: '20px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             <h3 style={{ fontSize: '24px', color: '#D4AF37', margin: '0 0 6px 0', textAlign: 'center', fontWeight: '900' }}>تسجيل الدخول</h3>
-            <p style={{ fontSize: '13px', color: '#A3B899', textAlign: 'center', marginBottom: '20px' }}>مرحباً بك مجدداً في بوابة خزنتي المالية</p>
             <form onSubmit={handleLoginSubmit}>
               <input type="email" required placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '16px', backgroundColor: '#03140F', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px', color: '#FFF', boxSizing: 'border-box' }} />
               <input type="password" required placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '24px', backgroundColor: '#03140F', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px', color: '#FFF', boxSizing: 'border-box' }} />
@@ -207,11 +136,7 @@ export default function App({ onLoginSuccess }) {
             <button onClick={() => setShowPrivacyModal(false)} style={{ position: 'absolute', top: '16px', left: '16px', background: 'none', border: 'none', color: '#D4AF37', fontSize: '20px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
             <h3 style={{ fontSize: '22px', color: '#D4AF37', margin: '0 0 16px 0', textAlign: 'center', fontWeight: '900' }}>سياسة الخصوصية وأمان البيانات</h3>
             <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#D1D5DB' }}>
-              <p style={{ marginBottom: '12px' }}>في <strong style={{ color: '#D4AF37' }}>خِزنتي (KHZNTI)</strong>، نلتزم بحماية سرية وأمان بياناتك المالية بأعلى معايير التشفير والتقنية السحابية.</p>
-              <h4 style={{ color: '#A3B899', fontSize: '15px', margin: '14px 0 6px 0' }}>1. سرية البيانات</h4>
-              <p style={{ marginBottom: '12px' }}>جميع الحركات النقدية وسجلات المصروفات محمية بالكامل بنظام أمان متطور، ولا يتم مشاركة أي معلومات مع طرف ثالث.</p>
-              <h4 style={{ color: '#A3B899', fontSize: '15px', margin: '14px 0 6px 0' }}>2. حقوق الملكية</h4>
-              <p style={{ margin: 0 }}>جميع الحقوق محفوظة © 2026 أثر. التصميم والهوية البصرية خاضعون لحماية حقوق الملكية الفكرية.</p>
+              <p>جميع الحركات النقدية وسجلات المصروفات محمية بالكامل بنظام أمان متطور.</p>
             </div>
             <div style={{ textAlign: 'center', marginTop: '24px' }}>
               <button onClick={() => setShowPrivacyModal(false)} style={{ padding: '10px 26px', backgroundColor: '#D4AF37', color: '#041E15', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>إغلاق</button>
