@@ -801,28 +801,22 @@ export default function App() {
                 {currencySymbol} {Number(d.amount).toFixed(2)}
               </span>
               <button
-                onClick={() => {
-                  if (typeof deleteDebt === 'function') {
-                    deleteDebt(d.id);
-                  } else if (typeof removeDebt === 'function') {
-                    removeDebt(d.id);
-                  }
-                }}
-                title="حذف الدين"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#ff6b6b"
-                }}
-              >
-                🗑️
-              </button>
+  onClick={() => setDebts(debts.filter(item => item.id !== d.id))}
+  title="حذف الدين"
+  style={{
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "16px",
+    padding: "4px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#ff6b6b"
+  }}
+>
+  🗑️
+</button>
             </div>
           </div>
         ))
