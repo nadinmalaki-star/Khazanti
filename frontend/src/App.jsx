@@ -1,3 +1,4 @@
+JavaScript
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase.js";
 import './App.css';
@@ -64,7 +65,7 @@ const THEMES = {
  
 // معلومات التواصل — بدّلي القيم هون بمعلوماتك الحقيقية بضغطة واحدة
 const CONTACT_EMAIL = "support@khznti.app";
-const CONTACT_WHATSAPP_DISPLAY = "0598168757"; 
+const CONTACT_WHATSAPP_DISPLAY = "0598168757";
 const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
  
 const REMEMBER_EMAIL_KEY = "khznti_remembered_email";
@@ -158,9 +159,6 @@ function Icon({ name, size = 16, color }) {
   }
 }
  
-const isIncome = (type) => ["دخل", "مبيعات", "إيراد"].includes(type);
-const isExpense = (type) => ["مصروف", "شراء"].includes(type);
-
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
@@ -246,8 +244,8 @@ export default function App() {
       transactions
         .filter((t) => !t.account || t.account === "الصندوق (كاش)")
         .reduce((sum, t) => {
-          if (isIncome(t.type)) return sum + Number(t.amount);
-          if (isExpense(t.type)) return sum - Number(t.amount); // تم التعديل للطرح هنا
+          if (t.type === "دخل" || t.type === "مبيعات") return sum + Number(t.amount);
+          if (t.type === "مصروف" || t.type === "شراء") return sum - Number(t.amount);
           return sum;
         }, 0) * exchangeRate,
     [transactions, exchangeRate]
@@ -258,8 +256,8 @@ export default function App() {
       transactions
         .filter((t) => t.account === "حساب البنك")
         .reduce((sum, t) => {
-          if (isIncome(t.type)) return sum + Number(t.amount);
-          if (isExpense(t.type)) return sum - Number(t.amount); // تم التعديل للطرح هنا
+          if (t.type === "دخل" || t.type === "مبيعات") return sum + Number(t.amount);
+          if (t.type === "مصروف" || t.type === "شراء") return sum - Number(t.amount);
           return sum;
         }, 0) * exchangeRate,
     [transactions, exchangeRate]
@@ -272,7 +270,7 @@ export default function App() {
     if (transactions.length < 2) return null;
     const byDate = {};
     transactions.forEach((t) => {
-      const signedAmt = isIncome(t.type) ? Number(t.amount) : isExpense(t.type) ? -Number(t.amount) : 0;
+      const signedAmt = (t.type === "دخل" || t.type === "مبيعات") ? Number(t.amount) : -Number(t.amount);
       byDate[t.date] = (byDate[t.date] || 0) + signedAmt;
     });
     const dates = Object.keys(byDate).sort();
@@ -313,7 +311,7 @@ export default function App() {
   // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية
   const categoryBreakdown = useMemo(() => {
     const allExpensesTotal = transactions
-      .filter((t) => isExpense(t.type))
+      .filter((t) => t.type === "مصروف" || t.type === "شراء")
       .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
  
     return CATEGORIES.filter((c) => c.type === "مصروف")
@@ -449,7 +447,7 @@ export default function App() {
       setDebtDueDate("");
     }
   }
-  
+ 
   async function removeTransaction(id) {
     const itemToDelete = transactions.find(t => t.id === id);
     if (!itemToDelete) return;
@@ -501,7 +499,6 @@ export default function App() {
         if (error) throw error;
  
         if (data.session) {
-          // تذكر الإيميل بس (مش كلمة المرور إطلاقًا) حسب اختيار المستخدمة
           if (rememberEmail) {
             localStorage.setItem(REMEMBER_EMAIL_KEY, loginEmail);
           } else {
@@ -683,7 +680,10 @@ export default function App() {
           KHZNTI — بوابتك الذكية للتحكم المالي والأمان السحابي<br />
           تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
         </div>
- 
+      </div>
+);
+  }
+}
         {showLoginModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
