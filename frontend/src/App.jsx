@@ -1,8 +1,7 @@
-JavaScript
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase.js";
 import './App.css';
- 
+
 // ------------------------------------------------------------------
 // فئات موسّعة (١١ مصروف + ٤ دخل) — حسب ما اتفقنا عليه.
 // ملاحظة: الحركات القديمة المسجّلة بفئات قديمة (مثلاً "طعام" بدل
@@ -26,13 +25,13 @@ const CATEGORIES = [
   { key: "عمولات", icon: "◎", type: "دخل" },
   { key: "دخل إضافي", icon: "✧", type: "دخل" },
 ];
- 
+
 const CURRENCIES = {
   ILS: { symbol: "₪", name: "شيكل", rate: 1 },
   USD: { symbol: "$", name: "دولار", rate: 0.27 },
   JOD: { symbol: "د.أ", name: "دينار", rate: 0.19 },
 };
- 
+
 const THEMES = {
   emerald: {
     name: "أخضر مصرفي",
@@ -62,14 +61,14 @@ const THEMES = {
     text: "#fef3c7",
   },
 };
- 
+
 // معلومات التواصل — بدّلي القيم هون بمعلوماتك الحقيقية بضغطة واحدة
 const CONTACT_EMAIL = "support@khznti.app";
-const CONTACT_WHATSAPP_DISPLAY = "0598168757";
-const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
- 
+const CONTACT_WHATSAPP_DISPLAY = "+970 59 000 0000";
+const CONTACT_WHATSAPP_LINK = "https://wa.me/970590000000";
+
 const REMEMBER_EMAIL_KEY = "khznti_remembered_email";
- 
+
 function Icon({ name, size = 16, color }) {
   const common = {
     width: size,
@@ -158,7 +157,7 @@ function Icon({ name, size = 16, color }) {
       return null;
   }
 }
- 
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
@@ -171,35 +170,35 @@ export default function App() {
   const [loginError, setLoginError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState("");
   const [rememberEmail, setRememberEmail] = useState(true);
- 
+
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
- 
+
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("طعام ومشروبات");
   const [selectedAccount, setSelectedAccount] = useState("الصندوق (كاش)");
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
   const [error, setError] = useState("");
- 
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currency, setCurrency] = useState("ILS");
   const [themeKey, setThemeKey] = useState("emerald");
   const [activeTab, setActiveTab] = useState("transactions");
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
- 
+
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
- 
+
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [debtName, setDebtName] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
   const [debtType, setDebtType] = useState("دين له");
   const [debtDueDate, setDebtDueDate] = useState("");
- 
+
   const currentTheme = THEMES[themeKey];
- 
+
   // تذكر الإيميل — تعبئة تلقائية من آخر مرة (بدون كلمة المرور إطلاقًا)
   useEffect(() => {
     const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
@@ -208,7 +207,7 @@ export default function App() {
       setRememberEmail(true);
     }
   }, []);
- 
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -219,7 +218,7 @@ export default function App() {
         setLoading(false);
       }
     });
- 
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setIsLoggedIn(true);
@@ -232,13 +231,13 @@ export default function App() {
         setDebts([]);
       }
     });
- 
+
     return () => subscription.unsubscribe();
   }, []);
- 
+
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
- 
+
   const cashBalance = useMemo(
     () =>
       transactions
@@ -250,7 +249,7 @@ export default function App() {
         }, 0) * exchangeRate,
     [transactions, exchangeRate]
   );
- 
+
   const bankBalance = useMemo(
     () =>
       transactions
@@ -262,9 +261,9 @@ export default function App() {
         }, 0) * exchangeRate,
     [transactions, exchangeRate]
   );
- 
+
   const totalBalance = cashBalance + bankBalance;
- 
+
   // اتجاه الرصيد آخر أيام (Sparkline) — بيظهر بس لو في بيانات كافية
   const trendPoints = useMemo(() => {
     if (transactions.length < 2) return null;
@@ -287,11 +286,11 @@ export default function App() {
       raw: v,
     }));
   }, [transactions]);
- 
+
   const trendUp = trendPoints && trendPoints.length > 1
     ? trendPoints[trendPoints.length - 1].raw >= trendPoints[0].raw
     : null;
- 
+
   // الديون القريبة أو المتأخرة (لعرض شارة التذكير)
   const upcomingDebts = useMemo(() => {
     const today = new Date();
@@ -307,13 +306,13 @@ export default function App() {
       .filter((d) => d.diffDays <= 3)
       .sort((a, b) => a.diffDays - b.diffDays);
   }, [debts]);
- 
+
   // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية
   const categoryBreakdown = useMemo(() => {
     const allExpensesTotal = transactions
       .filter((t) => t.type === "مصروف" || t.type === "شراء")
       .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
- 
+
     return CATEGORIES.filter((c) => c.type === "مصروف")
       .map((cat) => {
         const catTotal = transactions
@@ -325,9 +324,9 @@ export default function App() {
       .filter((c) => c.catTotal > 0)
       .sort((a, b) => b.catTotal - a.catTotal);
   }, [transactions, exchangeRate]);
- 
+
   const visibleCategories = showAllCategories ? categoryBreakdown : categoryBreakdown.slice(0, 5);
- 
+
   function exportToCSV() {
     if (transactions.length === 0) {
       alert("لا توجد حركات للتصدير");
@@ -344,7 +343,7 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
   }
- 
+
   async function fetchData() {
     setLoading(true);
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -352,41 +351,41 @@ export default function App() {
       setLoading(false);
       return;
     }
- 
+
     const { data: txData } = await supabase
       .from("transactions")
       .select("*")
       .eq("user_id", user.id)
       .order("id", { ascending: false });
- 
+
     const { data: debtData } = await supabase
       .from("debts")
       .select("*")
       .eq("user_id", user.id)
       .order("id", { ascending: false });
- 
+
     setTransactions(txData || []);
     setDebts(debtData || []);
     setLoading(false);
   }
- 
+
   async function addTransaction() {
     const num = parseFloat(amount);
     if (!num || num <= 0) {
       setError("أدخلي مبلغ صحيح");
       return;
     }
- 
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       setError("يجب تسجيل الدخول أولاً");
       return;
     }
- 
+
     const baseAmount = num / exchangeRate;
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
- 
+
     const newRecord = {
       type: finalType,
       amount: baseAmount,
@@ -395,12 +394,12 @@ export default function App() {
       date: transactionDate || new Date().toISOString().split("T")[0],
       user_id: user.id
     };
- 
+
     const { data, error: dbError } = await supabase
       .from("transactions")
       .insert([newRecord])
       .select();
- 
+
     if (dbError) {
       setError("فشل الحفظ: " + dbError.message);
     } else if (data) {
@@ -409,20 +408,20 @@ export default function App() {
       setError("");
     }
   }
- 
+
   async function handleSaveDebt() {
     const num = parseFloat(debtAmount);
     if (!debtName.trim() || !num || num <= 0) {
       alert("الرجاء إدخال اسم الشخص والمبلغ بشكل صحيح");
       return;
     }
- 
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       alert("يجب تسجيل الدخول أولاً");
       return;
     }
- 
+
     const baseAmount = num / exchangeRate;
     const newDebt = {
       name: debtName,
@@ -431,13 +430,15 @@ export default function App() {
       due_date: debtDueDate || null,
       user_id: user.id
     };
- 
+
     const { data, error: dbError } = await supabase
       .from("debts")
       .insert([newDebt])
       .select();
- 
+
     if (dbError) {
+      // لو ظهر خطأ يذكر عمود due_date، لازم تُضاف عمود جديدة بجدول debts
+      // بقاعدة البيانات أولًا (راجعي ملاحظة SQL بالأسفل).
       alert("فشل حفظ الدين: " + dbError.message);
     } else {
       if (data) setDebts(prev => [data[0], ...prev]);
@@ -447,14 +448,14 @@ export default function App() {
       setDebtDueDate("");
     }
   }
- 
+
   async function removeTransaction(id) {
     const itemToDelete = transactions.find(t => t.id === id);
     if (!itemToDelete) return;
- 
+
     setTransactions(transactions.filter((t) => t.id !== id));
     setDeletedItem(itemToDelete);
- 
+
     if (undoTimer) clearTimeout(undoTimer);
     const timer = setTimeout(async () => {
       await supabase.from("transactions").delete().eq("id", id);
@@ -462,7 +463,7 @@ export default function App() {
     }, 5000);
     setUndoTimer(timer);
   }
- 
+
   async function undoDelete() {
     if (!deletedItem) return;
     if (undoTimer) clearTimeout(undoTimer);
@@ -470,35 +471,36 @@ export default function App() {
     setDeletedItem(null);
     setUndoTimer(null);
   }
- 
+
   async function removeDebt(id) {
     const previousDebts = debts;
     setDebts(debts.filter((d) => d.id !== id));
- 
+
     const { error: dbError } = await supabase.from("debts").delete().eq("id", id);
- 
+
     if (dbError) {
       alert("فشل حذف الدين: " + dbError.message);
       setDebts(previousDebts);
     }
   }
- 
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
     setLoginSuccess("");
     setLoading(true);
- 
+
     try {
       if (authMode === "login") {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: loginEmail,
           password: loginPassword,
         });
- 
+
         if (error) throw error;
- 
+
         if (data.session) {
+          // تذكر الإيميل بس (مش كلمة المرور إطلاقًا) حسب اختيار المستخدمة
           if (rememberEmail) {
             localStorage.setItem(REMEMBER_EMAIL_KEY, loginEmail);
           } else {
@@ -513,9 +515,9 @@ export default function App() {
           email: loginEmail,
           password: loginPassword,
         });
- 
+
         if (error) throw error;
- 
+
         if (data.user) {
           setLoginSuccess("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
           setAuthMode("login");
@@ -527,7 +529,7 @@ export default function App() {
       setLoading(false);
     }
   };
- 
+
   // الشاشة الترحيبية — بدون أي تغيير على المحتوى الأصلي، فقط إضافة "تواصل معنا"
   if (!isLoggedIn) {
     return (
@@ -536,7 +538,7 @@ export default function App() {
           @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
           * { box-sizing: border-box; }
         `}</style>
- 
+
         <div style={{ width: "100%", maxWidth: "900px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px" }}>
           <div style={{ background: "#16302d", border: "1px solid #274442", color: "#c9a961", padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 }}>
             ✦ بوابة مالية ذكية
@@ -556,7 +558,7 @@ export default function App() {
             </button>
           </div>
         </div>
- 
+
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
           <div style={{ width: "110px", height: "110px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #D4AF37", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.6)", overflow: "hidden" }}>
             <img
@@ -568,7 +570,7 @@ export default function App() {
           <h1 style={{ fontSize: "50px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
           <p style={{ fontSize: "18px", color: "#c9a961", fontWeight: 500, margin: 0 }}>بوابتك الذكية للتحكم المالي والأمان السحابي</p>
         </div>
- 
+
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.3)" }}>
           <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
           <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>أكثر من مجرد سجل مصروفات</h2>
@@ -576,14 +578,14 @@ export default function App() {
             "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل هويته البصرية الراقية وبنيته التقنية المتقدمة، نجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
           </p>
         </div>
- 
+
         <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>الهوية البصرية</div>
             <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 8px" }}>لغة الألوان والرمز</h2>
             <p style={{ fontSize: "14px", color: "#c9a961", opacity: 0.9, margin: 0 }}>هوية بصرية بطابع فاخر ومصرفي — كل لون ورمز اختير ليعكس الموثوقية والأمان.</p>
           </div>
- 
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px", marginBottom: "25px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
               <h3 style={{ fontSize: "17px", margin: "6px 0", color: "#f2ede2" }}>الأخضر الداكن</h3>
@@ -594,7 +596,7 @@ export default function App() {
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى الفخامة والقيمة العالية والاحترافية، ويُستخدم لإبراز العناصر الأساسية.</p>
             </div>
           </div>
- 
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
               <h3 style={{ fontSize: "17px", margin: "0 0 8px", color: "#D4AF37" }}>قرص الخزنة الدائري</h3>
@@ -610,14 +612,14 @@ export default function App() {
             </div>
           </div>
         </div>
- 
+
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>المرحلة الحالية</div>
             <h2 style={{ fontSize: "24px", fontWeight: 900, margin: 0 }}>التأسيس الذكي والآمن</h2>
             <p style={{ fontSize: "14px", color: "#c9a961", opacity: 0.9, marginTop: "5px" }}>حجر الأساس لمنتج حقيقي يلبي الاحتياجات الأساسية بأعلى معايير الجودة والأمان.</p>
           </div>
- 
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>عزل تام للبيانات</h4>
@@ -637,13 +639,13 @@ export default function App() {
             </div>
           </div>
         </div>
- 
+
         <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
           <div style={{ textAlign: "center", marginBottom: "25px" }}>
             <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>طموحات المستقبل</div>
             <h2 style={{ fontSize: "24px", fontWeight: 900, margin: 0 }}>نحو آفاق مالية متقدمة</h2>
           </div>
- 
+
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "25px" }}>
               <div style={{ background: "#D4AF37", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة التوسعية Pro</div>
@@ -655,10 +657,10 @@ export default function App() {
             </div>
           </div>
         </div>
- 
+
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "22px", fontWeight: 900, marginBottom: "15px" }}>تحكم بأموالك اليوم.. وابنِ مستقبلك المالي بثقة.</h2>
- 
+
           <div>
             <button
               onClick={() => setShowPrivacyModal(true)}
@@ -675,19 +677,16 @@ export default function App() {
             </button>
           </div>
         </div>
- 
+
         <div style={{ textAlign: "center", opacity: 0.6, fontSize: "12px", borderTop: "1px solid #274442", width: "100%", maxWidth: "850px", paddingTop: "20px" }}>
           KHZNTI — بوابتك الذكية للتحكم المالي والأمان السحابي<br />
           تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
         </div>
-      </div>
-);
-  }
-}
+
         {showLoginModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
- 
+
               <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
                 <button type="button" onClick={() => setAuthMode("login")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#D4AF37" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
                   تسجيل الدخول
@@ -696,14 +695,14 @@ export default function App() {
                   حساب جديد
                 </button>
               </div>
- 
+
               <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "18px" }}>
                 {authMode === "login" ? "تسجيل الدخول إلى حسابك" : "إنشاء حساب جديد"}
               </h3>
- 
+
               {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{loginError}</div>}
               {loginSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{loginSuccess}</div>}
- 
+
               <form onSubmit={handleAuthSubmit}>
                 <div style={{ marginBottom: "15px" }}>
                   <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
@@ -727,7 +726,7 @@ export default function App() {
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
                   />
                 </div>
- 
+
                 {authMode === "login" && (
                   <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", marginBottom: "20px", cursor: "pointer", opacity: 0.85 }}>
                     <input
@@ -739,7 +738,7 @@ export default function App() {
                     تذكر إيميلي على هذا الجهاز
                   </label>
                 )}
- 
+
                 <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
                   <button type="button" onClick={() => setShowLoginModal(false)} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
                   <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
@@ -750,7 +749,7 @@ export default function App() {
             </div>
           </div>
         )}
- 
+
         {showPrivacyModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
@@ -764,23 +763,23 @@ export default function App() {
             </div>
           </div>
         )}
- 
+
         {showContactModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "380px", color: "#f2ede2" }}>
               <h3 style={{ margin: "0 0 6px", color: "#D4AF37" }}>تواصل معنا</h3>
               <p style={{ fontSize: "12.5px", opacity: 0.75, margin: "0 0 20px" }}>نسعد بتواصلك معنا لأي استفسار أو اقتراح</p>
- 
+
               <div style={{ background: "#0e1a1a", border: "1px solid #274442", borderRadius: "12px", padding: "14px", marginBottom: "10px", display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ fontSize: "13px", opacity: 0.6 }}>البريد الإلكتروني</span>
                 <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#f2ede2", fontWeight: 700, fontSize: "14px", marginRight: "auto", textDecoration: "none" }}>{CONTACT_EMAIL}</a>
               </div>
- 
+
               <div style={{ background: "#0e1a1a", border: "1px solid #274442", borderRadius: "12px", padding: "14px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ fontSize: "13px", opacity: 0.6 }}>واتساب</span>
                 <a href={CONTACT_WHATSAPP_LINK} target="_blank" rel="noreferrer" style={{ color: "#f2ede2", fontWeight: 700, fontSize: "14px", marginRight: "auto", textDecoration: "none" }}>{CONTACT_WHATSAPP_DISPLAY}</a>
               </div>
- 
+
               <div style={{ textAlign: "left" }}>
                 <button onClick={() => setShowContactModal(false)} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 20px", borderRadius: "8px", cursor: "pointer" }}>إغلاق</button>
               </div>
@@ -790,16 +789,16 @@ export default function App() {
       </div>
     );
   }
- 
+
   const TABS = [
     { id: "transactions", label: "العمليات", icon: "chart" },
     { id: "debts", label: "الديون", icon: "scale" },
     { id: "wallets", label: "الخزائن", icon: "vault" },
     { id: "contact", label: "تواصل", icon: "mail" },
   ];
- 
+
   const avatarInitials = userEmail ? userEmail.slice(0, 2).toUpperCase() : "؟؟";
- 
+
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
       <style>{`
@@ -807,9 +806,9 @@ export default function App() {
         * { box-sizing: border-box; }
         select option { background-color: #16302d !important; color: #f2ede2 !important; }
       `}</style>
- 
+
       <div style={{ width: "100%", maxWidth: 380 }}>
- 
+
         {/* الشريط العلوي — محفوظ بالضبط زي ما كان */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -830,7 +829,7 @@ export default function App() {
               ))}
             </div>
           </div>
- 
+
           <div style={{ display: "flex", gap: "6px" }}>
             {Object.keys(CURRENCIES).map((curr) => (
               <button
@@ -843,7 +842,7 @@ export default function App() {
             ))}
           </div>
         </div>
- 
+
         {/* شعار خزنتي + الاسم + أفاتار قابل للضغط (يعرض إيميل الحساب) */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -852,7 +851,7 @@ export default function App() {
             </div>
             <h1 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
           </div>
- 
+
           <div style={{ position: "relative" }}>
             <div
               onClick={() => setShowAvatarMenu(v => !v)}
@@ -868,7 +867,7 @@ export default function App() {
             )}
           </div>
         </div>
- 
+
         {/* شارة تذكير الديون القريبة/المتأخرة */}
         {upcomingDebts.length > 0 && (
           <div style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
@@ -885,14 +884,14 @@ export default function App() {
             </span>
           </div>
         )}
- 
+
         {deletedItem && (
           <div style={{ background: "#D4AF37", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
             <span>تم حذف الحركة. هل تريد التراجع؟</span>
             <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#D4AF37", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع</button>
           </div>
         )}
- 
+
         <div style={{ display: "flex", background: currentTheme.boxBg, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${currentTheme.border}` }}>
           {TABS.map((tab) => (
             <button
@@ -905,7 +904,7 @@ export default function App() {
             </button>
           ))}
         </div>
- 
+
         {/* ============ تبويب العمليات ============ */}
         {activeTab === "transactions" && (
           <>
@@ -914,7 +913,7 @@ export default function App() {
               <div style={{ fontSize: 28, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>
                 {currencySymbol} {totalBalance.toFixed(2)}
               </div>
- 
+
               {trendPoints && trendPoints.length > 1 && (
                 <>
                   <div style={{ fontSize: 11, marginTop: 6, color: trendUp ? "#38a169" : "#e05a5a" }}>
@@ -932,7 +931,7 @@ export default function App() {
                   </svg>
                 </>
               )}
- 
+
               <div style={{ display: "flex", justifyContent: "space-around", marginTop: 12, fontSize: 11, opacity: 0.8 }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
                   <Icon name="wallet" size={12} /> الكاش:{" "}
@@ -944,11 +943,11 @@ export default function App() {
                 </div>
               </div>
             </div>
- 
+
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>تسجيل عملية جديدة</div>
               {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
- 
+
               <input
                 type="number"
                 value={amount}
@@ -956,7 +955,7 @@ export default function App() {
                 placeholder="المبلغ..."
                 style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
               />
- 
+
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
                   {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.key}</option>)}
@@ -966,17 +965,17 @@ export default function App() {
                   <option value="حساب البنك">حساب البنك</option>
                 </select>
               </div>
- 
+
               <input
                 type="date"
                 value={transactionDate}
                 onChange={(e) => setTransactionDate(e.target.value)}
                 style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
               />
- 
+
               <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
             </div>
- 
+
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                 <Icon name="chart" size={14} /> المصاريف حسب الفئة — هذا الشهر
@@ -1009,7 +1008,7 @@ export default function App() {
                 </>
               )}
             </div>
- 
+
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>سجل الحركات</div>
@@ -1020,7 +1019,7 @@ export default function App() {
                   <Icon name="download" size={12} /> تصدير Excel
                 </button>
               </div>
- 
+
               <input
                 type="text"
                 value={searchQuery}
@@ -1028,7 +1027,7 @@ export default function App() {
                 placeholder="بحث في الحركات..."
                 style={{ width: "100%", padding: "8px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box", fontSize: "12px" }}
               />
- 
+
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto" }}>
                 {transactions.length === 0 ? (
                   <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد حركات مسجلة.</div>
@@ -1054,7 +1053,7 @@ export default function App() {
             </div>
           </>
         )}
- 
+
         {/* ============ تبويب الديون ============ */}
         {activeTab === "debts" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
@@ -1067,7 +1066,7 @@ export default function App() {
                 + إضافة دين جديد
               </button>
             </div>
- 
+
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {debts.length === 0 ? (
                 <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
@@ -1117,7 +1116,7 @@ export default function App() {
             </div>
           </div>
         )}
- 
+
         {/* ============ تبويب الخزائن ============ */}
         {activeTab === "wallets" && (
           <div>
@@ -1127,7 +1126,7 @@ export default function App() {
                 {currencySymbol} {totalBalance.toFixed(2)}
               </div>
             </div>
- 
+
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>إدارة الخزائن والحسابات</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1142,7 +1141,7 @@ export default function App() {
                     {currencySymbol} {((cashBalance || 0)).toFixed(2)}
                   </span>
                 </div>
- 
+
                 <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: "14px", display: "flex", alignItems: "center", gap: 6 }}>
@@ -1158,7 +1157,7 @@ export default function App() {
             </div>
           </div>
         )}
- 
+
         {/* ============ تبويب تواصل ============ */}
         {activeTab === "contact" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
@@ -1166,7 +1165,7 @@ export default function App() {
               <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}>تواصل معنا</div>
               <div style={{ fontSize: 12, opacity: 0.7 }}>عندك سؤال أو اقتراح؟ تواصلي معنا مباشرة من هون.</div>
             </div>
- 
+
             <a href={`mailto:${CONTACT_EMAIL}`} style={{ textDecoration: "none", color: "inherit" }}>
               <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
                 <Icon name="mail" size={18} color="#D4AF37" />
@@ -1176,7 +1175,7 @@ export default function App() {
                 </div>
               </div>
             </a>
- 
+
             <a href={CONTACT_WHATSAPP_LINK} target="_blank" rel="noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
               <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 18 }}>📱</span>
@@ -1188,12 +1187,12 @@ export default function App() {
             </a>
           </div>
         )}
- 
+
         {showAddDebtModal && (
           <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "400px", color: currentTheme.text }}>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 15 }}>إضافة دين جديد</div>
- 
+
               <div style={{ marginBottom: 10 }}>
                 <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>اسم الشخص / الجهة</label>
                 <input
@@ -1204,7 +1203,7 @@ export default function App() {
                   style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
                 />
               </div>
- 
+
               <div style={{ marginBottom: 10 }}>
                 <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>المبلغ</label>
                 <input
@@ -1215,7 +1214,7 @@ export default function App() {
                   style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
                 />
               </div>
- 
+
               <div style={{ marginBottom: 10 }}>
                 <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>موعد الاستحقاق (اختياري)</label>
                 <input
@@ -1225,7 +1224,7 @@ export default function App() {
                   style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
                 />
               </div>
- 
+
               <div style={{ marginBottom: 15 }}>
                 <label style={{ fontSize: 12, display: "block", marginBottom: 5 }}>نوع الدين</label>
                 <select
@@ -1237,7 +1236,7 @@ export default function App() {
                   <option value="دين عليه">دين عليه (فلوس للناس عندي)</option>
                 </select>
               </div>
- 
+
               <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 <button
                   onClick={() => setShowAddDebtModal(false)}
@@ -1255,9 +1254,8 @@ export default function App() {
             </div>
           </div>
         )}
- 
+
       </div>
     </div>
   );
 }
- 
