@@ -64,8 +64,8 @@ const THEMES = {
 
 // معلومات التواصل — بدّلي القيم هون بمعلوماتك الحقيقية بضغطة واحدة
 const CONTACT_EMAIL = "support@khznti.app";
-const CONTACT_WHATSAPP_DISPLAY = "+970 59 000 0000";
-const CONTACT_WHATSAPP_LINK = "https://wa.me/970590000000";
+const CONTACT_WHATSAPP_DISPLAY = "+97059816875";
+const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
 
 const REMEMBER_EMAIL_KEY = "khznti_remembered_email";
 
@@ -266,26 +266,44 @@ export default function App() {
 
   // اتجاه الرصيد آخر أيام (Sparkline) — بيظهر بس لو في بيانات كافية
   const trendPoints = useMemo(() => {
-    if (transactions.length < 2) return null;
-    const byDate = {};
-    transactions.forEach((t) => {
-      const signedAmt = (t.type === "دخل" || t.type === "مبيعات") ? Number(t.amount) : -Number(t.amount);
-      byDate[t.date] = (byDate[t.date] || 0) + signedAmt;
-    });
-    const dates = Object.keys(byDate).sort();
-    if (dates.length < 2) return null;
-    let running = 0;
-    const cumulative = dates.map((d) => { running += byDate[d]; return running; });
-    const last = cumulative.slice(-7);
-    const min = Math.min(...last);
-    const max = Math.max(...last);
-    const range = max - min || 1;
-    return last.map((v, i) => ({
-      x: (i / ((last.length - 1) || 1)) * 100,
-      y: 30 - ((v - min) / range) * 26,
-      raw: v,
-    }));
-  }, [transactions]);
+  if (transactions.length < 2) return null;
+
+  const byDate = {};
+
+  transactions.forEach((t) => {
+    let signedAmt = 0;
+
+    if (t.type === "دخل" || t.type === "مبيعات") {
+      signedAmt = Number(t.amount);
+    } else if (t.type === "مصروف" || t.type === "شراء") {
+      signedAmt = -Number(t.amount);
+    } else {
+      return;
+    }
+
+    byDate[t.date] = (byDate[t.date] || 0) + signedAmt;
+  });
+
+  const dates = Object.keys(byDate).sort();
+  if (dates.length < 2) return null;
+
+  let running = 0;
+  const cumulative = dates.map((d) => {
+    running += byDate[d];
+    return running;
+  });
+
+  const last = cumulative.slice(-7);
+  const min = Math.min(...last);
+  const max = Math.max(...last);
+  const range = max - min || 1;
+
+  return last.map((v, i) => ({
+    x: (i / ((last.length - 1) || 1)) * 100,
+    y: 30 - ((v - min) / range) * 26,
+    raw: v,
+  }));
+}, [transactions]);
 
   const trendUp = trendPoints && trendPoints.length > 1
     ? trendPoints[trendPoints.length - 1].raw >= trendPoints[0].raw
