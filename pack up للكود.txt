@@ -3,14 +3,14 @@ import { supabase } from "./supabase.js";
 import './App.css';
 
 const CATEGORIES = [
-  { key: "طعام", icon: "◆", type: "مصروف" },
-  { key: "مواصلات", icon: "▲", type: "مصروف" },
-  { key: "فواتير", icon: "■", type: "مصروف" },
-  { key: "تسوق", icon: "●", type: "مصروف" },
-  { key: "مشتريات بضاعة", icon: "◈", type: "مصروف" },
-  { key: "أخرى", icon: "✦", type: "مصروف" },
-  { key: "راتب / أرباح", icon: "◇", type: "دخل" },
-  { key: "مبيعات", icon: "○", type: "دخل" },
+  { key: "طعام", icon: "🍔", type: "مصروف" },
+  { key: "مواصلات", icon: "🚗", type: "مصروف" },
+  { key: "فواتير", icon: "📱", type: "مصروف" },
+  { key: "تسوق", icon: "🛍️", type: "مصروف" },
+  { key: "مشتريات بضاعة", icon: "📦", type: "مصروف" },
+  { key: "أخرى", icon: "✨", type: "مصروف" },
+  { key: "راتب / أرباح", icon: "💼", type: "دخل" },
+  { key: "مبيعات", icon: "🏷️", type: "دخل" },
 ];
 
 const CURRENCIES = {
@@ -48,92 +48,6 @@ const THEMES = {
     text: "#fef3c7",
   },
 };
-
-// ------------------------------------------------------------------
-// نظام أيقونات موحّد بخطوط رفيعة (بدل الإيموجي الملوّن) — كل أيقونة
-// بترث لونها من الأب عبر currentColor، فبتاخد لون الثيم تلقائيًا.
-// ------------------------------------------------------------------
-function Icon({ name, size = 16, color }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: color || "currentColor",
-    strokeWidth: 1.6,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  };
-  switch (name) {
-    case "wallet":
-      return (
-        <svg {...common}>
-          <rect x="2" y="6" width="20" height="14" rx="2" />
-          <line x1="2" y1="10" x2="22" y2="10" />
-          <circle cx="17" cy="14" r="1" />
-        </svg>
-      );
-    case "bank":
-      return (
-        <svg {...common}>
-          <polyline points="3,10 12,4 21,10" />
-          <line x1="4" y1="10" x2="20" y2="10" />
-          <line x1="4" y1="20" x2="20" y2="20" />
-          <line x1="6" y1="10" x2="6" y2="18" />
-          <line x1="10" y1="10" x2="10" y2="18" />
-          <line x1="14" y1="10" x2="14" y2="18" />
-          <line x1="18" y1="10" x2="18" y2="18" />
-        </svg>
-      );
-    case "vault":
-      return (
-        <svg {...common}>
-          <rect x="3" y="4" width="18" height="16" rx="2" />
-          <circle cx="12" cy="12" r="3.2" />
-          <line x1="12" y1="12" x2="12" y2="9.3" />
-        </svg>
-      );
-    case "scale":
-      return (
-        <svg {...common}>
-          <line x1="12" y1="3" x2="12" y2="19" />
-          <line x1="5" y1="7" x2="19" y2="7" />
-          <polyline points="3,13 5,7 7,13" />
-          <polyline points="17,13 19,7 21,13" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-        </svg>
-      );
-    case "chart":
-      return (
-        <svg {...common}>
-          <line x1="4" y1="20" x2="4" y2="12" />
-          <line x1="10" y1="20" x2="10" y2="6" />
-          <line x1="16" y1="20" x2="16" y2="15" />
-          <line x1="4" y1="20" x2="20" y2="20" />
-        </svg>
-      );
-    case "download":
-      return (
-        <svg {...common}>
-          <line x1="12" y1="3" x2="12" y2="14" />
-          <polyline points="7,10 12,15 17,10" />
-          <line x1="4" y1="20" x2="20" y2="20" />
-        </svg>
-      );
-    case "trash":
-      return (
-        <svg {...common}>
-          <line x1="9" y1="4" x2="15" y2="4" />
-          <line x1="4" y1="7" x2="20" y2="7" />
-          <rect x="6" y="7" width="12" height="13" rx="1" />
-          <line x1="10" y1="11" x2="10" y2="17" />
-          <line x1="14" y1="11" x2="14" y2="17" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -282,9 +196,9 @@ export default function App() {
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
 
-    const newRecord = {
-      type: finalType,
-      amount: baseAmount,
+    const newRecord = { 
+      type: finalType, 
+      amount: baseAmount, 
       category,
       account: selectedAccount,
       date: transactionDate || new Date().toISOString().split("T")[0],
@@ -364,21 +278,6 @@ export default function App() {
     setUndoTimer(null);
   }
 
-  // إصلاح: كانت الديون تُحذف من الشاشة بس بدون ما تنحذف فعليًا من قاعدة
-  // البيانات — يعني كانت ترجع تظهر بعد أي refresh. هلق الحذف حقيقي،
-  // وبترجع القائمة القديمة تلقائيًا لو فشل الحذف من السيرفر لأي سبب.
-  async function removeDebt(id) {
-    const previousDebts = debts;
-    setDebts(debts.filter((d) => d.id !== id));
-
-    const { error: dbError } = await supabase.from("debts").delete().eq("id", id);
-
-    if (dbError) {
-      alert("فشل حذف الدين: " + dbError.message);
-      setDebts(previousDebts);
-    }
-  }
-
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
@@ -435,13 +334,13 @@ export default function App() {
             ✦ بوابة مالية ذكية
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
-            <button
+            <button 
               onClick={() => { setAuthMode("login"); setShowLoginModal(true); }}
               style={{ background: "transparent", border: "1px solid #c9a961", color: "#c9a961", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
             >
               تسجيل الدخول
             </button>
-            <button
+            <button 
               onClick={() => { setAuthMode("signup"); setShowLoginModal(true); }}
               style={{ background: "#c9a961", border: "none", color: "#0e1a1a", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
             >
@@ -453,10 +352,10 @@ export default function App() {
         {/* الهيدر الرئيسي والشعار */}
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
           <div style={{ width: "110px", height: "110px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #D4AF37", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.6)", overflow: "hidden" }}>
-            <img
-              src="/logo.png.png"
-              alt="شعار خزنتي"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            <img 
+              src="/logo.png.png" 
+              alt="شعار خزنتي" 
+              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
             />
           </div>
           <h1 style={{ fontSize: "50px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
@@ -589,16 +488,16 @@ export default function App() {
         {showLoginModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
-
+              
               <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
-                <button
+                <button 
                   type="button"
                   onClick={() => setAuthMode("login")}
                   style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#D4AF37" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
                 >
                   تسجيل الدخول
                 </button>
-                <button
+                <button 
                   type="button"
                   onClick={() => setAuthMode("signup")}
                   style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "signup" ? "#D4AF37" : "transparent", color: authMode === "signup" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
@@ -613,26 +512,26 @@ export default function App() {
 
               {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{loginError}</div>}
               {loginSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{loginSuccess}</div>}
-
+              
               <form onSubmit={handleAuthSubmit}>
                 <div style={{ marginBottom: "15px" }}>
                   <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
+                  <input 
+                    type="email" 
+                    value={loginEmail} 
+                    onChange={(e) => setLoginEmail(e.target.value)} 
+                    required 
                     placeholder="name@example.com"
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
                   />
                 </div>
                 <div style={{ marginBottom: "20px" }}>
                   <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>كلمة المرور</label>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
+                  <input 
+                    type="password" 
+                    value={loginPassword} 
+                    onChange={(e) => setLoginPassword(e.target.value)} 
+                    required 
                     placeholder="••••••••"
                     style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
                   />
@@ -664,13 +563,7 @@ export default function App() {
       </div>
     );
   }
-
-  const TABS = [
-    { id: "transactions", label: "العمليات", icon: "chart" },
-    { id: "debts", label: "الديون", icon: "scale" },
-    { id: "wallets", label: "الخزائن", icon: "vault" },
-  ];
-
+  
   // لوحة التحكم الرئيسية (بعد تسجيل الدخول)
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
@@ -686,12 +579,12 @@ export default function App() {
       <div style={{ width: "100%", maxWidth: 380 }}>
         {/* --- القسم العلوي: الثيمات والعملات (الشكل الفخم مع أمان الـ CURRENCIES) --- */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
-
+          
           {/* جهة اليسار: زر الخروج ودوائر الثيمات */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              title="تسجيل الخروج"
+            <button 
+              onClick={() => supabase.auth.signOut()} 
+              title="تسجيل الخروج" 
               style={{
                 background: "transparent",
                 border: `1px solid ${currentTheme.border}`,
@@ -708,17 +601,17 @@ export default function App() {
             {/* دوائر الثيمات */}
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               {Object.keys(THEMES).map((th) => (
-                <div
-                  key={th}
-                  onClick={() => setThemeKey(th)}
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: "50%",
-                    border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`,
-                    background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616",
-                    cursor: "pointer"
-                  }}
+                <div 
+                  key={th} 
+                  onClick={() => setThemeKey(th)} 
+                  style={{ 
+                    width: 20, 
+                    height: 20, 
+                    borderRadius: "50%", 
+                    border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, 
+                    background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", 
+                    cursor: "pointer" 
+                  }} 
                 />
               ))}
             </div>
@@ -736,7 +629,7 @@ export default function App() {
                   color: currency === curr ? "#0e1a1a" : "#f2ede2",
                   padding: "6px 12px",
                   borderRadius: "8px",
-                  fontSize: "16px",
+                  fontSize: "16px", // شكل واضح ومرتب
                   fontWeight: "bold",
                   cursor: "pointer",
                 }}
@@ -763,27 +656,12 @@ export default function App() {
         )}
 
         <div style={{ display: "flex", background: currentTheme.boxBg, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${currentTheme.border}` }}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                flex: 1,
-                padding: "8px 0",
-                borderRadius: 8,
-                border: "none",
-                background: activeTab === tab.id ? currentTheme.accent : "transparent",
-                color: activeTab === tab.id ? "#0e1a1a" : currentTheme.text,
-                fontWeight: 700,
-                fontSize: 12,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-              }}
-            >
-              <Icon name={tab.icon} size={14} />
+          {[
+            { id: "transactions", label: "📊 العمليات" },
+            { id: "debts", label: "🤝 الديون" },
+            { id: "wallets", label: "🏦 الخزائن" },
+          ].map((tab) => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: activeTab === tab.id ? currentTheme.accent : "transparent", color: activeTab === tab.id ? "#0e1a1a" : currentTheme.text, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               {tab.label}
             </button>
           ))}
@@ -795,14 +673,8 @@ export default function App() {
             {currencySymbol} {totalBalance.toFixed(2)}
           </div>
           <div style={{ display: "flex", justifyContent: "space-around", marginTop: 12, fontSize: 11, opacity: 0.8 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Icon name="wallet" size={12} /> الكاش:{" "}
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{cashBalance.toFixed(2)}</span>
-            </div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Icon name="bank" size={12} /> البنك:{" "}
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{bankBalance.toFixed(2)}</span>
-            </div>
+            <div>💵 الكاش: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{cashBalance.toFixed(2)}</span></div>
+            <div>🏦 البنك: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>{currencySymbol}{bankBalance.toFixed(2)}</span></div>
           </div>
         </div>
 
@@ -812,12 +684,12 @@ export default function App() {
     <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>تسجيل عملية جديدة</div>
       {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
-
-      <input
-        type="number"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder="المبلغ..."
+      
+      <input 
+        type="number" 
+        value={amount} 
+        onChange={(e) => setAmount(e.target.value)} 
+        placeholder="المبلغ..." 
         style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
       />
 
@@ -836,15 +708,13 @@ export default function App() {
 
     {/* الشارت التحليلي للمصاريف */}
     <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-        <Icon name="chart" size={14} /> الشارت التحليلي للمصاريف حسب الفئة
-      </div>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>📊 الشارت التحليلي للمصاريف حسب الفئة</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {CATEGORIES.filter(c => c.type === "مصروف").map(cat => {
           const catTotal = transactions
             .filter(t => t.category === cat.key)
             .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
-
+          
           const allExpensesTotal = transactions
             .filter(t => t.type === "مصروف" || t.type === "شراء")
             .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
@@ -870,19 +740,14 @@ export default function App() {
     <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 700 }}>سجل الحركات</div>
-        <button
-          onClick={exportToCSV}
-          style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.accent, padding: "4px 10px", borderRadius: 8, fontSize: "11px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-        >
-          <Icon name="download" size={12} /> تصدير Excel
-        </button>
+        <button onClick={exportToCSV} style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.accent, padding: "4px 10px", borderRadius: 8, fontSize: "11px", fontWeight: 700, cursor: "pointer" }}>📥 تصدير Excel</button>
       </div>
 
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="بحث في الحركات..."
+      <input 
+        type="text" 
+        value={searchQuery} 
+        onChange={(e) => setSearchQuery(e.target.value)} 
+        placeholder="بحث في الحركات..." 
         style={{ width: "100%", padding: "8px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box", fontSize: "12px" }}
       />
 
@@ -900,9 +765,7 @@ export default function App() {
                 <span style={{ color: t.type === "دخل" || t.type === "مبيعات" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
                   {t.type === "دخل" || t.type === "مبيعات" ? "+" : "-"} {currencySymbol} {(Number(t.amount) * exchangeRate).toFixed(2)}
                 </span>
-                <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", display: "flex", alignItems: "center" }} title="حذف الحركة">
-                  <Icon name="trash" size={14} />
-                </button>
+                <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "14px" }} title="حذف الحركة">🗑️</button>
               </div>
             </div>
           ))
@@ -932,31 +795,29 @@ export default function App() {
           <div key={d.id} style={{ background: currentTheme.cardBg, padding: 12, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", color: currentTheme.text }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: "13px" }}>{d.name}</div>
-              {/* إصلاح: كانت المقارنة "له" لا تطابق القيمة الفعلية المخزّنة
-                  "دين له"، فكانت كل الديون تُعرض دايمًا كـ"دين علينا" باللون
-                  الأحمر بغض النظر عن نوعها الحقيقي. */}
-              <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type === "دين له" ? "دين لنا (على الآخرين)" : "دين علينا (للآخرين)"}</div>
+              <div style={{ fontSize: "11px", opacity: 0.7 }}>{d.type === "له" ? "دين لنا (على الآخرين)" : "دين علينا (للآخرين)"}</div>
             </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: d.type === "دين له" ? "#38a169" : "#e53e3e" }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: d.type === "له" ? "#38a169" : "#e53e3e" }}>
                 {currencySymbol} {Number(d.amount).toFixed(2)}
               </span>
               <button
-                onClick={() => removeDebt(d.id)}
-                title="حذف الدين"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#ff6b6b"
-                }}
-              >
-                <Icon name="trash" size={15} />
-              </button>
+  onClick={() => setDebts(debts.filter(item => item.id !== d.id))}
+  title="حذف الدين"
+  style={{
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "16px",
+    padding: "4px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#ff6b6b"
+  }}
+>
+  🗑️
+</button>
             </div>
           </div>
         ))
@@ -968,14 +829,12 @@ export default function App() {
 {activeTab === "wallets" && (
   <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>إدارة الخزائن والحسابات</div>
-
+    
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* بطاقة الكاش */}
       <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: "14px", display: "flex", alignItems: "center", gap: 6 }}>
-            <Icon name="wallet" size={15} color="#D4AF37" /> الكاش (النقد اليدوي)
-          </div>
+          <div style={{ fontWeight: 700, fontSize: "14px" }}>💵 الكاش (النقد اليدوي)</div>
           <div style={{ fontSize: "11px", opacity: 0.7 }}>المحفظة النقدية اليومية</div>
         </div>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
@@ -986,9 +845,7 @@ export default function App() {
       {/* بطاقة البنك */}
       <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: "14px", display: "flex", alignItems: "center", gap: 6 }}>
-            <Icon name="bank" size={15} color="#D4AF37" /> الحساب البنكي
-          </div>
+          <div style={{ fontWeight: 700, fontSize: "14px" }}>🏦 الحساب البنكي</div>
           <div style={{ fontSize: "11px", opacity: 0.7 }}>الرصيد المحول في البنك</div>
         </div>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
