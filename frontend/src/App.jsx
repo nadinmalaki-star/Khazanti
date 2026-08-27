@@ -1235,8 +1235,8 @@ export default function App() {
         {activeTab === "contact" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
             <div style={{ textAlign: "center", marginBottom: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}>تواصل معنا</div>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>عندك سؤال أو اقتراح؟ تواصل معنا مباشرة من هون.</div>
+              <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}>تواصل-ي معنا</div>
+              <div style={{ fontSize: 12, opacity: 0.7 }}>عندك سؤال أو اقتراح؟ تواصل-ي معنا مباشرة من هون.</div>
             </div>
 
             <a href={`mailto:${CONTACT_EMAIL}`} style={{ textDecoration: "none", color: "inherit" }}>
