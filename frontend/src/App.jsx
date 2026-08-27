@@ -1006,7 +1006,7 @@ export default function App() {
               onClick={() => setShowContactModal(true)}
               style={{ background: "none", border: "none", color: "#D4AF37", fontSize: "13px", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}
             >
-              تواصل معنا
+              للتواصل معنا
             </button>
           </div>
         </div>
@@ -1174,7 +1174,7 @@ export default function App() {
         {showContactModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "380px", color: "#f2ede2" }}>
-              <h3 style={{ margin: "0 0 6px", color: "#D4AF37" }}>تواصل معنا</h3>
+              <h3 style={{ margin: "0 0 6px", color: "#D4AF37" }}>للتواصل معنا</h3>
               <p style={{ fontSize: "12.5px", opacity: 0.75, margin: "0 0 20px" }}>نسعد بتواصلك معنا لأي استفسار أو اقتراح</p>
 
               <div style={{ background: "#0e1a1a", border: "1px solid #274442", borderRadius: "12px", padding: "14px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
