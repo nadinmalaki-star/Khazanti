@@ -941,7 +941,7 @@ export default function App() {
             </div>
             <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
               <h3 style={{ fontSize: "17px", margin: "0 0 8px", color: "#D4AF37" }}>الأيقونات الداخلية</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>رمز خطية نقية بلون ذهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>رموز خطية نقية بلون ذهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
             </div>
           </div>
         </div>
