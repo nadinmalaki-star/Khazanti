@@ -1138,6 +1138,31 @@ export default function App() {
           </div>
         </div>
 
+        {installPrompt && (
+          <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.accent}`, borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 12 }}>
+            <span>ثبّتي خزنتي على جهازك واستخدميها متل أي تطبيق عادي 📲</span>
+            <button
+              onClick={handleInstallClick}
+              style={{ background: currentTheme.accent, border: "none", color: "#0e1a1a", padding: "6px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}
+            >
+              تثبيت
+            </button>
+          </div>
+        )}
+
+        {showIosInstallHint && !installPrompt && (
+          <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 14px", marginBottom: 14, fontSize: 12, position: "relative" }}>
+            <button
+              onClick={() => setShowIosInstallHint(false)}
+              style={{ position: "absolute", top: "6px", left: "8px", background: "none", border: "none", color: currentTheme.text, opacity: 0.6, cursor: "pointer", fontSize: 14, lineHeight: 1 }}
+              aria-label="إغلاق"
+            >
+              ×
+            </button>
+            على آيفون: اضغطي زر المشاركة ⬆️ واختاري <strong style={{ color: currentTheme.accent }}>"إضافة إلى الشاشة الرئيسية"</strong> عشان تصير خزنتي متل تطبيق عادي عندك.
+          </div>
+        )}
+
         {/* شارة تذكير الديون القريبة/المتأخرة */}
         {upcomingDebts.length > 0 && (
           <div style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
