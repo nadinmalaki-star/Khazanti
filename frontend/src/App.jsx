@@ -986,13 +986,6 @@ export default function App() {
                 {currencySymbol} {totalBalance.toFixed(2)}
               </div>
 
-              {/* سطر تشخيصي مؤقت — بيوري مجموع الدخل والمصروف منفصلين، لحل موضوع الجمع/الطرح. رح نشيله بعد ما نتأكد. */}
-              <div style={{ fontSize: 10, opacity: 0.5, marginTop: 4, fontFamily: "'IBM Plex Mono', monospace" }}>
-                (تشخيص: دخل={transactions.filter(t => t.type === "دخل" || t.type === "مبيعات").reduce((s, t) => s + Number(t.amount), 0).toFixed(2)} |
-                {" "}مصروف={transactions.filter(t => t.type === "مصروف" || t.type === "شراء").reduce((s, t) => s + Number(t.amount), 0).toFixed(2)} |
-                {" "}عدد الحركات={transactions.length})
-              </div>
-
               {trendPoints && trendPoints.length > 1 && (
                 <>
                   <div style={{ fontSize: 11, marginTop: 6, color: trendUp ? "#38a169" : "#e05a5a" }}>
