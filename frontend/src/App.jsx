@@ -745,7 +745,7 @@ export default function App() {
               onClick={() => setShowContactModal(true)}
               style={{ background: "none", border: "none", color: "#D4AF37", fontSize: "13px", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}
             >
-              تواصل معنا
+              تواصل-ي معنا
             </button>
           </div>
         </div>
@@ -1235,7 +1235,9 @@ export default function App() {
         {activeTab === "contact" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
             <div style={{ textAlign: "center", marginBottom: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}>تواصل-ي معنا</div>
+              <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}
+              
+              >تواصل-ي معنا</div>
               <div style={{ fontSize: 12, opacity: 0.7 }}>عندك سؤال أو اقتراح؟ تواصل-ي معنا مباشرة من هون.</div>
             </div>
 
