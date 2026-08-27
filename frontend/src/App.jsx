@@ -62,10 +62,8 @@ const THEMES = {
   },
 };
 
-// معلومات التواصل — بدّلي القيم هون بمعلوماتك الحقيقية بضغطة واحدة
+// معلومات التواصل — بدّلي القيمة هون بإيميلك الحقيقي بضغطة واحدة
 const CONTACT_EMAIL = "khzntiapp@gmail.com";
-const CONTACT_WHATSAPP_DISPLAY = "0598168757";
-const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
 
 const REMEMBER_EMAIL_KEY = "khznti_remembered_email";
 
@@ -1047,14 +1045,9 @@ export default function App() {
               <h3 style={{ margin: "0 0 6px", color: "#D4AF37" }}>تواصل معنا</h3>
               <p style={{ fontSize: "12.5px", opacity: 0.75, margin: "0 0 20px" }}>نسعد بتواصلك معنا لأي استفسار أو اقتراح</p>
 
-              <div style={{ background: "#0e1a1a", border: "1px solid #274442", borderRadius: "12px", padding: "14px", marginBottom: "10px", display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ background: "#0e1a1a", border: "1px solid #274442", borderRadius: "12px", padding: "14px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ fontSize: "13px", opacity: 0.6 }}>البريد الإلكتروني</span>
                 <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#f2ede2", fontWeight: 700, fontSize: "14px", marginRight: "auto", textDecoration: "none" }}>{CONTACT_EMAIL}</a>
-              </div>
-
-              <div style={{ background: "#0e1a1a", border: "1px solid #274442", borderRadius: "12px", padding: "14px", marginBottom: "20px", display: "flex", alignItems: "center", gap: "12px" }}>
-                <span style={{ fontSize: "13px", opacity: 0.6 }}>واتساب</span>
-                <a href={CONTACT_WHATSAPP_LINK} target="_blank" rel="noreferrer" style={{ color: "#f2ede2", fontWeight: 700, fontSize: "14px", marginRight: "auto", textDecoration: "none" }}>{CONTACT_WHATSAPP_DISPLAY}</a>
               </div>
 
               <div style={{ textAlign: "left" }}>
@@ -1447,21 +1440,11 @@ export default function App() {
             </div>
 
             <a href={`mailto:${CONTACT_EMAIL}`} style={{ textDecoration: "none", color: "inherit" }}>
-              <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, marginBottom: 10, display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, display: "flex", alignItems: "center", gap: 12 }}>
                 <Icon name="mail" size={18} color="#D4AF37" />
                 <div>
                   <div style={{ fontSize: 10.5, opacity: 0.6 }}>البريد الإلكتروني</div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>{CONTACT_EMAIL}</div>
-                </div>
-              </div>
-            </a>
-
-            <a href={CONTACT_WHATSAPP_LINK} target="_blank" rel="noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
-              <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 14, padding: 14, display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 18 }}>📱</span>
-                <div>
-                  <div style={{ fontSize: 10.5, opacity: 0.6 }}>واتساب</div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{CONTACT_WHATSAPP_DISPLAY}</div>
                 </div>
               </div>
             </a>

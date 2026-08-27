@@ -1,14 +1,12 @@
-const CACHE_NAME = "khznti-shell-v1";
-const SHELL_URLS = ["/", "/manifest.json", "/icon.png", "/logo.png"];
+const CACHE_NAME = "khznti-shell-v2";
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS))
-  );
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
+  // بتمسح أي كاش قديم من نسخة سابقة (كانت بتخزن الصور وممكن تسبب
+  // مشاكل عرض على سفاري/آيفون).
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
@@ -17,9 +15,8 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  );
+self.addEventListener("fetch", () => {
+  // ما منتدخل بأي طلب إطلاقًا — كل شي بيروح للشبكة مباشرة بدون أي كاش.
+  // وجود هالمستمع بس هو اللي محتاجو المتصفح عشان يعتبر الموقع "قابل
+  // للتثبيت" على الشاشة الرئيسية.
 });
