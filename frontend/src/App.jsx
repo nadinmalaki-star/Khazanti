@@ -73,7 +73,7 @@ const AUTH_ERROR_TRANSLATIONS = {
   "Password should be at least 6 characters.": "كلمة المرور يجب أن تكون 6 أحرف على الأقل.",
   "Invalid login credentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
   "User already registered": "هذا البريد الإلكتروني مسجّل مسبقاً.",
-  "Email not confirmed": "يجب تأكيد بريدك الإلكتروني أولاً، تحققي من صندوق الوارد.",
+  "Email not confirmed": "يجب تأكيد بريدك الإلكتروني أولاً، تحقق-ي من صندوق الوارد.",
   "Unable to validate email address: invalid format": "صيغة البريد الإلكتروني غير صحيحة.",
 };
 function translateAuthError(message) {
@@ -447,7 +447,7 @@ export default function App() {
         const dedupeKey = `${d.id}_${todayStr}`;
         if (alreadyNotified[dedupeKey]) return;
         const notification = new Notification("خزنتي — دين مستحق", {
-          body: `دين "${d.name}" (${currencySymbol} ${(Number(d.amount) * exchangeRate).toFixed(2)}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغطي لتحصيله/تسديده أو لتأجيله.`,
+          body: `دين "${d.name}" (${currencySymbol} ${(Number(d.amount) * exchangeRate).toFixed(2)}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغط-ي لتحصيله/تسديده أو لتأجيله.`,
           icon: "/icon.png",
         });
         notification.onclick = () => {
@@ -526,7 +526,7 @@ export default function App() {
   async function addTransaction() {
     const num = parseFloat(amount);
     if (!num || num <= 0) {
-      setError("أدخلي مبلغ صحيح");
+      setError("أدخل-ي مبلغ صحيح");
       return;
     }
 
@@ -687,7 +687,7 @@ export default function App() {
       alert(
         "ما قدرنا نحدّث حالة الدين بقاعدة البيانات" +
           (debtError ? ": " + debtError.message : " (صلاحيات RLS ناقصة)") +
-          " — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغي فريق التطوير."
+          " — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغ-ي فريق التطوير."
       );
       return;
     }
@@ -717,7 +717,7 @@ export default function App() {
       alert(
         "ما قدرنا نأجّل الدين بقاعدة البيانات" +
           (dbError ? ": " + dbError.message : " (صلاحيات RLS ناقصة)") +
-          ". بلّغي فريق التطوير."
+          ". بلّغ-ي فريق التطوير."
       );
       return;
     }
@@ -866,7 +866,7 @@ export default function App() {
 
         {installPrompt && (
           <div style={{ width: "100%", maxWidth: "900px", background: "#16302d", border: "1px solid #D4AF37", borderRadius: "14px", padding: "14px 20px", marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "13px", color: "#f2ede2" }}>ثبّتي خزنتي على جهازك بضغطة وحدة، واستخدميها متل أي تطبيق عادي 📲</span>
+            <span style={{ fontSize: "13px", color: "#f2ede2" }}>ثبّت-ي خزنتي على جهازك بضغطة وحدة، واستخدم-يها متل أي تطبيق عادي 📲</span>
             <button
               onClick={handleInstallClick}
               style={{ background: "#D4AF37", border: "none", color: "#0e1a1a", padding: "8px 18px", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "13px", whiteSpace: "nowrap" }}
@@ -886,7 +886,7 @@ export default function App() {
               ×
             </button>
             <span style={{ fontSize: "13px", color: "#f2ede2" }}>
-              على آيفون: اضغطي زر المشاركة <strong style={{ color: "#D4AF37" }}>⬆️</strong> بالمتصفح، وبعدين اختاري{" "}
+              على آيفون: اضغط-ي زر المشاركة <strong style={{ color: "#D4AF37" }}>⬆️</strong> بالمتصفح، وبعدين اختار-ي{" "}
               <strong style={{ color: "#D4AF37" }}>"إضافة إلى الشاشة الرئيسية"</strong> عشان تصير خزنتي متل تطبيق عادي عندك.
             </span>
           </div>
@@ -1265,7 +1265,7 @@ export default function App() {
             </div>
             {showAvatarMenu && (
               <div style={{ position: "absolute", top: 42, left: 0, minWidth: 190, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
-                <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّلة الدخول بحساب</div>
+                <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّل-ة الدخول بحساب</div>
                 <div style={{ fontSize: 12, fontWeight: 700, wordBreak: "break-all" }}>{userEmail}</div>
               </div>
             )}
@@ -1274,7 +1274,7 @@ export default function App() {
 
         {installPrompt && (
           <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.accent}`, borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 12 }}>
-            <span>ثبّتي خزنتي على جهازك واستخدميها متل أي تطبيق عادي 📲</span>
+            <span>ثبّت-ي خزنتي على جهازك واستخدم-يها متل أي تطبيق عادي 📲</span>
             <button
               onClick={handleInstallClick}
               style={{ background: currentTheme.accent, border: "none", color: "#0e1a1a", padding: "6px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}
@@ -1293,7 +1293,7 @@ export default function App() {
             >
               ×
             </button>
-            على آيفون: اضغطي زر المشاركة ⬆️ واختاري <strong style={{ color: currentTheme.accent }}>"إضافة إلى الشاشة الرئيسية"</strong> عشان تصير خزنتي متل تطبيق عادي عندك.
+            على آيفون: اضغط-ي زر المشاركة ⬆️ واختار-ي <strong style={{ color: currentTheme.accent }}>"إضافة إلى الشاشة الرئيسية"</strong> عشان تصير خزنتي متل تطبيق عادي عندك.
           </div>
         )}
 
@@ -1378,7 +1378,7 @@ export default function App() {
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>تسجيل عملية جديدة</div>
-              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 12 }}>سجّلي أي مصروف أو دخل، بيتحسب فورًا برصيد الخزنة المختارة.</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 12 }}>سجّل-ي أي مصروف أو دخل، بيتحسب فورًا برصيد الخزنة المختارة.</div>
               {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
 
               <input
@@ -1493,7 +1493,7 @@ export default function App() {
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
             <div style={{ marginBottom: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
-              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>لما يستحق دين، اضغطي ⚙ إجراء بجنبه لتحصيله/تسديده أو تأجيله لتاريخ تاني.</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>لما يستحق دين، اضغط-ي ⚙ إجراء بجنبه لتحصيله/تسديده أو تأجيله لتاريخ تاني.</div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
               <button
@@ -1506,7 +1506,7 @@ export default function App() {
 
             {typeof Notification !== "undefined" && notifyPermission === "default" && (
               <div style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11.5 }}>
-                <span>فعّلي التنبيهات عشان نذكّرك لما يستحق دين.</span>
+                <span>فعّل-ي التنبيهات عشان نذكّرك لما يستحق دين.</span>
                 <button
                   onClick={requestDebtNotifications}
                   style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "6px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}
@@ -1614,7 +1614,7 @@ export default function App() {
                 <>
                   <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>دين "{settlingDebt.name}"</div>
                   <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 18 }}>
-                    بمبلغ <strong style={{ color: currentTheme.accent }}>{currencySymbol} {(Number(settlingDebt.amount) * exchangeRate).toFixed(2)}</strong> — شو بدك تعملي؟
+                    بمبلغ <strong style={{ color: currentTheme.accent }}>{currencySymbol} {(Number(settlingDebt.amount) * exchangeRate).toFixed(2)}</strong> — شو بدك تعمل-ي؟
                   </div>
 
                   <button
@@ -1678,7 +1678,7 @@ export default function App() {
                 <>
                   <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>تأجيل موعد الاستحقاق</div>
                   <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 16 }}>
-                    اختاري تاريخ استحقاق جديد لدين "{settlingDebt.name}" — بدون ما تنسجل أي حركة مالية.
+                    اختار-ي تاريخ استحقاق جديد لدين "{settlingDebt.name}" — بدون ما تنسجل أي حركة مالية.
                   </div>
 
                   <div style={{ marginBottom: 18 }}>
@@ -1708,7 +1708,7 @@ export default function App() {
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>إدارة الخزائن والحسابات</div>
-              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 16 }}>كل خزنة (كاش/بنك) رصيدها منفصل — اختاريها لما تسجّلي عملية عشان الحساب يضل مضبوط.</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 16 }}>كل خزنة (كاش/بنك) رصيدها منفصل — اختار-يها لما تسجّل-ي عملية عشان الحساب يضل مضبوط.</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
@@ -1771,7 +1771,7 @@ export default function App() {
                   type="text"
                   value={debtName}
                   onChange={(e) => setDebtName(e.target.value)}
-                  placeholder="أدخلي الاسم..."
+                  placeholder="أدخل-ي الاسم..."
                   style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}
                 />
               </div>
