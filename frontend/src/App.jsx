@@ -63,7 +63,7 @@ const THEMES = {
 };
 
 // معلومات التواصل — بدّلي القيم هون بمعلوماتك الحقيقية بضغطة واحدة
-const CONTACT_EMAIL = "support@khznti.app";
+const CONTACT_EMAIL = "khzntiapp@gmail.com";
 const CONTACT_WHATSAPP_DISPLAY = "0598168757";
 const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
 
