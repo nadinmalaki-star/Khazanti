@@ -447,7 +447,7 @@ export default function App() {
         const dedupeKey = `${d.id}_${todayStr}`;
         if (alreadyNotified[dedupeKey]) return;
         const notification = new Notification("خزنتي — دين مستحق", {
-          body: `دين "${d.name}" (${Number(d.amount).toFixed(2)}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغطي لتحصيله/تسديده أو لتأجيله.`,
+          body: `دين "${d.name}" (${currencySymbol} ${(Number(d.amount) * exchangeRate).toFixed(2)}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغطي لتحصيله/تسديده أو لتأجيله.`,
           icon: "/icon.png",
         });
         notification.onclick = () => {
@@ -1548,7 +1548,7 @@ export default function App() {
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: d.type === "دين له" ? "#38a169" : "#e53e3e" }}>
-                          {currencySymbol} {Number(d.amount).toFixed(2)}
+                          {currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}
                         </span>
                         <div style={{ display: "flex", gap: 6 }}>
                           <button
@@ -1588,7 +1588,7 @@ export default function App() {
                       <div key={d.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.55 }}>
                         <div style={{ fontSize: 12 }}>{d.name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{currencySymbol} {Number(d.amount).toFixed(2)}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{currencySymbol} {(Number(d.amount) * exchangeRate).toFixed(2)}</span>
                           <button
                             onClick={() => removeDebt(d.id)}
                             title="حذف نهائي"
@@ -1614,7 +1614,7 @@ export default function App() {
                 <>
                   <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>دين "{settlingDebt.name}"</div>
                   <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 18 }}>
-                    بمبلغ <strong style={{ color: currentTheme.accent }}>{currencySymbol} {Number(settlingDebt.amount).toFixed(2)}</strong> — شو بدك تعملي؟
+                    بمبلغ <strong style={{ color: currentTheme.accent }}>{currencySymbol} {(Number(settlingDebt.amount) * exchangeRate).toFixed(2)}</strong> — شو بدك تعملي؟
                   </div>
 
                   <button
@@ -1643,7 +1643,7 @@ export default function App() {
                   </div>
                   <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 16 }}>
                     هيك رح تنسجل {settlingDebt.type === "دين له" ? "كحركة دخل" : "كحركة مصروف"} بمبلغ{" "}
-                    <strong style={{ color: currentTheme.accent }}>{currencySymbol} {Number(settlingDebt.amount).toFixed(2)}</strong>{" "}
+                    <strong style={{ color: currentTheme.accent }}>{currencySymbol} {(Number(settlingDebt.amount) * exchangeRate).toFixed(2)}</strong>{" "}
                     باسم "{settlingDebt.name}"، والدين رح يتعلّم مسدد.
                   </div>
 
