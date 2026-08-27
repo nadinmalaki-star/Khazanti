@@ -287,6 +287,15 @@ export default function App() {
   const [debtType, setDebtType] = useState("دين له");
   const [debtDueDate, setDebtDueDate] = useState("");
 
+  const [settlingDebt, setSettlingDebt] = useState(null);
+  const [settleModalMode, setSettleModalMode] = useState("choose"); // "choose" | "settle" | "postpone"
+  const [settleAccount, setSettleAccount] = useState("الصندوق (كاش)");
+  const [postponeDate, setPostponeDate] = useState("");
+  const [showPaidDebts, setShowPaidDebts] = useState(false);
+  const [notifyPermission, setNotifyPermission] = useState(
+    typeof Notification !== "undefined" ? Notification.permission : "unsupported"
+  );
+
   const currentTheme = THEMES[themeKey];
 
   // تذكر الإيميل — تعبئة تلقائية من آخر مرة (بدون كلمة المرور إطلاقًا)
@@ -411,7 +420,7 @@ export default function App() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return debts
-      .filter((d) => d.due_date)
+      .filter((d) => d.due_date && !d.paid)
       .map((d) => {
         const due = new Date(d.due_date);
         due.setHours(0, 0, 0, 0);
@@ -421,6 +430,36 @@ export default function App() {
       .filter((d) => d.diffDays <= 3)
       .sort((a, b) => a.diffDays - b.diffDays);
   }, [debts]);
+
+  // إشعار متصفح (لما يكون التاب مفتوح أو التطبيق مثبّت) لأول دين مستحق
+  // اليوم أو متأخر — مرة وحدة باليوم لكل دين، عشان ما نكرر نفس الإشعار.
+  useEffect(() => {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (upcomingDebts.length === 0) return;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const notifiedKey = "khznti_notified_debts";
+    const alreadyNotified = JSON.parse(localStorage.getItem(notifiedKey) || "{}");
+
+    upcomingDebts
+      .filter((d) => d.diffDays <= 0)
+      .forEach((d) => {
+        const dedupeKey = `${d.id}_${todayStr}`;
+        if (alreadyNotified[dedupeKey]) return;
+        const notification = new Notification("خزنتي — دين مستحق", {
+          body: `دين "${d.name}" (${Number(d.amount).toFixed(2)}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغطي لتحصيله/تسديده أو لتأجيله.`,
+          icon: "/icon.png",
+        });
+        notification.onclick = () => {
+          window.focus();
+          setActiveTab("debts");
+          openSettleModal(d);
+        };
+        alreadyNotified[dedupeKey] = true;
+      });
+
+    localStorage.setItem(notifiedKey, JSON.stringify(alreadyNotified));
+  }, [upcomingDebts]);
 
   // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية
   const categoryBreakdown = useMemo(() => {
@@ -597,6 +636,95 @@ export default function App() {
       alert("فشل حذف الدين: " + dbError.message);
       setDebts(previousDebts);
     }
+  }
+
+  // تسوية دين: بتسجل حركة مالية فعلية (دخل لو "دين له"، مصروف لو "دين
+  // عليه") وبتعلّم الدين كمسدد. مقصود إنها خطوة يدوية بتأكيد المستخدمة
+  // (مش تلقائية بمجرد وصول تاريخ الاستحقاق)، لأنو وصول التاريخ ما يعني
+  // بالضرورة إنو الدين انسدد فعليًا.
+  async function settleDebt() {
+    if (!settlingDebt) return;
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      alert("يجب تسجيل الدخول أولاً");
+      return;
+    }
+
+    const finalType = settlingDebt.type === "دين له" ? "دخل" : "مصروف";
+    const newRecord = {
+      type: finalType,
+      amount: settlingDebt.amount,
+      category: settlingDebt.type === "دين له" ? "دخل إضافي" : "أخرى",
+      account: settleAccount,
+      date: new Date().toISOString().split("T")[0],
+      user_id: user.id,
+    };
+
+    const { data: txData, error: txError } = await supabase
+      .from("transactions")
+      .insert([newRecord])
+      .select();
+
+    if (txError) {
+      alert("فشل تسجيل الحركة: " + txError.message);
+      return;
+    }
+
+    const { data: debtData, error: debtError } = await supabase
+      .from("debts")
+      .update({ paid: true })
+      .eq("id", settlingDebt.id)
+      .select();
+
+    // لو التحديث ما أثّر على أي صف (سياسات RLS ناقصة على جدول debts
+    // مثلاً)، منرجّع الحركة المالية يلي سجلناها لتوّنا عشان ما يضل
+    // الرصيد متغيّر بينما الدين لسا شكليًا "غير مسدد" بقاعدة البيانات.
+    if (debtError || !debtData || debtData.length === 0) {
+      if (txData && txData[0]) {
+        await supabase.from("transactions").delete().eq("id", txData[0].id);
+      }
+      alert(
+        "ما قدرنا نحدّث حالة الدين بقاعدة البيانات (صلاحيات RLS ناقصة على جدول debts) — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغي فريق التطوير."
+      );
+      return;
+    }
+
+    if (txData) setTransactions((prev) => [txData[0], ...prev]);
+    setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, paid: true } : d)));
+    setSettlingDebt(null);
+  }
+
+  function openSettleModal(debt) {
+    setSettlingDebt(debt);
+    setSettleModalMode("choose");
+    setSettleAccount("الصندوق (كاش)");
+    setPostponeDate(debt.due_date || "");
+  }
+
+  async function postponeDebtDate() {
+    if (!settlingDebt || !postponeDate) return;
+
+    const { data: updatedRows, error: dbError } = await supabase
+      .from("debts")
+      .update({ due_date: postponeDate })
+      .eq("id", settlingDebt.id)
+      .select();
+
+    if (dbError || !updatedRows || updatedRows.length === 0) {
+      alert(
+        "ما قدرنا نأجّل الدين بقاعدة البيانات (صلاحيات RLS ناقصة على جدول debts). بلّغي فريق التطوير."
+      );
+      return;
+    }
+
+    setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, due_date: postponeDate } : d)));
+    setSettlingDebt(null);
+  }
+
+  function requestDebtNotifications() {
+    if (typeof Notification === "undefined") return;
+    Notification.requestPermission().then((perm) => setNotifyPermission(perm));
   }
 
   // تفتح المودال بوضع نظيف (تمسح أي رسالة خطأ/نجاح قديمة من فتحة سابقة)
@@ -1165,7 +1293,10 @@ export default function App() {
 
         {/* شارة تذكير الديون القريبة/المتأخرة */}
         {upcomingDebts.length > 0 && (
-          <div style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+          <div
+            onClick={() => openSettleModal(upcomingDebts[0])}
+            style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, cursor: "pointer" }}
+          >
             <span>
               دين "{upcomingDebts[0].name}"{" "}
               {upcomingDebts[0].diffDays < 0
@@ -1363,11 +1494,23 @@ export default function App() {
               </button>
             </div>
 
+            {typeof Notification !== "undefined" && notifyPermission === "default" && (
+              <div style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11.5 }}>
+                <span>فعّلي التنبيهات عشان نذكّرك لما يستحق دين.</span>
+                <button
+                  onClick={requestDebtNotifications}
+                  style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "6px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}
+                >
+                  تفعيل
+                </button>
+              </div>
+            )}
+
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {debts.length === 0 ? (
+              {debts.filter((d) => !d.paid).length === 0 ? (
                 <div style={{ fontSize: 12, opacity: 0.7, textAlign: "center", padding: "20px 0" }}>لا توجد ديون مسجلة حالياً.</div>
               ) : (
-                debts.map((d) => {
+                debts.filter((d) => !d.paid).map((d) => {
                   let dueBadge = null;
                   if (d.due_date) {
                     const today = new Date(); today.setHours(0,0,0,0);
@@ -1397,18 +1540,148 @@ export default function App() {
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: d.type === "دين له" ? "#38a169" : "#e53e3e" }}>
                           {currencySymbol} {Number(d.amount).toFixed(2)}
                         </span>
-                        <button
-                          onClick={() => removeDebt(d.id)}
-                          title="حذف الدين"
-                          style={{ background: "transparent", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff6b6b" }}
-                        >
-                          <Icon name="trash" size={15} />
-                        </button>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            onClick={() => openSettleModal(d)}
+                            title="تحصيل، تسديد، أو تأجيل"
+                            style={{ background: "rgba(56,161,105,0.15)", border: "1px solid rgba(56,161,105,0.4)", cursor: "pointer", padding: "4px 8px", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#38a169", fontSize: 10.5, fontWeight: 700 }}
+                          >
+                            ⚙ إجراء
+                          </button>
+                          <button
+                            onClick={() => removeDebt(d.id)}
+                            title="حذف الدين"
+                            style={{ background: "transparent", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff6b6b" }}
+                          >
+                            <Icon name="trash" size={15} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
+            </div>
+
+            {debts.some((d) => d.paid) && (
+              <div style={{ marginTop: 16 }}>
+                <button
+                  onClick={() => setShowPaidDebts((v) => !v)}
+                  style={{ background: "none", border: "none", color: currentTheme.accent, fontSize: 11.5, cursor: "pointer", textDecoration: "underline", fontFamily: "inherit", padding: 0 }}
+                >
+                  {showPaidDebts ? "إخفاء الديون المسددة" : `عرض الديون المسددة (${debts.filter((d) => d.paid).length})`}
+                </button>
+
+                {showPaidDebts && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                    {debts.filter((d) => d.paid).map((d) => (
+                      <div key={d.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.55 }}>
+                        <div style={{ fontSize: 12 }}>{d.name}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{currencySymbol} {Number(d.amount).toFixed(2)}</span>
+                          <button
+                            onClick={() => removeDebt(d.id)}
+                            title="حذف نهائي"
+                            style={{ background: "transparent", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center", color: "#ff6b6b" }}
+                          >
+                            <Icon name="trash" size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {settlingDebt && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+            <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, padding: 20, borderRadius: 16, width: "90%", maxWidth: "380px", color: currentTheme.text }}>
+
+              {settleModalMode === "choose" && (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>دين "{settlingDebt.name}"</div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 18 }}>
+                    بمبلغ <strong style={{ color: currentTheme.accent }}>{currencySymbol} {Number(settlingDebt.amount).toFixed(2)}</strong> — شو بدك تعملي؟
+                  </div>
+
+                  <button
+                    onClick={() => setSettleModalMode("settle")}
+                    style={{ width: "100%", background: "rgba(56,161,105,0.15)", border: "1px solid rgba(56,161,105,0.4)", color: "#38a169", padding: "12px", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 13, marginBottom: 10 }}
+                  >
+                    {settlingDebt.type === "دين له" ? "✓ تحصيل الدين الآن" : "✓ تسديد الدين الآن"}
+                  </button>
+                  <button
+                    onClick={() => setSettleModalMode("postpone")}
+                    style={{ width: "100%", background: "rgba(212,175,55,0.12)", border: `1px solid ${currentTheme.accent}`, color: currentTheme.accent, padding: "12px", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: 13, marginBottom: 16 }}
+                  >
+                    🕒 تأجيل لتاريخ تاني
+                  </button>
+
+                  <div style={{ textAlign: "left" }}>
+                    <button onClick={() => setSettlingDebt(null)} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}>إلغاء</button>
+                  </div>
+                </>
+              )}
+
+              {settleModalMode === "settle" && (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
+                    {settlingDebt.type === "دين له" ? "تأكيد تحصيل الدين" : "تأكيد تسديد الدين"}
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 16 }}>
+                    هيك رح تنسجل {settlingDebt.type === "دين له" ? "كحركة دخل" : "كحركة مصروف"} بمبلغ{" "}
+                    <strong style={{ color: currentTheme.accent }}>{currencySymbol} {Number(settlingDebt.amount).toFixed(2)}</strong>{" "}
+                    باسم "{settlingDebt.name}"، والدين رح يتعلّم مسدد.
+                  </div>
+
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ fontSize: 12, display: "block", marginBottom: 6 }}>من/إلى أي خزنة؟</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setSettleAccount("الصندوق (كاش)")}
+                        style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${currentTheme.border}`, background: settleAccount === "الصندوق (كاش)" ? currentTheme.accent : "transparent", color: settleAccount === "الصندوق (كاش)" ? "#0e1a1a" : currentTheme.text, fontWeight: 700, cursor: "pointer", fontSize: 12 }}
+                      >
+                        الكاش
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSettleAccount("حساب البنك")}
+                        style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${currentTheme.border}`, background: settleAccount === "حساب البنك" ? currentTheme.accent : "transparent", color: settleAccount === "حساب البنك" ? "#0e1a1a" : currentTheme.text, fontWeight: 700, cursor: "pointer", fontSize: 12 }}
+                      >
+                        البنك
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                    <button onClick={() => setSettleModalMode("choose")} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}>رجوع</button>
+                    <button onClick={settleDebt} style={{ background: "#38a169", border: "none", color: "#fff", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>تأكيد</button>
+                  </div>
+                </>
+              )}
+
+              {settleModalMode === "postpone" && (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>تأجيل موعد الاستحقاق</div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 16 }}>
+                    اختاري تاريخ استحقاق جديد لدين "{settlingDebt.name}" — بدون ما تنسجل أي حركة مالية.
+                  </div>
+
+                  <div style={{ marginBottom: 18 }}>
+                    <DatePickerSelects value={postponeDate} onChange={setPostponeDate} theme={currentTheme} />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                    <button onClick={() => setSettleModalMode("choose")} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}>رجوع</button>
+                    <button onClick={postponeDebtDate} style={{ background: currentTheme.accent, border: "none", color: "#0e1a1a", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>تأجيل</button>
+                  </div>
+                </>
+              )}
+
             </div>
           </div>
         )}
