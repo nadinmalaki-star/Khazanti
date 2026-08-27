@@ -69,6 +69,19 @@ const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
 
 const REMEMBER_EMAIL_KEY = "khznti_remembered_email";
 
+// ترجمة رسائل الأخطاء الشائعة من Supabase للعربي (تضل بالإنجليزي لو
+// الرسالة مش موجودة بالقائمة، لأنه ما فينا نترجم كل الحالات الممكنة).
+const AUTH_ERROR_TRANSLATIONS = {
+  "Password should be at least 6 characters.": "كلمة المرور يجب أن تكون 6 أحرف على الأقل.",
+  "Invalid login credentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+  "User already registered": "هذا البريد الإلكتروني مسجّل مسبقاً.",
+  "Email not confirmed": "يجب تأكيد بريدك الإلكتروني أولاً، تحققي من صندوق الوارد.",
+  "Unable to validate email address: invalid format": "صيغة البريد الإلكتروني غير صحيحة.",
+};
+function translateAuthError(message) {
+  return AUTH_ERROR_TRANSLATIONS[message] || message;
+}
+
 // ------------------------------------------------------------------
 // قوائم منسدلة مخصصة لليوم/الشهر/السنة، بدل خانة <input type="date">
 // الأصلية — لأنه هالخانة بتتصرف بشكل غير متوقع وغير متناسق بصريًا
@@ -242,6 +255,10 @@ export default function App() {
   const [loginError, setLoginError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState("");
   const [rememberEmail, setRememberEmail] = useState(true);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState(null); // { type: "success" | "error", text }
 
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
@@ -263,6 +280,9 @@ export default function App() {
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
 
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showIosInstallHint, setShowIosInstallHint] = useState(false);
+
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [debtName, setDebtName] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
@@ -279,6 +299,31 @@ export default function App() {
       setRememberEmail(true);
     }
   }, []);
+
+  // زر "تثبيت التطبيق" — كروم/أندرويد وسطح المكتب بيدعموا الحدث هاد
+  // تلقائيًا. آيفون/سفاري ما فيه هيك حدث إطلاقًا، فبنعرض تلميح يدوي بدالو.
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+    if (isIos && !isStandalone) setShowIosInstallHint(true);
+
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  }, []);
+
+  async function handleInstallClick() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -556,12 +601,52 @@ export default function App() {
     }
   }
 
+  // تفتح المودال بوضع نظيف (تمسح أي رسالة خطأ/نجاح قديمة من فتحة سابقة)
+  function openAuthModal(mode) {
+    setAuthMode(mode);
+    setLoginError("");
+    setLoginSuccess("");
+    setForgotMode(false);
+    setForgotStatus(null);
+    setAgreedToTerms(false);
+    setShowLoginModal(true);
+  }
+
+  // تبديل بين تسجيل الدخول/حساب جديد جوا المودال المفتوح أصلاً
+  function switchAuthMode(mode) {
+    setAuthMode(mode);
+    setLoginError("");
+    setLoginSuccess("");
+    setForgotMode(false);
+    setForgotStatus(null);
+    setAgreedToTerms(false);
+  }
+
+  function closeAuthModal() {
+    setShowLoginModal(false);
+    setLoginError("");
+    setLoginSuccess("");
+    setForgotMode(false);
+    setForgotStatus(null);
+  }
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
     setLoginSuccess("");
-    setLoading(true);
 
+    if (authMode === "signup") {
+      if (loginPassword.length < 8) {
+        setLoginError("كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+        return;
+      }
+      if (!agreedToTerms) {
+        setLoginError("يجب الموافقة على سياسة الخصوصية وشروط الاستخدام للمتابعة.");
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       if (authMode === "login") {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -593,14 +678,32 @@ export default function App() {
         if (data.user) {
           setLoginSuccess("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
           setAuthMode("login");
+          setAgreedToTerms(false);
         }
       }
     } catch (err) {
-      setLoginError("حدث خطأ: " + err.message);
+      setLoginError("حدث خطأ: " + translateAuthError(err.message));
     } finally {
       setLoading(false);
     }
   };
+
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    setForgotStatus(null);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: window.location.origin,
+      });
+      if (error) throw error;
+      setForgotStatus({ type: "success", text: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني." });
+    } catch (err) {
+      setForgotStatus({ type: "error", text: translateAuthError(err.message) });
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // الشاشة الترحيبية — بدون أي تغيير على المحتوى الأصلي، فقط إضافة "تواصل معنا"
   if (!isLoggedIn) {
@@ -617,13 +720,13 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <button
-              onClick={() => { setAuthMode("login"); setShowLoginModal(true); }}
+              onClick={() => openAuthModal("login")}
               style={{ background: "transparent", border: "1px solid #c9a961", color: "#c9a961", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
             >
               تسجيل الدخول
             </button>
             <button
-              onClick={() => { setAuthMode("signup"); setShowLoginModal(true); }}
+              onClick={() => openAuthModal("signup")}
               style={{ background: "#c9a961", border: "none", color: "#0e1a1a", padding: "8px 20px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
             >
               حساب جديد
@@ -631,10 +734,38 @@ export default function App() {
           </div>
         </div>
 
+        {installPrompt && (
+          <div style={{ width: "100%", maxWidth: "900px", background: "#16302d", border: "1px solid #D4AF37", borderRadius: "14px", padding: "14px 20px", marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "13px", color: "#f2ede2" }}>ثبّتي خزنتي على جهازك بضغطة وحدة، واستخدميها متل أي تطبيق عادي 📲</span>
+            <button
+              onClick={handleInstallClick}
+              style={{ background: "#D4AF37", border: "none", color: "#0e1a1a", padding: "8px 18px", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "13px", whiteSpace: "nowrap" }}
+            >
+              تثبيت التطبيق
+            </button>
+          </div>
+        )}
+
+        {showIosInstallHint && !installPrompt && (
+          <div style={{ width: "100%", maxWidth: "900px", background: "#16302d", border: "1px solid #274442", borderRadius: "14px", padding: "14px 20px", marginBottom: "30px", position: "relative" }}>
+            <button
+              onClick={() => setShowIosInstallHint(false)}
+              style={{ position: "absolute", top: "8px", left: "10px", background: "none", border: "none", color: "#f2ede2", opacity: 0.6, cursor: "pointer", fontSize: "16px", lineHeight: 1 }}
+              aria-label="إغلاق"
+            >
+              ×
+            </button>
+            <span style={{ fontSize: "13px", color: "#f2ede2" }}>
+              على آيفون: اضغطي زر المشاركة <strong style={{ color: "#D4AF37" }}>⬆️</strong> بالمتصفح، وبعدين اختاري{" "}
+              <strong style={{ color: "#D4AF37" }}>"إضافة إلى الشاشة الرئيسية"</strong> عشان تصير خزنتي متل تطبيق عادي عندك.
+            </span>
+          </div>
+        )}
+
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
           <div style={{ width: "110px", height: "110px", margin: "0 auto 20px", background: "linear-gradient(135deg, #1b3936, #16302d)", border: "2px solid #D4AF37", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.6)", overflow: "hidden" }}>
             <img
-              src="/logo.png.png"
+              src="/logo.png"
               alt="شعار خزنتي"
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
@@ -759,65 +890,139 @@ export default function App() {
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
 
-              <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
-                <button type="button" onClick={() => setAuthMode("login")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#D4AF37" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
-                  تسجيل الدخول
-                </button>
-                <button type="button" onClick={() => setAuthMode("signup")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "signup" ? "#D4AF37" : "transparent", color: authMode === "signup" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
-                  حساب جديد
-                </button>
-              </div>
-
-              <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "18px" }}>
-                {authMode === "login" ? "تسجيل الدخول إلى حسابك" : "إنشاء حساب جديد"}
-              </h3>
-
-              {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{loginError}</div>}
-              {loginSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{loginSuccess}</div>}
-
-              <form onSubmit={handleAuthSubmit}>
-                <div style={{ marginBottom: "15px" }}>
-                  <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                    placeholder="name@example.com"
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
-                  />
-                </div>
-                <div style={{ marginBottom: "12px" }}>
-                  <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>كلمة المرور</label>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                    placeholder="••••••••"
-                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
-                  />
-                </div>
-
-                {authMode === "login" && (
-                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", marginBottom: "20px", cursor: "pointer", opacity: 0.85 }}>
-                    <input
-                      type="checkbox"
-                      checked={rememberEmail}
-                      onChange={(e) => setRememberEmail(e.target.checked)}
-                      style={{ width: "14px", height: "14px", accentColor: "#D4AF37" }}
-                    />
-                    تذكر إيميلي على هذا الجهاز
-                  </label>
-                )}
-
-                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-                  <button type="button" onClick={() => setShowLoginModal(false)} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
-                  <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
-                    {authMode === "login" ? "دخول" : "إنشاء الحساب"}
+              {!forgotMode && (
+                <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
+                  <button type="button" onClick={() => switchAuthMode("login")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#D4AF37" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
+                    تسجيل الدخول
+                  </button>
+                  <button type="button" onClick={() => switchAuthMode("signup")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "signup" ? "#D4AF37" : "transparent", color: authMode === "signup" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
+                    حساب جديد
                   </button>
                 </div>
-              </form>
+              )}
+
+              {forgotMode ? (
+                <>
+                  <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "18px" }}>استعادة كلمة المرور</h3>
+
+                  {forgotStatus && (
+                    <div style={{
+                      color: forgotStatus.type === "success" ? "#48bb78" : "#ff6b6b",
+                      fontSize: "12px", marginBottom: "10px",
+                      background: forgotStatus.type === "success" ? "rgba(72,187,120,0.1)" : "rgba(255,107,107,0.1)",
+                      padding: "8px", borderRadius: "6px"
+                    }}>
+                      {forgotStatus.text}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleForgotPassword}>
+                    <div style={{ marginBottom: "18px" }}>
+                      <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
+                      <input
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        required
+                        placeholder="name@example.com"
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                      <button type="button" onClick={() => { setForgotMode(false); setForgotStatus(null); }} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>رجوع لتسجيل الدخول</button>
+                      <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+                        إرسال الرابط
+                      </button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "18px" }}>
+                    {authMode === "login" ? "تسجيل الدخول إلى حسابك" : "إنشاء حساب جديد"}
+                  </h3>
+
+                  {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{loginError}</div>}
+                  {loginSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{loginSuccess}</div>}
+
+                  <form onSubmit={handleAuthSubmit}>
+                    <div style={{ marginBottom: "15px" }}>
+                      <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>البريد الإلكتروني</label>
+                      <input
+                        type="email"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        required
+                        placeholder="name@example.com"
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: authMode === "login" ? "6px" : "12px" }}>
+                      <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>كلمة المرور</label>
+                      <input
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        required
+                        placeholder="••••••••"
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+                      />
+                    </div>
+
+                    {authMode === "login" && (
+                      <div style={{ textAlign: "left", marginBottom: "14px" }}>
+                        <button
+                          type="button"
+                          onClick={() => { setForgotMode(true); setForgotEmail(loginEmail); setLoginError(""); setLoginSuccess(""); }}
+                          style={{ background: "none", border: "none", color: "#D4AF37", fontSize: "12px", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit", padding: 0 }}
+                        >
+                          نسيت كلمة المرور؟
+                        </button>
+                      </div>
+                    )}
+
+                    {authMode === "login" && (
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", marginBottom: "20px", cursor: "pointer", opacity: 0.85 }}>
+                        <input
+                          type="checkbox"
+                          checked={rememberEmail}
+                          onChange={(e) => setRememberEmail(e.target.checked)}
+                          style={{ width: "14px", height: "14px", accentColor: "#D4AF37" }}
+                        />
+                        تذكر إيميلي على هذا الجهاز
+                      </label>
+                    )}
+
+                    {authMode === "signup" && (
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", marginBottom: "20px", cursor: "pointer", opacity: 0.85, lineHeight: 1.5 }}>
+                        <input
+                          type="checkbox"
+                          checked={agreedToTerms}
+                          onChange={(e) => setAgreedToTerms(e.target.checked)}
+                          style={{ width: "14px", height: "14px", accentColor: "#D4AF37", marginTop: "2px" }}
+                        />
+                        <span>
+                          أوافق على{" "}
+                          <button
+                            type="button"
+                            onClick={() => setShowPrivacyModal(true)}
+                            style={{ background: "none", border: "none", color: "#D4AF37", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit", fontSize: "12px", padding: 0 }}
+                          >
+                            سياسة الخصوصية وشروط الاستخدام
+                          </button>
+                        </span>
+                      </label>
+                    )}
+
+                    <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                      <button type="button" onClick={closeAuthModal} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
+                      <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+                        {authMode === "login" ? "دخول" : "إنشاء الحساب"}
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -919,7 +1124,7 @@ export default function App() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, overflow: "hidden", border: `1.5px solid ${currentTheme.accent}`, flexShrink: 0 }}>
-              <img src="/logo.png.png" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src="/logo.png" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h1 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
           </div>
