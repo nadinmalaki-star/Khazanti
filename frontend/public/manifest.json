@@ -4,14 +4,14 @@
   "description": "تطبيق إدارة المصروفات الشخصية",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#16302d", // لون خلفية التطبيق عند فتحه
-  "theme_color": "#D4AF37",      // لون شريط العنوان في المتصفح
+  "background_color": "#16302d",
+  "theme_color": "#D4AF37",
   "icons": [
     {
-      "src": "/icon.png",        // المسار الصحيح للأيقونة داخل public
+      "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"  // لجعل الأيقونة تبدو جيدة على كل الأشكال
+      "purpose": "any maskable"
     }
   ]
 }
