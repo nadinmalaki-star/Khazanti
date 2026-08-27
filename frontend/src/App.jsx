@@ -1226,6 +1226,7 @@ export default function App() {
                 <div
                   key={th}
                   onClick={() => setThemeKey(th)}
+                  title={`تغيير الألوان: ${THEMES[th].name}`}
                   style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }}
                 />
               ))}
@@ -1237,6 +1238,7 @@ export default function App() {
               <button
                 key={curr}
                 onClick={() => setCurrency(curr)}
+                title={`عرض الأرصدة بال${CURRENCIES[curr].name}`}
                 style={{ background: currency === curr ? currentTheme.accent : currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, color: currency === curr ? "#0e1a1a" : currentTheme.text, padding: "6px 12px", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}
               >
                 {CURRENCIES[curr].symbol}
@@ -1375,7 +1377,8 @@ export default function App() {
             </div>
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>تسجيل عملية جديدة</div>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>تسجيل عملية جديدة</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 12 }}>سجّلي أي مصروف أو دخل، بيتحسب فورًا برصيد الخزنة المختارة.</div>
               {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
 
               <input
@@ -1488,8 +1491,11 @@ export default function App() {
         {/* ============ تبويب الديون ============ */}
         {activeTab === "debts" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div style={{ marginBottom: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>لما يستحق دين، اضغطي ⚙ إجراء بجنبه لتحصيله/تسديده أو تأجيله لتاريخ تاني.</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
               <button
                 onClick={() => setShowAddDebtModal(true)}
                 style={{ background: "#D4AF37", color: "#16302d", padding: "8px 16px", borderRadius: "8px", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "12px" }}
@@ -1701,7 +1707,8 @@ export default function App() {
             </div>
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>إدارة الخزائن والحسابات</div>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>إدارة الخزائن والحسابات</div>
+              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 16 }}>كل خزنة (كاش/بنك) رصيدها منفصل — اختاريها لما تسجّلي عملية عشان الحساب يضل مضبوط.</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ background: currentTheme.cardBg, padding: 14, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
