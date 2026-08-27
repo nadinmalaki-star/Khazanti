@@ -1006,7 +1006,7 @@ export default function App() {
               onClick={() => setShowContactModal(true)}
               style={{ background: "none", border: "none", color: "#D4AF37", fontSize: "13px", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}
             >
-              تواصل-ي معنا
+              تواصل معنا
             </button>
           </div>
         </div>
