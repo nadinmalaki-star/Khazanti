@@ -673,25 +673,27 @@ export default function App() {
 
     const { data: debtData, error: debtError } = await supabase
       .from("debts")
-      .update({ paid: true })
+      .update({ paid: 1 }) // عمود paid رقمي (numeric) مش boolean بقاعدة البيانات
       .eq("id", settlingDebt.id)
       .select();
 
-    // لو التحديث ما أثّر على أي صف (سياسات RLS ناقصة على جدول debts
-    // مثلاً)، منرجّع الحركة المالية يلي سجلناها لتوّنا عشان ما يضل
-    // الرصيد متغيّر بينما الدين لسا شكليًا "غير مسدد" بقاعدة البيانات.
+    // لو التحديث ما أثّر على أي صف أو رجّع خطأ، منرجّع الحركة المالية
+    // يلي سجلناها لتوّنا عشان ما يضل الرصيد متغيّر بينما الدين لسا
+    // شكليًا "غير مسدد" بقاعدة البيانات.
     if (debtError || !debtData || debtData.length === 0) {
       if (txData && txData[0]) {
         await supabase.from("transactions").delete().eq("id", txData[0].id);
       }
       alert(
-        "ما قدرنا نحدّث حالة الدين بقاعدة البيانات (صلاحيات RLS ناقصة على جدول debts) — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغي فريق التطوير."
+        "ما قدرنا نحدّث حالة الدين بقاعدة البيانات" +
+          (debtError ? ": " + debtError.message : " (صلاحيات RLS ناقصة)") +
+          " — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغي فريق التطوير."
       );
       return;
     }
 
     if (txData) setTransactions((prev) => [txData[0], ...prev]);
-    setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, paid: true } : d)));
+    setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, paid: 1 } : d)));
     setSettlingDebt(null);
   }
 
@@ -713,7 +715,9 @@ export default function App() {
 
     if (dbError || !updatedRows || updatedRows.length === 0) {
       alert(
-        "ما قدرنا نأجّل الدين بقاعدة البيانات (صلاحيات RLS ناقصة على جدول debts). بلّغي فريق التطوير."
+        "ما قدرنا نأجّل الدين بقاعدة البيانات" +
+          (dbError ? ": " + dbError.message : " (صلاحيات RLS ناقصة)") +
+          ". بلّغي فريق التطوير."
       );
       return;
     }
