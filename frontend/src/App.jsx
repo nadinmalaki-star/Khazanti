@@ -64,7 +64,7 @@ const THEMES = {
 
 // معلومات التواصل — بدّلي القيم هون بمعلوماتك الحقيقية بضغطة واحدة
 const CONTACT_EMAIL = "support@khznti.app";
-const CONTACT_WHATSAPP_DISPLAY = "0598168757"; 
+const CONTACT_WHATSAPP_DISPLAY = "0598168757";
 const CONTACT_WHATSAPP_LINK = "https://wa.me/970598168757";
 
 const REMEMBER_EMAIL_KEY = "khznti_remembered_email";
@@ -907,7 +907,7 @@ export default function App() {
               <button
                 key={curr}
                 onClick={() => setCurrency(curr)}
-                style={{ background: currency === curr ? "#D4AF37" : "#16302d", border: "1px solid #274442", color: currency === curr ? "#0e1a1a" : "#f2ede2", padding: "6px 12px", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}
+                style={{ background: currency === curr ? currentTheme.accent : currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, color: currency === curr ? "#0e1a1a" : currentTheme.text, padding: "6px 12px", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}
               >
                 {CURRENCIES[curr].symbol}
               </button>
