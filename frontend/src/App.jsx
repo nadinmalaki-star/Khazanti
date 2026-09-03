@@ -258,6 +258,12 @@ export default function App() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState(null); // { type: "success" | "error", text }
 
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [updatePasswordError, setUpdatePasswordError] = useState("");
+  const [updatePasswordSuccess, setUpdatePasswordSuccess] = useState("");
+
   const [transactions, setTransactions] = useState([]);
   const [debts, setDebts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -344,6 +350,15 @@ export default function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // رابط "نسيت كلمة المرور" بيسجّل دخول تلقائي (recovery session) —
+      // لازم نعترضه ونعرض فورم "كلمة مرور جديدة" بدل ما نودّيها مباشرة
+      // للوحة التحكم بدون ما تغيّر شي فعليًا.
+      if (_event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
+        setLoading(false);
+        return;
+      }
+
       if (session) {
         setIsLoggedIn(true);
         setUserEmail(session.user?.email || "");
@@ -833,6 +848,90 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleUpdatePassword(e) {
+    e.preventDefault();
+    setUpdatePasswordError("");
+    setUpdatePasswordSuccess("");
+
+    if (newPassword.length < 8) {
+      setUpdatePasswordError("كلمة المرور يجب أن تكون 8 أحرف على الأقل.");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setUpdatePasswordError("كلمتا المرور غير متطابقتين.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setUpdatePasswordSuccess("تم تحديث كلمة المرور بنجاح.");
+      setNewPassword("");
+      setNewPasswordConfirm("");
+      setTimeout(() => {
+        setIsPasswordRecovery(false);
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            setIsLoggedIn(true);
+            setUserEmail(session.user?.email || "");
+            fetchData();
+          }
+        });
+      }, 1500);
+    } catch (err) {
+      setUpdatePasswordError(translateAuthError(err.message));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // شاشة تعيين كلمة مرور جديدة — بتظهر لما توصل المستخدمة عبر رابط
+  // "نسيت كلمة المرور"، وبتاخذ أولوية قبل أي شاشة تانية (حتى لو
+  // Supabase عملها تسجيل دخول تلقائي عبر رابط الاستعادة).
+  if (isPasswordRecovery) {
+    return (
+      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", color: "#f2ede2", fontFamily: "'Tajawal', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');`}</style>
+        <div style={{ width: "100%", maxWidth: "380px", background: "#16302d", border: "1px solid #D4AF37", borderRadius: "16px", padding: "30px" }}>
+          <h3 style={{ margin: "0 0 6px", color: "#D4AF37", fontSize: "18px" }}>تعيين كلمة مرور جديدة</h3>
+          <p style={{ fontSize: "12.5px", opacity: 0.75, margin: "0 0 18px" }}>وصلتي عبر رابط استعادة كلمة المرور — اختاري كلمة مرور جديدة لحسابك.</p>
+
+          {updatePasswordError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{updatePasswordError}</div>}
+          {updatePasswordSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{updatePasswordSuccess}</div>}
+
+          <form onSubmit={handleUpdatePassword}>
+            <div style={{ marginBottom: "15px" }}>
+              <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>كلمة المرور الجديدة</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+              />
+            </div>
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", marginBottom: "5px", fontSize: "13px" }}>تأكيد كلمة المرور</label>
+              <input
+                type="password"
+                value={newPasswordConfirm}
+                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                required
+                placeholder="••••••••"
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
+              />
+            </div>
+            <button type="submit" style={{ width: "100%", background: "#D4AF37", border: "none", color: "#16302d", padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+              تحديث كلمة المرور
+            </button>
+          </form>
+        </div>
+      </div>
+    );
   }
 
   // الشاشة الترحيبية — بدون أي تغيير على المحتوى الأصلي، فقط إضافة "تواصل معنا"
