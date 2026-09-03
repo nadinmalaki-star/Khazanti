@@ -897,7 +897,7 @@ export default function App() {
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');`}</style>
         <div style={{ width: "100%", maxWidth: "380px", background: "#16302d", border: "1px solid #D4AF37", borderRadius: "16px", padding: "30px" }}>
           <h3 style={{ margin: "0 0 6px", color: "#D4AF37", fontSize: "18px" }}>تعيين كلمة مرور جديدة</h3>
-          <p style={{ fontSize: "12.5px", opacity: 0.75, margin: "0 0 18px" }}>وصلتي عبر رابط استعادة كلمة المرور — اختاري كلمة مرور جديدة لحسابك.</p>
+          <p style={{ fontSize: "12.5px", opacity: 0.75, margin: "0 0 18px" }}>هاد رابط استعادة كلمة المرور — اختار-ي كلمة مرور جديدة لحسابك.</p>
 
           {updatePasswordError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{updatePasswordError}</div>}
           {updatePasswordSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{updatePasswordSuccess}</div>}
