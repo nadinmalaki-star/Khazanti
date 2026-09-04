@@ -26,6 +26,10 @@ const CATEGORIES = [
   { key: "دخل إضافي", icon: "✧", type: "دخل" },
 ];
 
+// ألوان مخطط الفئات — متحقق منها بأداة تحقق النخالة اللونية (تباين
+// كافٍ حتى لعمى الألوان)، مش مجرد درجات من نفس اللون الذهبي.
+const CATEGORY_CHART_COLORS = ["#A8842E", "#1F9C87", "#B85F3F", "#4A6FB8", "#A14F6E"];
+
 const CURRENCIES = {
   ILS: { symbol: "₪", name: "شيكل", rate: 1 },
   USD: { symbol: "$", name: "دولار", rate: 0.27 },
@@ -273,8 +277,11 @@ export default function App() {
   const [selectedAccount, setSelectedAccount] = useState("الصندوق (كاش)");
   const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split("T")[0]);
   const [error, setError] = useState("");
+  const [editingTransactionId, setEditingTransactionId] = useState(null);
+  const [showAddTransactionForm, setShowAddTransactionForm] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [transactionFilter, setTransactionFilter] = useState("الكل"); // "الكل" | "دخل" | "مصروف" | "هالشهر"
   const [currency, setCurrency] = useState("ILS");
   const [themeKey, setThemeKey] = useState("emerald");
   const [activeTab, setActiveTab] = useState("transactions");
@@ -494,6 +501,44 @@ export default function App() {
       .sort((a, b) => b.catTotal - a.catTotal);
   }, [transactions, exchangeRate]);
 
+  // شرائح مخطط الفئات الدائري — أعلى ٤ فئات + شريحة "الباقي" لو في أكتر،
+  // عشان الألوان تضل متمايزة (مش لون لكل فئة من ١١ فئة ممكنة).
+  const categoryDonut = useMemo(() => {
+    const top = categoryBreakdown.slice(0, 4);
+    const rest = categoryBreakdown.slice(4);
+    const slices = [...top];
+    if (rest.length > 0) {
+      slices.push({
+        key: "الباقي",
+        icon: "✦",
+        catTotal: rest.reduce((sum, c) => sum + c.catTotal, 0),
+        percentage: rest.reduce((sum, c) => sum + c.percentage, 0),
+      });
+    }
+    let cumulative = 0;
+    return slices.map((s, i) => {
+      const start = cumulative;
+      cumulative += s.percentage * 3.6;
+      return { ...s, color: CATEGORY_CHART_COLORS[i], start, end: cumulative };
+    });
+  }, [categoryBreakdown]);
+
+  // سجل الحركات مفلتر بالبحث الموجود + رقاقات الفلتر الجديدة (دخل/مصروف/هالشهر)
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      const matchesSearch = t.category.includes(searchQuery) || (t.account && t.account.includes(searchQuery));
+      if (!matchesSearch) return false;
+      if (transactionFilter === "دخل") return t.type === "دخل" || t.type === "مبيعات";
+      if (transactionFilter === "مصروف") return t.type === "مصروف" || t.type === "شراء";
+      if (transactionFilter === "هالشهر") {
+        const now = new Date();
+        const d = new Date(t.date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }
+      return true;
+    });
+  }, [transactions, searchQuery, transactionFilter]);
+
   const visibleCategories = showAllCategories ? categoryBreakdown : categoryBreakdown.slice(0, 5);
 
   function exportToCSV() {
@@ -555,6 +600,29 @@ export default function App() {
     const catObj = CATEGORIES.find(c => c.key === category);
     const finalType = catObj ? catObj.type : "مصروف";
 
+    if (editingTransactionId) {
+      const { data, error: dbError } = await supabase
+        .from("transactions")
+        .update({
+          type: finalType,
+          amount: baseAmount,
+          category,
+          account: selectedAccount,
+          date: transactionDate || new Date().toISOString().split("T")[0],
+        })
+        .eq("id", editingTransactionId)
+        .select();
+
+      if (dbError || !data || data.length === 0) {
+        setError(dbError ? "فشل التعديل: " + dbError.message : "فشل التعديل (صلاحيات RLS ناقصة).");
+        return;
+      }
+
+      setTransactions(prev => prev.map(t => (t.id === editingTransactionId ? data[0] : t)));
+      cancelEditTransaction();
+      return;
+    }
+
     const newRecord = {
       type: finalType,
       amount: baseAmount,
@@ -576,6 +644,22 @@ export default function App() {
       setAmount("");
       setError("");
     }
+  }
+
+  function startEditTransaction(t) {
+    setEditingTransactionId(t.id);
+    setAmount(String(Number(t.amount) * exchangeRate));
+    setCategory(t.category);
+    setSelectedAccount(t.account || "الصندوق (كاش)");
+    setTransactionDate(t.date || new Date().toISOString().split("T")[0]);
+    setError("");
+    setShowAddTransactionForm(true);
+  }
+
+  function cancelEditTransaction() {
+    setEditingTransactionId(null);
+    setAmount("");
+    setError("");
   }
 
   async function handleSaveDebt() {
@@ -1476,37 +1560,61 @@ export default function App() {
             </div>
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>تسجيل عملية جديدة</div>
-              <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 12 }}>سجّل-ي أي مصروف أو دخل، بيتحسب فورًا برصيد الخزنة المختارة.</div>
-              {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
-
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="المبلغ..."
-                style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
-              />
-
-              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
-                  {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.key}</option>)}
-                </select>
-                <select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
-                  <option value="الصندوق (كاش)">الصندوق (كاش)</option>
-                  <option value="حساب البنك">حساب البنك</option>
-                </select>
+              <div
+                onClick={() => { if (!editingTransactionId) setShowAddTransactionForm(v => !v); }}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: editingTransactionId ? "default" : "pointer" }}
+              >
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{editingTransactionId ? "تعديل العملية" : "تسجيل عملية جديدة"}</div>
+                  {!showAddTransactionForm && <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>سجّل-ي أي مصروف أو دخل، بيتحسب فورًا برصيد الخزنة المختارة.</div>}
+                </div>
+                {!editingTransactionId && (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={currentTheme.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showAddTransactionForm ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                    <polyline points="6,9 12,15 18,9" />
+                  </svg>
+                )}
               </div>
 
-              <div style={{ marginBottom: 10 }}>
-                <DatePickerSelects
-                  value={transactionDate}
-                  onChange={setTransactionDate}
-                  theme={currentTheme}
-                />
-              </div>
+              {(showAddTransactionForm || editingTransactionId) && (
+                <div style={{ marginTop: 14 }}>
+                  {error && <div style={{ color: "#ff6b6b", fontSize: "11px", marginBottom: 8 }}>{error}</div>}
 
-              <button onClick={addTransaction} style={{ width: "100%", background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>حفظ العملية</button>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="المبلغ..."
+                    style={{ width: "100%", padding: "10px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box" }}
+                  />
+
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                    <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
+                      {CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.icon} {c.key}</option>)}
+                    </select>
+                    <select value={selectedAccount} onChange={(e) => setSelectedAccount(e.target.value)} style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }}>
+                      <option value="الصندوق (كاش)">الصندوق (كاش)</option>
+                      <option value="حساب البنك">حساب البنك</option>
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: 10 }}>
+                    <DatePickerSelects
+                      value={transactionDate}
+                      onChange={setTransactionDate}
+                      theme={currentTheme}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {editingTransactionId && (
+                      <button onClick={cancelEditTransaction} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "10px 16px", borderRadius: 8, cursor: "pointer" }}>إلغاء</button>
+                    )}
+                    <button onClick={addTransaction} style={{ flex: 1, background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>
+                      {editingTransactionId ? "تحديث العملية" : "حفظ العملية"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
@@ -1517,6 +1625,24 @@ export default function App() {
                 <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد مصاريف مسجلة بعد.</div>
               ) : (
                 <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18 }}>
+                    <div style={{ position: "relative", width: 84, height: 84, flexShrink: 0 }}>
+                      <div style={{
+                        width: 84, height: 84, borderRadius: "50%",
+                        background: `conic-gradient(from 0deg, ${categoryDonut.map(s => `${s.color} ${s.start}deg ${s.end}deg`).join(", ")})`,
+                      }}></div>
+                      <div style={{ position: "absolute", inset: 14, borderRadius: "50%", background: currentTheme.boxBg }}></div>
+                    </div>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      {categoryDonut.map((s) => (
+                        <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, flexShrink: 0 }}></span>
+                          <span>{s.icon} {s.key}</span>
+                          <span style={{ marginInlineStart: "auto", fontFamily: "'IBM Plex Mono', monospace", opacity: 0.75 }}>{s.percentage.toFixed(0)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {visibleCategories.map(cat => (
                       <div key={cat.key} style={{ fontSize: "11px" }}>
@@ -1561,11 +1687,33 @@ export default function App() {
                 style={{ width: "100%", padding: "8px", borderRadius: 8, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 10, boxSizing: "border-box", fontSize: "12px" }}
               />
 
+              <div style={{ display: "flex", gap: 6, marginBottom: 10, overflowX: "auto" }}>
+                {["الكل", "دخل", "مصروف", "هالشهر"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setTransactionFilter(f)}
+                    style={{
+                      flexShrink: 0,
+                      background: transactionFilter === f ? currentTheme.accent : currentTheme.cardBg,
+                      color: transactionFilter === f ? "#0e1a1a" : currentTheme.text,
+                      border: `1px solid ${currentTheme.border}`,
+                      fontSize: 11, fontWeight: 700, padding: "5px 13px", borderRadius: 20, cursor: "pointer",
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto" }}>
                 {transactions.length === 0 ? (
-                  <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا توجد حركات مسجلة.</div>
+                  <div style={{ fontSize: 11.5, opacity: 0.7, textAlign: "center", padding: "18px 10px", lineHeight: 1.8 }}>
+                    خزنتك لسا فاضية 💼<br />سجّل-ي أول عملية دخل أو مصروف عشان تبلشي تشوفي رصيدك يتحرك.
+                  </div>
+                ) : filteredTransactions.length === 0 ? (
+                  <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>ما في نتائج مطابقة.</div>
                 ) : (
-                  transactions.filter(t => t.category.includes(searchQuery) || (t.account && t.account.includes(searchQuery))).map(t => (
+                  filteredTransactions.map(t => (
                     <div key={t.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px" }}>
                       <div>
                         <span style={{ fontWeight: 700 }}>{t.category}</span>
@@ -1575,6 +1723,9 @@ export default function App() {
                         <span style={{ color: t.type === "دخل" || t.type === "مبيعات" ? "#38a169" : "#e53e3e", fontWeight: "bold" }}>
                           {t.type === "دخل" || t.type === "مبيعات" ? "+" : "-"} {currencySymbol} {(Number(t.amount) * exchangeRate).toFixed(2)}
                         </span>
+                        <button onClick={() => startEditTransaction(t)} style={{ background: "transparent", border: "none", color: currentTheme.accent, cursor: "pointer", display: "flex", alignItems: "center" }} title="تعديل الحركة">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                        </button>
                         <button onClick={() => removeTransaction(t.id)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", display: "flex", alignItems: "center" }} title="حذف الحركة">
                           <Icon name="trash" size={14} />
                         </button>
