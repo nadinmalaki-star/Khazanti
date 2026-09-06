@@ -1084,49 +1084,15 @@ export default function App() {
             />
           </div>
           <h1 style={{ fontSize: "50px", fontWeight: 900, color: "#f2ede2", margin: "0 0 10px", letterSpacing: "1px" }}>خِزنتي</h1>
-          <p style={{ fontSize: "18px", color: "#c9a961", fontWeight: 500, margin: 0 }}>بوابتك الذكية للتحكم المالي والأمان السحابي</p>
+          <p style={{ fontSize: "18px", color: "#c9a961", fontWeight: 500, margin: 0 }}>بوابتك الذكية للتحكم المالي الآمن</p>
         </div>
 
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.3)" }}>
           <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
           <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>أكثر من مجرد سجل مصروفات</h2>
           <p style={{ fontSize: "15px", opacity: 0.9, lineHeight: "1.8", maxWidth: "700px", margin: "0 auto", color: "#f2ede2" }}>
-            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل هويته البصرية الراقية وبنيته التقنية المتقدمة، نجمع بين فخامة العمل المصرفي وسهولة التقنية الحديثة.
+            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل بساطتها وسهولة استخدامها، نجمع بين دقة العمل المصرفي وسهولة التقنية الحديثة.
           </p>
-        </div>
-
-        <div style={{ width: "100%", maxWidth: "850px", marginBottom: "40px" }}>
-          <div style={{ textAlign: "center", marginBottom: "25px" }}>
-            <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "5px", fontWeight: 700 }}>الهوية البصرية</div>
-            <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 8px" }}>لغة الألوان والرمز</h2>
-            <p style={{ fontSize: "14px", color: "#c9a961", opacity: 0.9, margin: 0 }}>هوية بصرية بطابع فاخر ومصرفي — كل لون ورمز اختير ليعكس الموثوقية والأمان.</p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px", marginBottom: "25px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h3 style={{ fontSize: "17px", margin: "6px 0", color: "#f2ede2" }}>الأخضر الداكن</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى المال والثروة والاستقرار المالي، ويوثّق بيئة عمل مصرفية آمنة وهادئة.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h3 style={{ fontSize: "17px", margin: "6px 0", color: "#f2ede2" }}>الذهبي الدافئ المصقول</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى الفخامة والقيمة العالية والاحترافية، ويُستخدم لإبراز العناصر الأساسية.</p>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px" }}>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h3 style={{ fontSize: "17px", margin: "0 0 8px", color: "#D4AF37" }}>قرص الخزنة الدائري</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى التحكم المطلق والأمان التام، خزنة حقيقية تحفظ أسرارك بعيداً عن المتطفلين.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h3 style={{ fontSize: "17px", margin: "0 0 8px", color: "#D4AF37" }}>سهم النمو الصاعد</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>يرمز إلى الاستثمار وتزايد الأرباح والتقدم المالي المستمر نحو الأفضل.</p>
-            </div>
-            <div style={{ background: "#16302d", border: "1px solid #274442", borderRadius: "16px", padding: "20px" }}>
-              <h3 style={{ fontSize: "17px", margin: "0 0 8px", color: "#D4AF37" }}>الأيقونات الداخلية</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>رموز خطية نقية بلون ذهبي هادئ، تعكس الدقة والوضوح دون أي إزعاج بصري.</p>
-            </div>
-          </div>
         </div>
 
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px" }}>
@@ -1139,7 +1105,7 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>عزل تام للبيانات</h4>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بيئة سحابية محمية ومستقلة لكل مستخدم، تضمن سرية معلوماته المالية.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بياناتك المالية محمية وخاصة فيك بس، محدا غيرك يقدر يوصلها.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>إدارة مرنة للحركات</h4>
@@ -1195,7 +1161,7 @@ export default function App() {
         </div>
 
         <div style={{ textAlign: "center", opacity: 0.6, fontSize: "12px", borderTop: "1px solid #274442", width: "100%", maxWidth: "850px", paddingTop: "20px" }}>
-          KHZNTI — بوابتك الذكية للتحكم المالي والأمان السحابي<br />
+          KHZNTI — بوابتك الذكية للتحكم المالي الآمن<br />
           تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
         </div>
 
