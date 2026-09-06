@@ -79,9 +79,17 @@ const AUTH_ERROR_TRANSLATIONS = {
   "User already registered": "هذا البريد الإلكتروني مسجّل مسبقاً.",
   "Email not confirmed": "يجب تأكيد بريدك الإلكتروني أولاً، تحقق-ي من صندوق الوارد.",
   "Unable to validate email address: invalid format": "صيغة البريد الإلكتروني غير صحيحة.",
+  "email rate limit exceeded": "تم إرسال عدد كبير من الرسائل خلال وقت قصير. الرجاء المحاولة لاحقاً بعد شوي.",
 };
 function translateAuthError(message) {
-  return AUTH_ERROR_TRANSLATIONS[message] || message;
+  if (!message) return "حدث خطأ غير متوقع.";
+  if (AUTH_ERROR_TRANSLATIONS[message]) return AUTH_ERROR_TRANSLATIONS[message];
+  // Supabase بيرجع رسالة الحد الزمني (rate limit) بصيغ مختلفة فيها رقم
+  // ثواني متغيّر، فما فيها تنترجم بمطابقة تامة متل باقي الرسائل بالأعلى.
+  if (/security purposes|only request this/i.test(message)) {
+    return "الرجاء الانتظار قليلاً قبل إعادة إرسال رسالة التأكيد.";
+  }
+  return message;
 }
 
 // ------------------------------------------------------------------
@@ -255,12 +263,18 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [loginSuccess, setLoginSuccess] = useState("");
   const [rememberEmail, setRememberEmail] = useState(true);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState(null); // { type: "success" | "error", text }
+
+  // حساب جديد اتسجّل لكن بريده الإلكتروني لسا مش مؤكَّد (Confirm email مفعّل
+  // بمشروع Supabase هاد) — ما فيها تسجّل دخول لحتى تأكّد-ي البريد.
+  const [awaitingEmailConfirmation, setAwaitingEmailConfirmation] = useState(false);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState("");
+  const [resendStatus, setResendStatus] = useState(null); // { type: "success" | "error", text }
+  const [resendLoading, setResendLoading] = useState(false);
 
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -279,6 +293,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [editingTransactionId, setEditingTransactionId] = useState(null);
   const [showAddTransactionForm, setShowAddTransactionForm] = useState(false);
+  const [savingTransaction, setSavingTransaction] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [transactionFilter, setTransactionFilter] = useState("الكل"); // "الكل" | "دخل" | "مصروف" | "هالشهر"
@@ -290,6 +305,7 @@ export default function App() {
 
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
@@ -299,11 +315,14 @@ export default function App() {
   const [debtAmount, setDebtAmount] = useState("");
   const [debtType, setDebtType] = useState("دين له");
   const [debtDueDate, setDebtDueDate] = useState("");
+  const [savingDebt, setSavingDebt] = useState(false);
 
   const [settlingDebt, setSettlingDebt] = useState(null);
   const [settleModalMode, setSettleModalMode] = useState("choose"); // "choose" | "settle" | "postpone"
   const [settleAccount, setSettleAccount] = useState("الصندوق (كاش)");
   const [postponeDate, setPostponeDate] = useState("");
+  const [settlingInProgress, setSettlingInProgress] = useState(false);
+  const [postponingInProgress, setPostponingInProgress] = useState(false);
   const [showPaidDebts, setShowPaidDebts] = useState(false);
   const [notifyPermission, setNotifyPermission] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "unsupported"
@@ -546,8 +565,8 @@ export default function App() {
       alert("لا توجد حركات للتصدير");
       return;
     }
-    const headers = "ID,Type,Category,Account,Amount,Date\n";
-    const rows = transactions.map(t => `${t.id},${t.type},${t.category},${t.account || "الصندوق (كاش)"},${t.amount},${t.date}`).join("\n");
+    const headers = "Type,Category,Account,Amount,Date\n";
+    const rows = transactions.map(t => `${t.type},${t.category},${t.account || "الصندوق (كاش)"},${t.amount},${t.date}`).join("\n");
     const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -566,17 +585,10 @@ export default function App() {
       return;
     }
 
-    const { data: txData } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("id", { ascending: false });
-
-    const { data: debtData } = await supabase
-      .from("debts")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("id", { ascending: false });
+    const [{ data: txData }, { data: debtData }] = await Promise.all([
+      supabase.from("transactions").select("*").eq("user_id", user.id).order("id", { ascending: false }),
+      supabase.from("debts").select("*").eq("user_id", user.id).order("id", { ascending: false }),
+    ]);
 
     setTransactions(txData || []);
     setDebts(debtData || []);
@@ -584,65 +596,71 @@ export default function App() {
   }
 
   async function addTransaction() {
+    if (savingTransaction) return; // منع إرسال مزدوج
     const num = parseFloat(amount);
     if (!num || num <= 0) {
       setError("أدخل-ي مبلغ صحيح");
       return;
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      setError("يجب تسجيل الدخول أولاً");
-      return;
-    }
-
-    const baseAmount = num / exchangeRate;
-    const catObj = CATEGORIES.find(c => c.key === category);
-    const finalType = catObj ? catObj.type : "مصروف";
-
-    if (editingTransactionId) {
-      const { data, error: dbError } = await supabase
-        .from("transactions")
-        .update({
-          type: finalType,
-          amount: baseAmount,
-          category,
-          account: selectedAccount,
-          date: transactionDate || new Date().toISOString().split("T")[0],
-        })
-        .eq("id", editingTransactionId)
-        .select();
-
-      if (dbError || !data || data.length === 0) {
-        setError(dbError ? "فشل التعديل: " + dbError.message : "فشل التعديل (صلاحيات RLS ناقصة).");
+    setSavingTransaction(true);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        setError("يجب تسجيل الدخول أولاً");
         return;
       }
 
-      setTransactions(prev => prev.map(t => (t.id === editingTransactionId ? data[0] : t)));
-      cancelEditTransaction();
-      return;
-    }
+      const baseAmount = num / exchangeRate;
+      const catObj = CATEGORIES.find(c => c.key === category);
+      const finalType = catObj ? catObj.type : "مصروف";
 
-    const newRecord = {
-      type: finalType,
-      amount: baseAmount,
-      category,
-      account: selectedAccount,
-      date: transactionDate || new Date().toISOString().split("T")[0],
-      user_id: user.id
-    };
+      if (editingTransactionId) {
+        const { data, error: dbError } = await supabase
+          .from("transactions")
+          .update({
+            type: finalType,
+            amount: baseAmount,
+            category,
+            account: selectedAccount,
+            date: transactionDate || new Date().toISOString().split("T")[0],
+          })
+          .eq("id", editingTransactionId)
+          .select();
 
-    const { data, error: dbError } = await supabase
-      .from("transactions")
-      .insert([newRecord])
-      .select();
+        if (dbError || !data || data.length === 0) {
+          setError(dbError ? "فشل التعديل: " + dbError.message : "فشل التعديل (صلاحيات RLS ناقصة).");
+          return;
+        }
 
-    if (dbError) {
-      setError("فشل الحفظ: " + dbError.message);
-    } else if (data) {
-      setTransactions(prev => [data[0], ...prev]);
-      setAmount("");
-      setError("");
+        setTransactions(prev => prev.map(t => (t.id === editingTransactionId ? data[0] : t)));
+        cancelEditTransaction();
+        return;
+      }
+
+      const newRecord = {
+        type: finalType,
+        amount: baseAmount,
+        category,
+        account: selectedAccount,
+        date: transactionDate || new Date().toISOString().split("T")[0],
+        user_id: user.id
+      };
+
+      const { data, error: dbError } = await supabase
+        .from("transactions")
+        .insert([newRecord])
+        .select();
+
+      if (dbError) {
+        setError("فشل الحفظ: " + dbError.message);
+      } else if (data) {
+        setTransactions(prev => [data[0], ...prev]);
+        setAmount("");
+        setError("");
+      }
+    } finally {
+      setSavingTransaction(false);
     }
   }
 
@@ -669,49 +687,75 @@ export default function App() {
       return;
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      alert("يجب تسجيل الدخول أولاً");
-      return;
-    }
+    if (savingDebt) return; // منع إرسال مزدوج
+    setSavingDebt(true);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        alert("يجب تسجيل الدخول أولاً");
+        return;
+      }
 
-    const baseAmount = num / exchangeRate;
-    const newDebt = {
-      name: debtName,
-      amount: baseAmount,
-      type: debtType,
-      due_date: debtDueDate || null,
-      user_id: user.id
-    };
+      const baseAmount = num / exchangeRate;
+      const newDebt = {
+        name: debtName,
+        amount: baseAmount,
+        type: debtType,
+        due_date: debtDueDate || null,
+        user_id: user.id
+      };
 
-    const { data, error: dbError } = await supabase
-      .from("debts")
-      .insert([newDebt])
-      .select();
+      const { data, error: dbError } = await supabase
+        .from("debts")
+        .insert([newDebt])
+        .select();
 
-    if (dbError) {
-      // لو ظهر خطأ يذكر عمود due_date، لازم تُضاف عمود جديدة بجدول debts
-      // بقاعدة البيانات أولًا (راجعي ملاحظة SQL بالأسفل).
-      alert("فشل حفظ الدين: " + dbError.message);
-    } else {
-      if (data) setDebts(prev => [data[0], ...prev]);
-      setShowAddDebtModal(false);
-      setDebtName("");
-      setDebtAmount("");
-      setDebtDueDate("");
+      if (dbError) {
+        // لو ظهر خطأ يذكر عمود due_date، لازم تُضاف عمود جديدة بجدول debts
+        // بقاعدة البيانات أولًا (راجعي ملاحظة SQL بالأسفل).
+        alert("فشل حفظ الدين: " + dbError.message);
+      } else {
+        if (data) setDebts(prev => [data[0], ...prev]);
+        setShowAddDebtModal(false);
+        setDebtName("");
+        setDebtAmount("");
+        setDebtDueDate("");
+      }
+    } finally {
+      setSavingDebt(false);
     }
   }
 
   async function removeTransaction(id) {
     const itemToDelete = transactions.find(t => t.id === id);
-    if (!itemToDelete) return;
+    if (!itemToDelete) return; // الحركة أصلاً مش موجودة (تم حذفها/سحبها قبل هيك) — منع طلب مزدوج
 
     setTransactions(transactions.filter((t) => t.id !== id));
     setDeletedItem(itemToDelete);
+    setDeleteError("");
 
     if (undoTimer) clearTimeout(undoTimer);
     const timer = setTimeout(async () => {
-      await supabase.from("transactions").delete().eq("id", id);
+      try {
+        const { data, error: dbError } = await supabase
+          .from("transactions")
+          .delete()
+          .eq("id", id)
+          .select();
+
+        // لو ما انحذف أي صف فعليًا (صلاحيات RLS ناقصة، أو الحركة مش موجودة
+        // أصلاً بقاعدة البيانات) — منرجّع الحركة عالواجهة، ما منفترض إنها
+        // انحذفت لمجرد إنو ما ظهر خطأ.
+        if (dbError || !data || data.length === 0) {
+          setTransactions(prev => [itemToDelete, ...prev]);
+          setDeleteError("تعذّر حذف الحركة، حاول-ي مرة تانية.");
+          setTimeout(() => setDeleteError(""), 6000);
+        }
+      } catch (err) {
+        setTransactions(prev => [itemToDelete, ...prev]);
+        setDeleteError("فشل حذف الحركة — تحقق-ي من اتصال الإنترنت.");
+        setTimeout(() => setDeleteError(""), 6000);
+      }
       setDeletedItem(null);
     }, 5000);
     setUndoTimer(timer);
@@ -742,58 +786,62 @@ export default function App() {
   // (مش تلقائية بمجرد وصول تاريخ الاستحقاق)، لأنو وصول التاريخ ما يعني
   // بالضرورة إنو الدين انسدد فعليًا.
   async function settleDebt() {
-    if (!settlingDebt) return;
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      alert("يجب تسجيل الدخول أولاً");
-      return;
-    }
-
-    const finalType = settlingDebt.type === "دين له" ? "دخل" : "مصروف";
-    const newRecord = {
-      type: finalType,
-      amount: settlingDebt.amount,
-      category: settlingDebt.type === "دين له" ? "دخل إضافي" : "أخرى",
-      account: settleAccount,
-      date: new Date().toISOString().split("T")[0],
-      user_id: user.id,
-    };
-
-    const { data: txData, error: txError } = await supabase
-      .from("transactions")
-      .insert([newRecord])
-      .select();
-
-    if (txError) {
-      alert("فشل تسجيل الحركة: " + txError.message);
-      return;
-    }
-
-    const { data: debtData, error: debtError } = await supabase
-      .from("debts")
-      .update({ paid: 1 }) // عمود paid رقمي (numeric) مش boolean بقاعدة البيانات
-      .eq("id", settlingDebt.id)
-      .select();
-
-    // لو التحديث ما أثّر على أي صف أو رجّع خطأ، منرجّع الحركة المالية
-    // يلي سجلناها لتوّنا عشان ما يضل الرصيد متغيّر بينما الدين لسا
-    // شكليًا "غير مسدد" بقاعدة البيانات.
-    if (debtError || !debtData || debtData.length === 0) {
-      if (txData && txData[0]) {
-        await supabase.from("transactions").delete().eq("id", txData[0].id);
+    if (!settlingDebt || settlingInProgress) return;
+    setSettlingInProgress(true);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        alert("يجب تسجيل الدخول أولاً");
+        return;
       }
-      alert(
-        "ما قدرنا نحدّث حالة الدين بقاعدة البيانات" +
-          (debtError ? ": " + debtError.message : " (صلاحيات RLS ناقصة)") +
-          " — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغ-ي فريق التطوير."
-      );
-      return;
-    }
 
-    if (txData) setTransactions((prev) => [txData[0], ...prev]);
-    setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, paid: 1 } : d)));
-    setSettlingDebt(null);
+      const finalType = settlingDebt.type === "دين له" ? "دخل" : "مصروف";
+      const newRecord = {
+        type: finalType,
+        amount: settlingDebt.amount,
+        category: settlingDebt.type === "دين له" ? "دخل إضافي" : "أخرى",
+        account: settleAccount,
+        date: new Date().toISOString().split("T")[0],
+        user_id: user.id,
+      };
+
+      const { data: txData, error: txError } = await supabase
+        .from("transactions")
+        .insert([newRecord])
+        .select();
+
+      if (txError) {
+        alert("فشل تسجيل الحركة: " + txError.message);
+        return;
+      }
+
+      const { data: debtData, error: debtError } = await supabase
+        .from("debts")
+        .update({ paid: 1 }) // عمود paid رقمي (numeric) مش boolean بقاعدة البيانات
+        .eq("id", settlingDebt.id)
+        .select();
+
+      // لو التحديث ما أثّر على أي صف أو رجّع خطأ، منرجّع الحركة المالية
+      // يلي سجلناها لتوّنا عشان ما يضل الرصيد متغيّر بينما الدين لسا
+      // شكليًا "غير مسدد" بقاعدة البيانات.
+      if (debtError || !debtData || debtData.length === 0) {
+        if (txData && txData[0]) {
+          await supabase.from("transactions").delete().eq("id", txData[0].id);
+        }
+        alert(
+          "ما قدرنا نحدّث حالة الدين بقاعدة البيانات" +
+            (debtError ? ": " + debtError.message : " (صلاحيات RLS ناقصة)") +
+            " — تراجعنا عن الحركة المالية عشان الرصيد يضل صحيح. بلّغ-ي فريق التطوير."
+        );
+        return;
+      }
+
+      if (txData) setTransactions((prev) => [txData[0], ...prev]);
+      setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, paid: 1 } : d)));
+      setSettlingDebt(null);
+    } finally {
+      setSettlingInProgress(false);
+    }
   }
 
   function openSettleModal(debt) {
@@ -804,25 +852,29 @@ export default function App() {
   }
 
   async function postponeDebtDate() {
-    if (!settlingDebt || !postponeDate) return;
+    if (!settlingDebt || !postponeDate || postponingInProgress) return;
+    setPostponingInProgress(true);
+    try {
+      const { data: updatedRows, error: dbError } = await supabase
+        .from("debts")
+        .update({ due_date: postponeDate })
+        .eq("id", settlingDebt.id)
+        .select();
 
-    const { data: updatedRows, error: dbError } = await supabase
-      .from("debts")
-      .update({ due_date: postponeDate })
-      .eq("id", settlingDebt.id)
-      .select();
+      if (dbError || !updatedRows || updatedRows.length === 0) {
+        alert(
+          "ما قدرنا نأجّل الدين بقاعدة البيانات" +
+            (dbError ? ": " + dbError.message : " (صلاحيات RLS ناقصة)") +
+            ". بلّغ-ي فريق التطوير."
+        );
+        return;
+      }
 
-    if (dbError || !updatedRows || updatedRows.length === 0) {
-      alert(
-        "ما قدرنا نأجّل الدين بقاعدة البيانات" +
-          (dbError ? ": " + dbError.message : " (صلاحيات RLS ناقصة)") +
-          ". بلّغ-ي فريق التطوير."
-      );
-      return;
+      setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, due_date: postponeDate } : d)));
+      setSettlingDebt(null);
+    } finally {
+      setPostponingInProgress(false);
     }
-
-    setDebts((prev) => prev.map((d) => (d.id === settlingDebt.id ? { ...d, due_date: postponeDate } : d)));
-    setSettlingDebt(null);
   }
 
   function requestDebtNotifications() {
@@ -834,10 +886,11 @@ export default function App() {
   function openAuthModal(mode) {
     setAuthMode(mode);
     setLoginError("");
-    setLoginSuccess("");
     setForgotMode(false);
     setForgotStatus(null);
     setAgreedToTerms(false);
+    setAwaitingEmailConfirmation(false);
+    setResendStatus(null);
     setShowLoginModal(true);
   }
 
@@ -845,24 +898,26 @@ export default function App() {
   function switchAuthMode(mode) {
     setAuthMode(mode);
     setLoginError("");
-    setLoginSuccess("");
     setForgotMode(false);
     setForgotStatus(null);
     setAgreedToTerms(false);
+    setAwaitingEmailConfirmation(false);
+    setResendStatus(null);
   }
 
   function closeAuthModal() {
     setShowLoginModal(false);
     setLoginError("");
-    setLoginSuccess("");
     setForgotMode(false);
     setForgotStatus(null);
+    setAwaitingEmailConfirmation(false);
+    setResendStatus(null);
   }
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return; // منع إرسال مزدوج لو ضغطت الزر أكتر من مرة
     setLoginError("");
-    setLoginSuccess("");
 
     if (authMode === "signup") {
       if (loginPassword.length < 8) {
@@ -904,11 +959,23 @@ export default function App() {
 
         if (error) throw error;
 
-        if (data.user) {
-          setLoginSuccess("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
-          setAuthMode("login");
+        if (data.session) {
+          // (أ) الحساب اتسجّل وفي جلسة فورية — يعني تأكيد البريد مش مفعّل
+          // بهاد الإعداد، أو الحساب كان أصلاً مؤكَّد. onAuthStateChange
+          // رح يلتقط الجلسة هاي لحاله ويحوّل للوحة التحكم — ما في داعي
+          // نعمل شي إضافي هون.
           setAgreedToTerms(false);
+        } else if (data.user) {
+          // (ب) الحساب اتسجّل بس ما في جلسة — لازم تأكيد البريد الإلكتروني
+          // قبل ما تقدر تسجّل دخول (هاد وضع Supabase الحالي لهاد المشروع).
+          setPendingConfirmationEmail(loginEmail);
+          setAwaitingEmailConfirmation(true);
+          setResendStatus(null);
+          setAgreedToTerms(false);
+          setLoginPassword("");
         }
+        // (ج) فشل التسجيل بيوصل هون عن طريق catch تحت — ما منحتاج نتعامل
+        // معه هون لأنه أصلاً بيرمي error ويوقف قبل ما يوصل لهاد السطر.
       }
     } catch (err) {
       setLoginError("حدث خطأ: " + translateAuthError(err.message));
@@ -919,6 +986,7 @@ export default function App() {
 
   async function handleForgotPassword(e) {
     e.preventDefault();
+    if (loading) return;
     setForgotStatus(null);
     setLoading(true);
     try {
@@ -934,8 +1002,28 @@ export default function App() {
     }
   }
 
+  // إعادة إرسال رسالة تأكيد البريد الإلكتروني لحساب لسا ما تأكّد
+  async function resendConfirmationEmail() {
+    if (!pendingConfirmationEmail || resendLoading) return; // منع إرسال مزدوج
+    setResendLoading(true);
+    setResendStatus(null);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: pendingConfirmationEmail,
+      });
+      if (error) throw error;
+      setResendStatus({ type: "success", text: "تم إرسال رابط التأكيد مجدداً. تحقق-ي من بريدك الإلكتروني." });
+    } catch (err) {
+      setResendStatus({ type: "error", text: translateAuthError(err.message) });
+    } finally {
+      setResendLoading(false);
+    }
+  }
+
   async function handleUpdatePassword(e) {
     e.preventDefault();
+    if (loading) return;
     setUpdatePasswordError("");
     setUpdatePasswordSuccess("");
 
@@ -1009,10 +1097,23 @@ export default function App() {
                 style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #274442", background: "#0e1a1a", color: "#f2ede2" }}
               />
             </div>
-            <button type="submit" style={{ width: "100%", background: "#D4AF37", border: "none", color: "#16302d", padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
-              تحديث كلمة المرور
+            <button type="submit" disabled={loading} style={{ width: "100%", background: "#D4AF37", border: "none", color: "#16302d", padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
+              {loading ? "جارِ التحديث..." : "تحديث كلمة المرور"}
             </button>
           </form>
+        </div>
+      </div>
+    );
+  }
+
+  // فحص الجلسة الأولي (getSession) لسا شغال — منعرض شاشة بسيطة بدل ما
+  // نفلاش الصفحة الترحيبية لحظة وحدة قبل ما نعرف إذا في جلسة مسجّلة أصلاً
+  // (خصوصًا لمستخدمة رجعت وهي مسجّلة دخول من قبل).
+  if (!isLoggedIn && loading) {
+    return (
+      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 72, height: 72, borderRadius: 18, overflow: "hidden", border: "2px solid #D4AF37", boxShadow: "0 12px 30px rgba(0,0,0,0.6)" }}>
+          <img src="/logo.png" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
       </div>
     );
@@ -1104,19 +1205,19 @@ export default function App() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>عزل تام للبيانات</h4>
+              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>عزل تام للبيانات</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بياناتك المالية محمية وخاصة فيك بس، محدا غيرك يقدر يوصلها.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>إدارة مرنة للحركات</h4>
+              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>إدارة مرنة للحركات</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>تصنيفات شاملة</h4>
+              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>تصنيفات شاملة</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>١١ فئة مصروف و٤ فئات دخل، تغطي كل احتياجاتك الواقعية.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h4 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>تجربة ويب تقدمية (PWA)</h4>
+              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>تجربة ويب تقدمية (PWA)</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تطبيق سريع وخفيف يعمل من المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
             </div>
           </div>
@@ -1169,7 +1270,7 @@ export default function App() {
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "400px", color: "#f2ede2" }}>
 
-              {!forgotMode && (
+              {!forgotMode && !awaitingEmailConfirmation && (
                 <div style={{ display: "flex", background: "#0e1a1a", borderRadius: "10px", padding: "4px", marginBottom: "20px", border: "1px solid #274442" }}>
                   <button type="button" onClick={() => switchAuthMode("login")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: authMode === "login" ? "#D4AF37" : "transparent", color: authMode === "login" ? "#0e1a1a" : "#f2ede2", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
                     تسجيل الدخول
@@ -1180,7 +1281,49 @@ export default function App() {
                 </div>
               )}
 
-              {forgotMode ? (
+              {awaitingEmailConfirmation ? (
+                <>
+                  <h3 style={{ margin: "0 0 6px", color: "#D4AF37", fontSize: "18px" }}>تأكيد بريدك الإلكتروني</h3>
+                  <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, margin: "0 0 16px" }}>
+                    تم إنشاء حسابك بنجاح. أرسلنا رابط تأكيد إلى بريدك الإلكتروني{" "}
+                    <strong style={{ color: "#D4AF37" }}>{pendingConfirmationEmail}</strong>. يرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول.
+                  </p>
+
+                  {resendStatus && (
+                    <div style={{
+                      color: resendStatus.type === "success" ? "#48bb78" : "#ff6b6b",
+                      fontSize: "12px", marginBottom: "14px",
+                      background: resendStatus.type === "success" ? "rgba(72,187,120,0.1)" : "rgba(255,107,107,0.1)",
+                      padding: "8px", borderRadius: "6px"
+                    }}>
+                      {resendStatus.text}
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <button
+                      type="button"
+                      onClick={resendConfirmationEmail}
+                      disabled={resendLoading}
+                      style={{ background: "rgba(212,175,55,0.12)", border: "1px solid #D4AF37", color: "#D4AF37", padding: "10px", borderRadius: "8px", fontWeight: 700, cursor: resendLoading ? "default" : "pointer", fontSize: "13px", opacity: resendLoading ? 0.6 : 1 }}
+                    >
+                      {resendLoading ? "جارِ الإرسال..." : "إعادة إرسال رسالة التأكيد"}
+                    </button>
+                    <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        onClick={() => { setAwaitingEmailConfirmation(false); switchAuthMode("login"); setLoginEmail(pendingConfirmationEmail); }}
+                        style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}
+                      >
+                        رجوع لتسجيل الدخول
+                      </button>
+                      <button type="button" onClick={closeAuthModal} style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
+                        إغلاق
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : forgotMode ? (
                 <>
                   <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "18px" }}>استعادة كلمة المرور</h3>
 
@@ -1209,8 +1352,8 @@ export default function App() {
                     </div>
                     <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
                       <button type="button" onClick={() => { setForgotMode(false); setForgotStatus(null); }} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>رجوع لتسجيل الدخول</button>
-                      <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
-                        إرسال الرابط
+                      <button type="submit" disabled={loading} style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
+                        {loading ? "جارِ الإرسال..." : "إرسال الرابط"}
                       </button>
                     </div>
                   </form>
@@ -1222,7 +1365,6 @@ export default function App() {
                   </h3>
 
                   {loginError && <div style={{ color: "#ff6b6b", fontSize: "12px", marginBottom: "10px", background: "rgba(255,107,107,0.1)", padding: "8px", borderRadius: "6px" }}>{loginError}</div>}
-                  {loginSuccess && <div style={{ color: "#48bb78", fontSize: "12px", marginBottom: "10px", background: "rgba(72,187,120,0.1)", padding: "8px", borderRadius: "6px" }}>{loginSuccess}</div>}
 
                   <form onSubmit={handleAuthSubmit}>
                     <div style={{ marginBottom: "15px" }}>
@@ -1252,7 +1394,7 @@ export default function App() {
                       <div style={{ textAlign: "left", marginBottom: "14px" }}>
                         <button
                           type="button"
-                          onClick={() => { setForgotMode(true); setForgotEmail(loginEmail); setLoginError(""); setLoginSuccess(""); }}
+                          onClick={() => { setForgotMode(true); setForgotEmail(loginEmail); setLoginError(""); }}
                           style={{ background: "none", border: "none", color: "#D4AF37", fontSize: "12px", cursor: "pointer", textDecoration: "underline", fontFamily: "inherit", padding: 0 }}
                         >
                           نسيت كلمة المرور؟
@@ -1295,8 +1437,8 @@ export default function App() {
 
                     <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
                       <button type="button" onClick={closeAuthModal} style={{ background: "transparent", border: "1px solid #274442", color: "#f2ede2", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>إلغاء</button>
-                      <button type="submit" style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>
-                        {authMode === "login" ? "دخول" : "إنشاء الحساب"}
+                      <button type="submit" disabled={loading} style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
+                        {loading ? "..." : (authMode === "login" ? "دخول" : "إنشاء الحساب")}
                       </button>
                     </div>
                   </form>
@@ -1372,11 +1514,14 @@ export default function App() {
             </button>
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               {Object.keys(THEMES).map((th) => (
-                <div
+                <button
                   key={th}
+                  type="button"
                   onClick={() => setThemeKey(th)}
                   title={`تغيير الألوان: ${THEMES[th].name}`}
-                  style={{ width: 20, height: 20, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }}
+                  aria-label={`تغيير الألوان: ${THEMES[th].name}`}
+                  aria-pressed={themeKey === th}
+                  style={{ width: 20, height: 20, padding: 0, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }}
                 />
               ))}
             </div>
@@ -1406,12 +1551,15 @@ export default function App() {
           </div>
 
           <div style={{ position: "relative" }}>
-            <div
+            <button
+              type="button"
               onClick={() => setShowAvatarMenu(v => !v)}
-              style={{ width: 34, height: 34, borderRadius: "50%", background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: currentTheme.accent, cursor: "pointer" }}
+              aria-label="حساب المستخدمة"
+              aria-expanded={showAvatarMenu}
+              style={{ width: 34, height: 34, padding: 0, borderRadius: "50%", background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: currentTheme.accent, cursor: "pointer" }}
             >
               {avatarInitials}
-            </div>
+            </button>
             {showAvatarMenu && (
               <div style={{ position: "absolute", top: 42, left: 0, minWidth: 190, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
                 <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّل-ة الدخول بحساب</div>
@@ -1470,6 +1618,12 @@ export default function App() {
           <div style={{ background: "#D4AF37", color: "#0e1a1a", padding: "10px 14px", borderRadius: 12, marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, fontWeight: 700 }}>
             <span>تم حذف الحركة. هل تريد التراجع؟</span>
             <button onClick={undoDelete} style={{ background: "#0e1a1a", color: "#D4AF37", border: "none", padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 900, cursor: "pointer" }}>تراجع</button>
+          </div>
+        )}
+
+        {deleteError && (
+          <div style={{ background: "rgba(255,107,107,0.15)", border: "1px solid #ff6b6b", color: "#ff6b6b", padding: "10px 14px", borderRadius: 12, marginBottom: 12, fontSize: 12, fontWeight: 700 }}>
+            {deleteError}
           </div>
         )}
 
@@ -1575,8 +1729,8 @@ export default function App() {
                     {editingTransactionId && (
                       <button onClick={cancelEditTransaction} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "10px 16px", borderRadius: 8, cursor: "pointer" }}>إلغاء</button>
                     )}
-                    <button onClick={addTransaction} style={{ flex: 1, background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>
-                      {editingTransactionId ? "تحديث العملية" : "حفظ العملية"}
+                    <button onClick={addTransaction} disabled={savingTransaction} style={{ flex: 1, background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "10px", borderRadius: 8, fontWeight: "bold", cursor: savingTransaction ? "default" : "pointer", opacity: savingTransaction ? 0.6 : 1 }}>
+                      {savingTransaction ? "جارِ الحفظ..." : (editingTransactionId ? "تحديث العملية" : "حفظ العملية")}
                     </button>
                   </div>
                 </div>
@@ -1885,7 +2039,9 @@ export default function App() {
 
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => setSettleModalMode("choose")} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}>رجوع</button>
-                    <button onClick={settleDebt} style={{ background: "#38a169", border: "none", color: "#fff", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>تأكيد</button>
+                    <button onClick={settleDebt} disabled={settlingInProgress} style={{ background: "#38a169", border: "none", color: "#fff", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: settlingInProgress ? "default" : "pointer", opacity: settlingInProgress ? 0.6 : 1 }}>
+                      {settlingInProgress ? "جارِ التنفيذ..." : "تأكيد"}
+                    </button>
                   </div>
                 </>
               )}
@@ -1903,7 +2059,9 @@ export default function App() {
 
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                     <button onClick={() => setSettleModalMode("choose")} style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}>رجوع</button>
-                    <button onClick={postponeDebtDate} style={{ background: currentTheme.accent, border: "none", color: "#0e1a1a", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}>تأجيل</button>
+                    <button onClick={postponeDebtDate} disabled={postponingInProgress} style={{ background: currentTheme.accent, border: "none", color: "#0e1a1a", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: postponingInProgress ? "default" : "pointer", opacity: postponingInProgress ? 0.6 : 1 }}>
+                      {postponingInProgress ? "جارِ التأجيل..." : "تأجيل"}
+                    </button>
                   </div>
                 </>
               )}
@@ -1958,9 +2116,7 @@ export default function App() {
         {activeTab === "contact" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
             <div style={{ textAlign: "center", marginBottom: 18 }}>
-              <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}
-              
-              >تواصل-ي معنا</div>
+              <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 6 }}>للتواصل معنا</div>
               <div style={{ fontSize: 12, opacity: 0.7 }}>عندك سؤال أو اقتراح؟ تواصل-ي معنا مباشرة من هون.</div>
             </div>
 
@@ -2033,9 +2189,10 @@ export default function App() {
                 </button>
                 <button
                   onClick={handleSaveDebt}
-                  style={{ background: "#D4AF37", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: "pointer" }}
+                  disabled={savingDebt}
+                  style={{ background: "#D4AF37", color: "#16302d", border: "none", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: savingDebt ? "default" : "pointer", opacity: savingDebt ? 0.6 : 1 }}
                 >
-                  حفظ الدين
+                  {savingDebt ? "جارِ الحفظ..." : "حفظ الدين"}
                 </button>
               </div>
             </div>
