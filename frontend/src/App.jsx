@@ -118,6 +118,47 @@ function daysInMonth(month, year) {
   return new Date(Number(year), Number(month), 0).getDate();
 }
 
+// تقرير مالي لشهر محدد (سنة + رقم شهر صفري-الأساس) — دالة نقية بتاخد
+// الحركات وسعر الصرف كوسائط عشان تنعمل تختبر لحالها. بترجع null لو ما
+// في ولا حركة بهداك الشهر بالذات.
+function computeMonthReport(txList, rate, year, monthIndex) {
+  const monthTx = txList.filter((t) => {
+    const d = new Date(t.date);
+    return d.getFullYear() === year && d.getMonth() === monthIndex;
+  });
+  if (monthTx.length === 0) return null;
+
+  const balanceChange = monthTx.reduce((sum, t) => {
+    if (t.type === "دخل" || t.type === "مبيعات") return sum + Number(t.amount);
+    if (t.type === "مصروف" || t.type === "شراء") return sum - Number(t.amount);
+    return sum;
+  }, 0) * rate;
+
+  const expensesByCategory = {};
+  let totalExpenses = 0;
+  monthTx.forEach((t) => {
+    if (t.type === "مصروف" || t.type === "شراء") {
+      const amt = Number(t.amount) * rate;
+      expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + amt;
+      totalExpenses += amt;
+    }
+  });
+
+  let topCategory = null;
+  const topKey = Object.keys(expensesByCategory).sort((a, b) => expensesByCategory[b] - expensesByCategory[a])[0];
+  if (topKey) {
+    const catObj = CATEGORIES.find((c) => c.key === topKey);
+    topCategory = {
+      key: topKey,
+      icon: catObj ? catObj.icon : "✦",
+      amount: expensesByCategory[topKey],
+      percentage: totalExpenses > 0 ? (expensesByCategory[topKey] / totalExpenses) * 100 : 0,
+    };
+  }
+
+  return { monthName: ARABIC_MONTHS[monthIndex], balanceChange, topCategory };
+}
+
 // مكوّن قابل لإعادة الاستخدام لاختيار تاريخ عبر ٣ قوائم منسدلة
 function DatePickerSelects({ value, onChange, theme }) {
   const parts = parseDateParts(value);
@@ -246,6 +287,15 @@ function Icon({ name, size = 16, color }) {
         <svg {...common}>
           <rect x="3" y="5" width="18" height="14" rx="2" />
           <polyline points="3,7 12,13 21,7" />
+        </svg>
+      );
+    case "report":
+      return (
+        <svg {...common}>
+          <rect x="5" y="3" width="14" height="18" rx="2" />
+          <line x1="8" y1="8" x2="16" y2="8" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+          <line x1="8" y1="16" x2="13" y2="16" />
         </svg>
       );
     default:
@@ -502,15 +552,24 @@ export default function App() {
     localStorage.setItem(notifiedKey, JSON.stringify(alreadyNotified));
   }, [upcomingDebts]);
 
-  // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية
+  // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية.
+  // محصور بحركات الشهر الحالي فقط (كان قبل هيك بيحسب كل الحركات من الأول
+  // بالغلط بينما العنوان كان كاتب "هذا الشهر" — تصحيح حقيقي بالسلوك مش
+  // بس بالتسمية).
   const categoryBreakdown = useMemo(() => {
-    const allExpensesTotal = transactions
+    const now = new Date();
+    const thisMonthTx = transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+
+    const allExpensesTotal = thisMonthTx
       .filter((t) => t.type === "مصروف" || t.type === "شراء")
       .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
 
     return CATEGORIES.filter((c) => c.type === "مصروف")
       .map((cat) => {
-        const catTotal = transactions
+        const catTotal = thisMonthTx
           .filter((t) => t.category === cat.key)
           .reduce((sum, t) => sum + Number(t.amount), 0) * exchangeRate;
         const percentage = allExpensesTotal > 0 ? (catTotal / allExpensesTotal) * 100 : 0;
@@ -541,6 +600,41 @@ export default function App() {
       return { ...s, color: CATEGORY_CHART_COLORS[i], start, end: cumulative };
     });
   }, [categoryBreakdown]);
+
+  // تقرير الشهر لتبويب "تقارير" — التقرير الرئيسي (main) هو آخر شهر كامل
+  // خلص لو في فيه بيانات. جنبه، لو الشهر الحالي كمان فيه حركات، بيظهر
+  // تقرير ثانوي مختصر (secondary) "لسا وين واصل هالشهر" بدون ما يلغي
+  // تقرير الشهر يلي خلص — الاثنين بيظهروا مع بعض. لو ما في شهر سابق
+  // كامل إطلاقًا، الشهر الحالي (لو في فيه بيانات) بيصير هو الـmain
+  // لحاله بوسم "لسا ماشي" (inProgress: true)، وما في secondary وقتها.
+  // الديون (لسا إلك/عليك) صورة آنية دائمًا، مش محصورة بشهر. بيرجع null
+  // بس لو ما في ولا حركة إطلاقًا بالشهرين.
+  const monthlyReport = useMemo(() => {
+    const now = new Date();
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const prevReport = computeMonthReport(transactions, exchangeRate, prevMonthDate.getFullYear(), prevMonthDate.getMonth());
+    const currentReport = computeMonthReport(transactions, exchangeRate, now.getFullYear(), now.getMonth());
+
+    const main = prevReport
+      ? { ...prevReport, inProgress: false }
+      : currentReport
+      ? { ...currentReport, inProgress: true }
+      : null;
+
+    if (!main) return null;
+
+    const secondary = (!main.inProgress && currentReport) ? { ...currentReport, inProgress: true } : null;
+
+    const owedToMe = debts
+      .filter((d) => !d.paid && d.type === "دين له")
+      .reduce((sum, d) => sum + Number(d.amount), 0) * exchangeRate;
+    const owedByMe = debts
+      .filter((d) => !d.paid && d.type === "دين عليه")
+      .reduce((sum, d) => sum + Number(d.amount), 0) * exchangeRate;
+
+    return { main, secondary, owedToMe, owedByMe };
+  }, [transactions, debts, exchangeRate]);
 
   // سجل الحركات مفلتر بالبحث الموجود + رقاقات الفلتر الجديدة (دخل/مصروف/هالشهر)
   const filteredTransactions = useMemo(() => {
@@ -1487,6 +1581,7 @@ export default function App() {
     { id: "transactions", label: "العمليات", icon: "chart" },
     { id: "debts", label: "الديون", icon: "scale" },
     { id: "wallets", label: "الخزائن", icon: "vault" },
+    { id: "reports", label: "تقارير", icon: "report" },
     { id: "contact", label: "تواصل", icon: "mail" },
   ];
 
@@ -2109,6 +2204,112 @@ export default function App() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ============ تبويب تقارير ============ */}
+        {activeTab === "reports" && (
+          <div>
+            <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: currentTheme.accent, marginBottom: 2 }}>تقارير شهرية</div>
+              <div style={{ fontSize: 11, opacity: 0.6 }}>لمحة سريعة على وضعك المالي عبر الوقت.</div>
+            </div>
+
+            {!monthlyReport ? (
+              <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 20, textAlign: "center" }}>
+                <div style={{ fontSize: 12, opacity: 0.7, lineHeight: 1.8 }}>
+                  لسا ما في تقرير 📊<br />سجّلي أول عملية دخل أو مصروف عشان يبدأ تقريرك الشهري يتكوّن.
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{
+                  background: currentTheme.cardBg,
+                  border: monthlyReport.main.inProgress ? `1px dashed ${currentTheme.accent}` : `1px solid ${currentTheme.accent}`,
+                  borderRadius: 18,
+                  padding: 18,
+                  marginBottom: monthlyReport.secondary ? 12 : 0,
+                }}>
+                  <div style={{ textAlign: "center", marginBottom: 14 }}>
+                    {monthlyReport.main.inProgress && (
+                      <div style={{ display: "inline-block", fontSize: 10, color: currentTheme.accent, background: "rgba(201,169,97,0.12)", padding: "2px 10px", borderRadius: 20, marginBottom: 8 }}>
+                        لسا الشهر ماشي
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11.5, opacity: 0.75, marginBottom: 6 }}>
+                      {monthlyReport.main.inProgress ? `رصيدك تحرّك هيك لحد هلق بـ${monthlyReport.main.monthName}` : `رصيدك تحرّك هيك بـ${monthlyReport.main.monthName}`}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={monthlyReport.main.balanceChange >= 0 ? "#38a169" : "#e53e3e"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        {monthlyReport.main.balanceChange >= 0 ? (
+                          <><line x1="12" y1="19" x2="12" y2="5" /><polyline points="6,11 12,5 18,11" /></>
+                        ) : (
+                          <><line x1="12" y1="5" x2="12" y2="19" /><polyline points="6,13 12,19 18,13" /></>
+                        )}
+                      </svg>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, fontWeight: 800, color: monthlyReport.main.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
+                        {currencySymbol}{Math.abs(monthlyReport.main.balanceChange).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ height: 1, background: currentTheme.border, marginBottom: 14 }}></div>
+
+                  {monthlyReport.main.topCategory && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, background: currentTheme.boxBg, borderRadius: 14, padding: 12, marginBottom: (monthlyReport.owedToMe > 0 || monthlyReport.owedByMe > 0) ? 10 : 0 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(212,175,55,.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                        {monthlyReport.main.topCategory.icon}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>
+                          {monthlyReport.main.inProgress ? "أكتر شي صرفتيه لحد هلق" : "أكتر شي صرفتي عليه"}
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: 12.5 }}>{monthlyReport.main.topCategory.key}</div>
+                      </div>
+                      <div style={{ textAlign: "left" }}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 12.5, color: currentTheme.accent }}>
+                          {currencySymbol}{monthlyReport.main.topCategory.amount.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: 10, opacity: 0.6 }}>{monthlyReport.main.topCategory.percentage.toFixed(0)}٪ من مصاريفك</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(monthlyReport.owedToMe > 0 || monthlyReport.owedByMe > 0) && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {monthlyReport.owedToMe > 0 && (
+                        <div style={{ flex: 1, background: currentTheme.boxBg, borderRadius: 14, padding: "10px 12px" }}>
+                          <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 3 }}>لسا متبقي إلك</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 13, color: "#38a169" }}>
+                            {currencySymbol}{monthlyReport.owedToMe.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                      {monthlyReport.owedByMe > 0 && (
+                        <div style={{ flex: 1, background: currentTheme.boxBg, borderRadius: 14, padding: "10px 12px" }}>
+                          <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 3 }}>لسا متبقي عليك</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 13, color: "#e53e3e" }}>
+                            {currencySymbol}{monthlyReport.owedByMe.toFixed(2)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {monthlyReport.secondary && (
+                  <div style={{ background: currentTheme.boxBg, border: `1px dashed ${currentTheme.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: currentTheme.accent, marginBottom: 2 }}>لسا الشهر ماشي</div>
+                      <div style={{ fontSize: 11, opacity: 0.7 }}>وين واصل رصيدك بـ{monthlyReport.secondary.monthName} لحد هلق</div>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 800, color: monthlyReport.secondary.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
+                      {currencySymbol}{Math.abs(monthlyReport.secondary.balanceChange).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
