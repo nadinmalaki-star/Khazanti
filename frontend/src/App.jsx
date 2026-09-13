@@ -1323,9 +1323,15 @@ export default function App() {
 
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.3)" }}>
           <div style={{ fontSize: "14px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
-          <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>أكثر من مجرد سجل مصروفات</h2>
+          <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>خزنتي — وضوح أكبر لأموالك</h2>
+          <p style={{ fontSize: "15px", opacity: 0.9, lineHeight: "1.8", maxWidth: "700px", margin: "0 auto 14px", color: "#f2ede2" }}>
+            "خزنتي" منصة مالية ذكية تساعد الأفراد وأصحاب الأعمال على فهم أموالهم وإدارتها بوضوح، من خلال متابعة الكاش، والحسابات البنكية، والديون والمستحقات في مكان واحد.
+          </p>
+          <p style={{ fontSize: "15px", opacity: 0.9, lineHeight: "1.8", maxWidth: "700px", margin: "0 auto 14px", color: "#f2ede2" }}>
+            بدل ما تظل أموالك موزعة بين أكثر من مكان، تساعدك "خزنتي" على معرفة كم معك فعلًا، أين تذهب أموالك، وما الذي عليك أو لك — بطريقة بسيطة وسهلة الاستخدام.
+          </p>
           <p style={{ fontSize: "15px", opacity: 0.9, lineHeight: "1.8", maxWidth: "700px", margin: "0 auto", color: "#f2ede2" }}>
-            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية — بفصل الكاش عن الحساب البنكي، ومتابعة الديون والمستحقات بكل بساطة. بفضل بساطتها وسهولة استخدامها، نجمع بين دقة العمل المصرفي وسهولة التقنية الحديثة.
+            نجمع في "خزنتي" بين دقة الإدارة المالية وبساطة التقنية الحديثة، لنمنحك رؤية أوضح وتحكمًا أفضل في تدفقاتك النقدية.
           </p>
         </div>
 
@@ -1339,19 +1345,22 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>خزنتين، مش خزنة وحدة</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>كاشك اليومي منفصل تمامًا عن حسابك البنكي — تراقبي كل وحدة لحالها زي ما فعليًا بتشتغلي.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>
+                الكاش اللي بإيدك مش هو الرصيد اللي بالبنك.<br />
+                "خزنتي" بتفصل بينهم، عشان تعرف-ي بالضبط كم معك، وين موجود، وكيف عم يتحرك.
+              </p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>إدارة مرنة للحركات</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تسجيل المصروفات والإيرادات بسلاسة فائقة ودون تعقيد.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تسجيل المصروفات والإيرادات بسهولة، ومتابعة كل حركة مالية بوضوح.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>تصنيفات شاملة</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>١١ فئة مصروف و٤ فئات دخل، تغطي كل احتياجاتك الواقعية.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>١١ فئة للمصروف و٤ فئات للدخل، لتنظيم معاملاتك اليومية بطريقة بسيطة وواضحة.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>تجربة ويب تقدمية (PWA)</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>تطبيق سريع وخفيف يعمل من المتصفح، مع إمكانية تثبيته على شاشة الهاتف الرئيسية.</p>
+              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>بياناتك محفوظة، مش بس بجهازك</h3>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بياناتك بتضل مرتبطة بحسابك، عشان تكون خزنتك معك من أي جهاز، وقت ما تحتاجها.</p>
             </div>
           </div>
         </div>
@@ -1584,10 +1593,48 @@ export default function App() {
         {showPrivacyModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
             <div style={{ background: "#16302d", border: "1px solid #D4AF37", padding: "30px", borderRadius: "16px", width: "90%", maxWidth: "500px", color: "#f2ede2", maxHeight: "80vh", overflowY: "auto" }}>
-              <h3 style={{ margin: "0 0 15px", color: "#D4AF37" }}>سياسة الخصوصية وشروط الاستخدام</h3>
-              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9 }}>
-                نحن في منصة "خزنتي" نلتزم بحماية خصوصية بياناتك المالية والشخصية بأعلى معايير الأمان والسحابة المشفرة. جميع بياناتك مفصولة تماماً ومحمية ولا يتم مشاركتها مطلقاً.
+              <h3 style={{ margin: "0 0 15px", color: "#D4AF37", fontSize: "20px" }}>سياسة الخصوصية وشروط الاستخدام</h3>
+
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                في خزنتي، نؤمن أن بياناتك المالية شخصية، لذلك نحرص على التعامل معها بمسؤولية وحمايتها أثناء استخدامك للمنصة.
               </p>
+
+              <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>الخصوصية وحماية البيانات</h4>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "10px" }}>
+                نجمع فقط البيانات اللازمة لتشغيل حسابك وتقديم خدمات خزنتي، مثل بيانات الحساب والحركات المالية التي تختار إضافتها.
+              </p>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                نستخدم هذه البيانات لتشغيل المنصة، حفظ معلوماتك، وتحسين تجربة الاستخدام. لا نبيع بياناتك الشخصية أو المالية، ولا نشاركها إلا عند الحاجة لتشغيل الخدمة أو عندما يكون ذلك مطلوبًا قانونيًا.
+              </p>
+
+              <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>أمان البيانات</h4>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                نتخذ إجراءات تقنية وتنظيمية مناسبة للمساعدة في حماية بياناتك من الوصول أو الاستخدام غير المصرح به. ومع ذلك، لا يمكن ضمان أمان أي خدمة إلكترونية بشكل كامل.
+              </p>
+
+              <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>مسؤولية المستخدم</h4>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                أنت مسؤول عن صحة البيانات التي تدخلها وعن الحفاظ على سرية بيانات تسجيل الدخول الخاصة بحسابك.
+              </p>
+
+              <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>استخدام خزنتي</h4>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                خزنتي هي أداة تساعد على تنظيم ومتابعة الأموال والتدفقات النقدية، وليست بنكًا أو مؤسسة مالية، ولا تقدم استشارات مالية أو استثمارية أو قانونية.
+              </p>
+
+              <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>التحديثات</h4>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                قد يتم تحديث هذه السياسة من وقت لآخر بما يتناسب مع تطور خدمات خزنتي أو المتطلبات القانونية. سيتم نشر النسخة المحدثة على هذه الصفحة.
+              </p>
+
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9 }}>
+                باستخدام منصة خزنتي، فإنك تقر بقراءة هذه السياسة والموافقة على شروط استخدامها.
+              </p>
+
+              <p style={{ fontSize: "11px", opacity: 0.6, marginTop: "14px" }}>
+                تاريخ التحديث: ٢٠-٩-٢٠٢٦
+              </p>
+
               <div style={{ textAlign: "left", marginTop: "20px" }}>
                 <button onClick={() => setShowPrivacyModal(false)} style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" }}>إغلاق</button>
               </div>
