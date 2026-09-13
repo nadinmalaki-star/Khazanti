@@ -118,17 +118,11 @@ function daysInMonth(month, year) {
   return new Date(Number(year), Number(month), 0).getDate();
 }
 
-// تقرير مالي لشهر محدد (سنة + رقم شهر صفري-الأساس) — دالة نقية بتاخد
-// الحركات وسعر الصرف كوسائط عشان تنعمل تختبر لحالها. بترجع null لو ما
-// في ولا حركة بهداك الشهر بالذات.
-function computeMonthReport(txList, rate, year, monthIndex) {
-  const monthTx = txList.filter((t) => {
-    const d = new Date(t.date);
-    return d.getFullYear() === year && d.getMonth() === monthIndex;
-  });
-  if (monthTx.length === 0) return null;
-
-  const balanceChange = monthTx.reduce((sum, t) => {
+// حساب مشترك لمجموعة حركات محصورة بفترة معيّنة (شهر أو سنة) — بيرجع
+// تغيّر الرصيد وأكتر فئة مصروف. مستخدمة من computeMonthReport
+// وcomputeYearReport عشان ما يتكرر نفس المنطق.
+function computeReportForTx(periodTx, rate) {
+  const balanceChange = periodTx.reduce((sum, t) => {
     if (t.type === "دخل" || t.type === "مبيعات") return sum + Number(t.amount);
     if (t.type === "مصروف" || t.type === "شراء") return sum - Number(t.amount);
     return sum;
@@ -136,7 +130,7 @@ function computeMonthReport(txList, rate, year, monthIndex) {
 
   const expensesByCategory = {};
   let totalExpenses = 0;
-  monthTx.forEach((t) => {
+  periodTx.forEach((t) => {
     if (t.type === "مصروف" || t.type === "شراء") {
       const amt = Number(t.amount) * rate;
       expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + amt;
@@ -156,7 +150,27 @@ function computeMonthReport(txList, rate, year, monthIndex) {
     };
   }
 
-  return { monthName: ARABIC_MONTHS[monthIndex], balanceChange, topCategory };
+  return { balanceChange, topCategory };
+}
+
+// تقرير مالي لشهر محدد (سنة + رقم شهر صفري-الأساس) — دالة نقية بتاخد
+// الحركات وسعر الصرف كوسائط عشان تنعمل تختبر لحالها. بترجع null لو ما
+// في ولا حركة بهداك الشهر بالذات.
+function computeMonthReport(txList, rate, year, monthIndex) {
+  const monthTx = txList.filter((t) => {
+    const d = new Date(t.date);
+    return d.getFullYear() === year && d.getMonth() === monthIndex;
+  });
+  if (monthTx.length === 0) return null;
+  return { monthName: ARABIC_MONTHS[monthIndex], ...computeReportForTx(monthTx, rate) };
+}
+
+// تقرير مالي لسنة محددة — نفس فكرة computeMonthReport بس محصور بسنة
+// كاملة مش شهر. بترجع null لو ما في ولا حركة بهديك السنة.
+function computeYearReport(txList, rate, year) {
+  const yearTx = txList.filter((t) => new Date(t.date).getFullYear() === year);
+  if (yearTx.length === 0) return null;
+  return { year, ...computeReportForTx(yearTx, rate) };
 }
 
 // مكوّن قابل لإعادة الاستخدام لاختيار تاريخ عبر ٣ قوائم منسدلة
@@ -635,6 +649,31 @@ export default function App() {
 
     return { main, secondary, owedToMe, owedByMe };
   }, [transactions, debts, exchangeRate]);
+
+  // تقرير السنة لتبويب "تقارير" — نفس فكرة monthlyReport بالضبط بس عالسنة:
+  // آخر سنة كاملة خلصت هي الـmain، وإذا السنة الحالية كمان فيها حركات
+  // بتظهر جنبها بطاقة ثانوية "لسا السنة ماشية". بما إنه خزنتي تطبيق
+  // جديد، الغالب حاليًا إنه ما في سنة سابقة كاملة إطلاقًا، فالـmain غالبًا
+  // رح يكون السنة الحالية بوسم "لسا ماشية" لفترة طويلة — هاد متوقع وصحيح.
+  const yearlyReport = useMemo(() => {
+    const now = new Date();
+    const prevYear = now.getFullYear() - 1;
+
+    const prevReport = computeYearReport(transactions, exchangeRate, prevYear);
+    const currentReport = computeYearReport(transactions, exchangeRate, now.getFullYear());
+
+    const main = prevReport
+      ? { ...prevReport, inProgress: false }
+      : currentReport
+      ? { ...currentReport, inProgress: true }
+      : null;
+
+    if (!main) return null;
+
+    const secondary = (!main.inProgress && currentReport) ? { ...currentReport, inProgress: true } : null;
+
+    return { main, secondary };
+  }, [transactions, exchangeRate]);
 
   // سجل الحركات مفلتر بالبحث الموجود + رقاقات الفلتر الجديدة (دخل/مصروف/هالشهر)
   const filteredTransactions = useMemo(() => {
@@ -2211,9 +2250,11 @@ export default function App() {
         {activeTab === "reports" && (
           <div>
             <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 14 }}>
-              <div style={{ fontSize: 13, fontWeight: 900, color: currentTheme.accent, marginBottom: 2 }}>تقارير شهرية</div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: currentTheme.accent, marginBottom: 2 }}>تقارير شهرية وسنوية</div>
               <div style={{ fontSize: 11, opacity: 0.6 }}>لمحة سريعة على وضعك المالي عبر الوقت.</div>
             </div>
+
+            <div style={{ fontSize: 12, fontWeight: 900, color: currentTheme.accent, margin: "0 0 10px" }}>التقرير الشهري</div>
 
             {!monthlyReport ? (
               <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 20, textAlign: "center" }}>
@@ -2305,6 +2346,84 @@ export default function App() {
                     </div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 800, color: monthlyReport.secondary.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
                       {currencySymbol}{Math.abs(monthlyReport.secondary.balanceChange).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div style={{ fontSize: 12, fontWeight: 900, color: currentTheme.accent, margin: "20px 0 10px" }}>التقرير السنوي</div>
+
+            {!yearlyReport ? (
+              <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 20, textAlign: "center" }}>
+                <div style={{ fontSize: 12, opacity: 0.7, lineHeight: 1.8 }}>
+                  لسا ما في تقرير سنوي — رح يبين أول ما تتسجّل حركات هالسنة.
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{
+                  background: currentTheme.cardBg,
+                  border: yearlyReport.main.inProgress ? `1px dashed ${currentTheme.accent}` : `1px solid ${currentTheme.accent}`,
+                  borderRadius: 18,
+                  padding: 18,
+                  marginBottom: yearlyReport.secondary ? 12 : 0,
+                }}>
+                  <div style={{ textAlign: "center", marginBottom: 14 }}>
+                    {yearlyReport.main.inProgress && (
+                      <div style={{ display: "inline-block", fontSize: 10, color: currentTheme.accent, background: "rgba(201,169,97,0.12)", padding: "2px 10px", borderRadius: 20, marginBottom: 8 }}>
+                        لسا السنة ماشية
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11.5, opacity: 0.75, marginBottom: 6 }}>
+                      {yearlyReport.main.inProgress ? `رصيدك تحرّك هيك لحد هلق بسنة ${yearlyReport.main.year}` : `رصيدك تحرّك هيك بسنة ${yearlyReport.main.year}`}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={yearlyReport.main.balanceChange >= 0 ? "#38a169" : "#e53e3e"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        {yearlyReport.main.balanceChange >= 0 ? (
+                          <><line x1="12" y1="19" x2="12" y2="5" /><polyline points="6,11 12,5 18,11" /></>
+                        ) : (
+                          <><line x1="12" y1="5" x2="12" y2="19" /><polyline points="6,13 12,19 18,13" /></>
+                        )}
+                      </svg>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, fontWeight: 800, color: yearlyReport.main.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
+                        {currencySymbol}{Math.abs(yearlyReport.main.balanceChange).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {yearlyReport.main.topCategory && (
+                    <>
+                      <div style={{ height: 1, background: currentTheme.border, marginBottom: 14 }}></div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, background: currentTheme.boxBg, borderRadius: 14, padding: 12 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(212,175,55,.14)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                          {yearlyReport.main.topCategory.icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>
+                            {yearlyReport.main.inProgress ? "أكتر شي صرفتيه لحد هلق" : "أكتر شي صرفتي عليه"}
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: 12.5 }}>{yearlyReport.main.topCategory.key}</div>
+                        </div>
+                        <div style={{ textAlign: "left" }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 12.5, color: currentTheme.accent }}>
+                            {currencySymbol}{yearlyReport.main.topCategory.amount.toFixed(2)}
+                          </div>
+                          <div style={{ fontSize: 10, opacity: 0.6 }}>{yearlyReport.main.topCategory.percentage.toFixed(0)}٪ من مصاريفك</div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {yearlyReport.secondary && (
+                  <div style={{ background: currentTheme.boxBg, border: `1px dashed ${currentTheme.border}`, borderRadius: 14, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: currentTheme.accent, marginBottom: 2 }}>لسا السنة ماشية</div>
+                      <div style={{ fontSize: 11, opacity: 0.7 }}>وين واصل رصيدك بسنة {yearlyReport.secondary.year} لحد هلق</div>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 800, color: yearlyReport.secondary.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
+                      {currencySymbol}{Math.abs(yearlyReport.secondary.balanceChange).toFixed(2)}
                     </span>
                   </div>
                 )}
