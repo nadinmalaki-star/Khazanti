@@ -373,6 +373,7 @@ export default function App() {
 
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [debtName, setDebtName] = useState("");
@@ -401,6 +402,20 @@ export default function App() {
       setLoginEmail(savedEmail);
       setRememberEmail(true);
     }
+  }, []);
+
+  // متابعة حالة الاتصال بالإنترنت — عشان نعرض تنبيه واضح بدل ما تفشل
+  // العمليات بصمت أو تظهر رسالة خطأ غلط (متل "سجّلي دخول" لمستخدمة
+  // مسجّلة أصلًا بس بدون نت).
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   // زر "تثبيت التطبيق" — كروم/أندرويد وسطح المكتب بيدعموا الحدث هاد
@@ -735,6 +750,10 @@ export default function App() {
       setError("أدخل-ي مبلغ صحيح");
       return;
     }
+    if (!navigator.onLine) {
+      setError("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      return;
+    }
 
     setSavingTransaction(true);
     try {
@@ -819,6 +838,10 @@ export default function App() {
       alert("الرجاء إدخال اسم الشخص والمبلغ بشكل صحيح");
       return;
     }
+    if (!navigator.onLine) {
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      return;
+    }
 
     if (savingDebt) return; // منع إرسال مزدوج
     setSavingDebt(true);
@@ -884,7 +907,7 @@ export default function App() {
           setDeleteError("تعذّر حذف الحركة، حاول-ي مرة تانية.");
           setTimeout(() => setDeleteError(""), 6000);
         }
-      } catch (err) {
+      } catch {
         setTransactions(prev => [itemToDelete, ...prev]);
         setDeleteError("فشل حذف الحركة — تحقق-ي من اتصال الإنترنت.");
         setTimeout(() => setDeleteError(""), 6000);
@@ -903,13 +926,26 @@ export default function App() {
   }
 
   async function removeDebt(id) {
+    if (!navigator.onLine) {
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      return;
+    }
+
     const previousDebts = debts;
     setDebts(debts.filter((d) => d.id !== id));
 
-    const { error: dbError } = await supabase.from("debts").delete().eq("id", id);
+    // نفس نمط removeTransaction — لازم .select() ونتأكد إنو صف فعليًا
+    // انحذف، لأنه حذف مرفوض بصلاحيات RLS بيرجع بدون أي خطأ إذا ما
+    // تأكدنا من عدد الصفوف يلي رجعت.
+    try {
+      const { data, error: dbError } = await supabase.from("debts").delete().eq("id", id).select();
 
-    if (dbError) {
-      alert("فشل حذف الدين: " + dbError.message);
+      if (dbError || !data || data.length === 0) {
+        alert("تعذّر حذف الدين، حاول-ي مرة تانية.");
+        setDebts(previousDebts);
+      }
+    } catch {
+      alert("فشل حذف الدين — تحقق-ي من اتصال الإنترنت.");
       setDebts(previousDebts);
     }
   }
@@ -920,6 +956,10 @@ export default function App() {
   // بالضرورة إنو الدين انسدد فعليًا.
   async function settleDebt() {
     if (!settlingDebt || settlingInProgress) return;
+    if (!navigator.onLine) {
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      return;
+    }
     setSettlingInProgress(true);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -986,6 +1026,10 @@ export default function App() {
 
   async function postponeDebtDate() {
     if (!settlingDebt || !postponeDate || postponingInProgress) return;
+    if (!navigator.onLine) {
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      return;
+    }
     setPostponingInProgress(true);
     try {
       const { data: updatedRows, error: dbError } = await supabase
@@ -1280,6 +1324,12 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {!isOnline && (
+          <div style={{ width: "100%", maxWidth: "900px", background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: "14px", padding: "12px 20px", marginBottom: "20px", textAlign: "center", fontSize: "13px", color: "#f2ede2" }}>
+            ⚠️ ما في اتصال بالإنترنت حاليًا — بعض الميزات (تسجيل الدخول، إنشاء حساب) ما رح تشتغل لحد ما يرجع الاتصال.
+          </div>
+        )}
 
         {installPrompt && (
           <div style={{ width: "100%", maxWidth: "900px", background: "#16302d", border: "1px solid #D4AF37", borderRadius: "14px", padding: "14px 20px", marginBottom: "30px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -1749,6 +1799,12 @@ export default function App() {
             )}
           </div>
         </div>
+
+        {!isOnline && (
+          <div style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.35)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, textAlign: "center", fontSize: 12, color: currentTheme.text }}>
+            ⚠️ ما في اتصال بالإنترنت حاليًا — أي عملية جديدة (تسجيل، تعديل، حذف) ما رح تنحفظ لحد ما يرجع الاتصال.
+          </div>
+        )}
 
         {installPrompt && (
           <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.accent}`, borderRadius: 12, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 12 }}>
