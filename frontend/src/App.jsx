@@ -1322,10 +1322,10 @@ export default function App() {
         </div>
 
         <div style={{ width: "100%", maxWidth: "850px", background: "#16302d", border: "1px solid #274442", borderRadius: "20px", padding: "35px", marginBottom: "40px", textAlign: "center", boxShadow: "0 8px 25px rgba(0,0,0,0.3)" }}>
-          <div style={{ fontSize: "12px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
+          <div style={{ fontSize: "14px", color: "#D4AF37", marginBottom: "8px", fontWeight: 700 }}>من نحن</div>
           <h2 style={{ fontSize: "24px", fontWeight: 900, margin: "0 0 15px" }}>أكثر من مجرد سجل مصروفات</h2>
           <p style={{ fontSize: "15px", opacity: 0.9, lineHeight: "1.8", maxWidth: "700px", margin: "0 auto", color: "#f2ede2" }}>
-            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية. بفضل بساطتها وسهولة استخدامها، نجمع بين دقة العمل المصرفي وسهولة التقنية الحديثة.
+            "خزنتي" منصة مالية ذكية، مصممة خصيصاً لتمنح الأفراد وأصحاب الأعمال سيطرة كاملة ودقيقة على تدفقاتهم النقدية — بفصل الكاش عن الحساب البنكي، ومتابعة الديون والمستحقات بكل بساطة. بفضل بساطتها وسهولة استخدامها، نجمع بين دقة العمل المصرفي وسهولة التقنية الحديثة.
           </p>
         </div>
 
@@ -1338,8 +1338,8 @@ export default function App() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
-              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>عزل تام للبيانات</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بياناتك المالية محمية وخاصة فيك بس، محدا غيرك يقدر يوصلها.</p>
+              <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>خزنتين، مش خزنة وحدة</h3>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>كاشك اليومي منفصل تمامًا عن حسابك البنكي — تراقبي كل وحدة لحالها زي ما فعليًا بتشتغلي.</p>
             </div>
             <div style={{ background: "#0e1a1a", border: "1px solid #274442", padding: "18px", borderRadius: "12px" }}>
               <h3 style={{ color: "#D4AF37", margin: "0 0 8px", fontSize: "15px" }}>إدارة مرنة للحركات</h3>
