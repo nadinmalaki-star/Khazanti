@@ -1455,7 +1455,7 @@ export default function App() {
 
         <div style={{ textAlign: "center", opacity: 0.6, fontSize: "12px", borderTop: "1px solid #274442", width: "100%", maxWidth: "850px", paddingTop: "20px" }}>
           KHZNTI — بوابتك الذكية للتحكم المالي الآمن<br />
-          تصميم وتطوير أثر — استوديو رقمي &nbsp;|&nbsp; © 2026 أثر. جميع الحقوق محفوظة.
+          تصميم وتطوير شركة أثر للحلول الرقمية &nbsp;|&nbsp; © 2026 أثر للحلول الرقمية. جميع الحقوق محفوظة.
         </div>
 
         {showLoginModal && (
