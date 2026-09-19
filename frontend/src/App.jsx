@@ -1849,7 +1849,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowAvatarMenu(v => !v)}
-              aria-label="حساب المستخدمة"
+              aria-label="حساب المستخدم"
               aria-expanded={showAvatarMenu}
               style={{ width: 34, height: 34, padding: 0, borderRadius: "50%", background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: currentTheme.accent, cursor: "pointer" }}
             >
@@ -2135,7 +2135,7 @@ export default function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto" }}>
                 {transactions.length === 0 ? (
                   <div style={{ fontSize: 11.5, opacity: 0.7, textAlign: "center", padding: "18px 10px", lineHeight: 1.8 }}>
-                    خزنتك لسا فاضية 💼<br />سجّل-ي أول عملية دخل أو مصروف عشان تبلشي تشوفي رصيدك يتحرك.
+                    خزنتك لسا فاضية 💼<br />سجّل-ي أول عملية دخل أو مصروف عشان تبلش-ي تشوف-ي رصيدك يتحرك.
                   </div>
                 ) : filteredTransactions.length === 0 ? (
                   <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>ما في نتائج مطابقة.</div>
@@ -2432,7 +2432,7 @@ export default function App() {
             {!monthlyReport ? (
               <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 20, textAlign: "center" }}>
                 <div style={{ fontSize: 12, opacity: 0.7, lineHeight: 1.8 }}>
-                  لسا ما في تقرير 📊<br />سجّلي أول عملية دخل أو مصروف عشان يبدأ تقريرك الشهري يتكوّن.
+                  لسا ما في تقرير 📊<br />سجّل-ي أول عملية دخل أو مصروف عشان يبدأ تقريرك الشهري يتكوّن.
                 </div>
               </div>
             ) : (
