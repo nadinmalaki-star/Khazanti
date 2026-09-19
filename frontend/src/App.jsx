@@ -366,6 +366,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("transactions");
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+  const [showDeleteDataModal, setShowDeleteDataModal] = useState(false);
+  const [deleteDataError, setDeleteDataError] = useState("");
+  const [deletingData, setDeletingData] = useState(false);
 
   const [deletedItem, setDeletedItem] = useState(null);
   const [undoTimer, setUndoTimer] = useState(null);
@@ -947,6 +950,50 @@ export default function App() {
     } catch {
       alert("فشل حذف الدين — تحقق-ي من اتصال الإنترنت.");
       setDebts(previousDebts);
+    }
+  }
+
+  // حذف كل بيانات المستخدمة المالية (حركات وديون) نهائيًا — حق ملكية
+  // البيانات، مش حذف حساب الدخول نفسه (هاد يحتاج صلاحية سيرفر أعلى).
+  async function handleDeleteAllData() {
+    setDeleteDataError("");
+
+    if (!navigator.onLine) {
+      setDeleteDataError("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      return;
+    }
+
+    setDeletingData(true);
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        setDeleteDataError("يجب تسجيل الدخول أولاً.");
+        setDeletingData(false);
+        return;
+      }
+
+      const { error: txError } = await supabase.from("transactions").delete().eq("user_id", user.id);
+      if (txError) {
+        setDeleteDataError("فشل حذف الحركات: " + txError.message);
+        setDeletingData(false);
+        return;
+      }
+
+      const { error: debtsError } = await supabase.from("debts").delete().eq("user_id", user.id);
+      if (debtsError) {
+        setDeleteDataError("فشل حذف الديون: " + debtsError.message);
+        setDeletingData(false);
+        return;
+      }
+
+      setTransactions([]);
+      setDebts([]);
+      setShowDeleteDataModal(false);
+      setDeletingData(false);
+      await supabase.auth.signOut();
+    } catch {
+      setDeleteDataError("فشل الحذف — تحقق-ي من اتصال الإنترنت وحاولي مرة تانية.");
+      setDeletingData(false);
     }
   }
 
@@ -1657,6 +1704,11 @@ export default function App() {
                 نستخدم هذه البيانات لتشغيل المنصة، حفظ معلوماتك، وتحسين تجربة الاستخدام. لا نبيع بياناتك الشخصية أو المالية، ولا نشاركها إلا عند الحاجة لتشغيل الخدمة أو عندما يكون ذلك مطلوبًا قانونيًا.
               </p>
 
+              <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>ملكية بياناتك وحقوقك</h4>
+              <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
+                بياناتك المالية ملكك أنت وحدك — خزنتي بس الجهة يلي بتخزّنها وتعرضها إلك، مش بتملكها. من حسابك، فيك بأي وقت تصدّري كل حركاتك (زر "تصدير Excel")، أو تمسحي كل بياناتك المالية نهائيًا من إعدادات حسابك، بدون ما تحتاجي إذن من حدا.
+              </p>
+
               <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>أمان البيانات</h4>
               <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
                 نتخذ إجراءات تقنية وتنظيمية مناسبة للمساعدة في حماية بياناتك من الوصول أو الاستخدام غير المصرح به. ومع ذلك، لا يمكن ضمان أمان أي خدمة إلكترونية بشكل كامل.
@@ -1682,7 +1734,7 @@ export default function App() {
               </p>
 
               <p style={{ fontSize: "11px", opacity: 0.6, marginTop: "14px" }}>
-                تاريخ التحديث: ٢٠-٩-٢٠٢٦
+                تاريخ التحديث: ١٩-٩-٢٠٢٦
               </p>
 
               <div style={{ textAlign: "left", marginTop: "20px" }}>
@@ -1794,7 +1846,13 @@ export default function App() {
             {showAvatarMenu && (
               <div style={{ position: "absolute", top: 42, left: 0, minWidth: 190, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
                 <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّل-ة الدخول بحساب</div>
-                <div style={{ fontSize: 12, fontWeight: 700, wordBreak: "break-all" }}>{userEmail}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, wordBreak: "break-all", marginBottom: 10 }}>{userEmail}</div>
+                <button
+                  onClick={() => { setShowAvatarMenu(false); setDeleteDataError(""); setShowDeleteDataModal(true); }}
+                  style={{ width: "100%", textAlign: "start", background: "none", border: "none", borderTop: `1px solid ${currentTheme.border}`, paddingTop: 10, color: "#ff6b6b", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  حذف كل بياناتي
+                </button>
               </div>
             )}
           </div>
@@ -2552,6 +2610,36 @@ export default function App() {
                 </div>
               </div>
             </a>
+          </div>
+        )}
+
+        {showDeleteDataModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+            <div style={{ background: currentTheme.boxBg, border: "1px solid #ff6b6b", padding: 22, borderRadius: 16, width: "90%", maxWidth: "380px", color: currentTheme.text }}>
+              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10, color: "#ff6b6b" }}>حذف كل بياناتي نهائيًا</div>
+              <p style={{ fontSize: 12.5, lineHeight: 1.8, opacity: 0.9, marginBottom: 16 }}>
+                هاد الإجراء بيمسح <strong>كل حركاتك وديونك المسجّلة</strong> نهائيًا من خزنتي، بدون رجعة. حساب الدخول (الإيميل) بيضل موجود، بس فاضي من أي بيانات. بعد الحذف رح تنسجّلي خروج تلقائيًا.
+              </p>
+
+              {deleteDataError && <div style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12, background: "rgba(255,107,107,0.1)", padding: 8, borderRadius: 6 }}>{deleteDataError}</div>}
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => setShowDeleteDataModal(false)}
+                  disabled={deletingData}
+                  style={{ background: "transparent", border: `1px solid ${currentTheme.border}`, color: currentTheme.text, padding: "8px 16px", borderRadius: 8, cursor: deletingData ? "default" : "pointer", opacity: deletingData ? 0.6 : 1 }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleDeleteAllData}
+                  disabled={deletingData}
+                  style={{ background: "#ff6b6b", border: "none", color: "#fff", padding: "8px 20px", borderRadius: 8, fontWeight: "bold", cursor: deletingData ? "default" : "pointer", opacity: deletingData ? 0.7 : 1 }}
+                >
+                  {deletingData ? "جارِ الحذف..." : "تأكيد الحذف نهائيًا"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
