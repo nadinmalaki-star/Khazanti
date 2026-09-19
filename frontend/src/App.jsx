@@ -2476,7 +2476,7 @@ export default function App() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>
-                          {monthlyReport.main.inProgress ? "أكتر شي صرفتيه لحد هلق" : "أكتر شي صرفتي عليه"}
+                          {monthlyReport.main.inProgress ? "أكتر شي صرفت-يه لحد هلق" : "أكتر شي صرفت-ي عليه"}
                         </div>
                         <div style={{ fontWeight: 700, fontSize: 12.5 }}>{monthlyReport.main.topCategory.key}</div>
                       </div>
@@ -2574,7 +2574,7 @@ export default function App() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 2 }}>
-                            {yearlyReport.main.inProgress ? "أكتر شي صرفتيه لحد هلق" : "أكتر شي صرفتي عليه"}
+                            {yearlyReport.main.inProgress ? "أكتر شي صرفت-يه لحد هلق" : "أكتر شي صرفت-ي عليه"}
                           </div>
                           <div style={{ fontWeight: 700, fontSize: 12.5 }}>{yearlyReport.main.topCategory.key}</div>
                         </div>
