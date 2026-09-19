@@ -754,7 +754,7 @@ export default function App() {
       return;
     }
     if (!navigator.onLine) {
-      setError("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      setError("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية.");
       return;
     }
 
@@ -842,7 +842,7 @@ export default function App() {
       return;
     }
     if (!navigator.onLine) {
-      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية.");
       return;
     }
 
@@ -930,7 +930,7 @@ export default function App() {
 
   async function removeDebt(id) {
     if (!navigator.onLine) {
-      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية.");
       return;
     }
 
@@ -959,7 +959,7 @@ export default function App() {
     setDeleteDataError("");
 
     if (!navigator.onLine) {
-      setDeleteDataError("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      setDeleteDataError("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية.");
       return;
     }
 
@@ -992,7 +992,7 @@ export default function App() {
       setDeletingData(false);
       await supabase.auth.signOut();
     } catch {
-      setDeleteDataError("فشل الحذف — تحقق-ي من اتصال الإنترنت وحاولي مرة تانية.");
+      setDeleteDataError("فشل الحذف — تحقق-ي من اتصال الإنترنت وحاول-ي مرة تانية.");
       setDeletingData(false);
     }
   }
@@ -1004,7 +1004,7 @@ export default function App() {
   async function settleDebt() {
     if (!settlingDebt || settlingInProgress) return;
     if (!navigator.onLine) {
-      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية.");
       return;
     }
     setSettlingInProgress(true);
@@ -1074,7 +1074,7 @@ export default function App() {
   async function postponeDebtDate() {
     if (!settlingDebt || !postponeDate || postponingInProgress) return;
     if (!navigator.onLine) {
-      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاولي مرة تانية.");
+      alert("ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية.");
       return;
     }
     setPostponingInProgress(true);
@@ -1706,7 +1706,7 @@ export default function App() {
 
               <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>ملكية بياناتك وحقوقك</h4>
               <p style={{ fontSize: "13px", lineHeight: "1.7", opacity: 0.9, marginBottom: "18px" }}>
-                بياناتك المالية ملكك أنت وحدك — خزنتي بس الجهة يلي بتخزّنها وتعرضها إلك، مش بتملكها. من حسابك، فيك بأي وقت تصدّري كل حركاتك (زر "تصدير Excel")، أو تمسحي كل بياناتك المالية نهائيًا من إعدادات حسابك، بدون ما تحتاجي إذن من حدا.
+                بياناتك المالية ملكك أنت وحدك — خزنتي بس الجهة يلي بتخزّنها وتعرضها إلك، مش بتملكها. من حسابك، فيك بأي وقت تصدّر-ي كل حركاتك (زر "تصدير Excel")، أو تمسح-ي كل بياناتك المالية نهائيًا من إعدادات حسابك، بدون ما تحتاج-ي إذن من حدا.
               </p>
 
               <h4 style={{ margin: "0 0 8px", color: "#D4AF37", fontSize: "15px" }}>أمان البيانات</h4>
@@ -2618,7 +2618,7 @@ export default function App() {
             <div style={{ background: currentTheme.boxBg, border: "1px solid #ff6b6b", padding: 22, borderRadius: 16, width: "90%", maxWidth: "380px", color: currentTheme.text }}>
               <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 10, color: "#ff6b6b" }}>حذف كل بياناتي نهائيًا</div>
               <p style={{ fontSize: 12.5, lineHeight: 1.8, opacity: 0.9, marginBottom: 16 }}>
-                هاد الإجراء بيمسح <strong>كل حركاتك وديونك المسجّلة</strong> نهائيًا من خزنتي، بدون رجعة. حساب الدخول (الإيميل) بيضل موجود، بس فاضي من أي بيانات. بعد الحذف رح تنسجّلي خروج تلقائيًا.
+                هاد الإجراء بيمسح <strong>كل حركاتك وديونك المسجّلة</strong> نهائيًا من خزنتي، بدون رجعة. حساب الدخول (الإيميل) بيضل موجود، بس فاضي من أي بيانات. بعد الحذف رح تنسجّل-ي خروج تلقائيًا.
               </p>
 
               {deleteDataError && <div style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 12, background: "rgba(255,107,107,0.1)", padding: 8, borderRadius: 6 }}>{deleteDataError}</div>}
