@@ -36,9 +36,15 @@ const CURRENCIES = {
   JOD: { symbol: "د.أ", name: "دينار", rate: 0.19 },
 };
 
+const GOLD_RING = "#D4AF37";
+const BEIGE_RING = "#f0e6d2";
+
 const THEMES = {
   emerald: {
-    name: "أخضر مصرفي",
+    name: "أخضر",
+    swatchBg: "#163430",
+    ring: GOLD_RING,
+    isDefault: true,
     bg: "radial-gradient(1000px 600px at 50% -10%, #163430 0%, #0e1a1a 55%)",
     cardBg: "linear-gradient(135deg, #1b3936, #16302d)",
     boxBg: "#16302d",
@@ -47,7 +53,9 @@ const THEMES = {
     text: "#f2ede2",
   },
   navy: {
-    name: "أزرق كلاسيكي",
+    name: "أزرق",
+    swatchBg: "#1a2536",
+    ring: GOLD_RING,
     bg: "radial-gradient(1000px 600px at 50% -10%, #1a2536 0%, #0e141a 55%)",
     cardBg: "linear-gradient(135deg, #1e2d42, #162030)",
     boxBg: "#162030",
@@ -56,13 +64,37 @@ const THEMES = {
     text: "#f0f4f8",
   },
   gold: {
-    name: "ذهبي ملكي",
+    name: "ذهبي",
+    swatchBg: "#302616",
+    ring: BEIGE_RING,
     bg: "radial-gradient(1000px 600px at 50% -10%, #302616 0%, #1a150e 55%)",
     cardBg: "linear-gradient(135deg, #392f1b, #302616)",
     boxBg: "#302616",
     border: "#4d4027",
     accent: "#fbbf24",
     text: "#fef3c7",
+  },
+  beige: {
+    name: "بيج",
+    swatchBg: "#f0e6d2",
+    ring: GOLD_RING,
+    bg: "radial-gradient(1000px 600px at 50% -10%, #f0e6d2 0%, #e8dcc0 55%)",
+    cardBg: "linear-gradient(135deg, #f7f0e0, #f0e6d2)",
+    boxBg: "#e8dcc0",
+    border: "#d9c48f",
+    accent: "#b8860b",
+    text: "#3a2f1f",
+  },
+  purple: {
+    name: "بنفسجي",
+    swatchBg: "#241732",
+    ring: GOLD_RING,
+    bg: "radial-gradient(1000px 600px at 50% -10%, #241732 0%, #170f21 55%)",
+    cardBg: "linear-gradient(135deg, #2e1f3d, #241732)",
+    boxBg: "#2e1f3d",
+    border: "#5a4370",
+    accent: "#d4af37",
+    text: "#f3e8ff",
   },
 };
 
@@ -363,6 +395,7 @@ export default function App() {
   const [transactionFilter, setTransactionFilter] = useState("الكل"); // "الكل" | "دخل" | "مصروف" | "هالشهر"
   const [currency, setCurrency] = useState("ILS");
   const [themeKey, setThemeKey] = useState("emerald");
+  const [showThemePanel, setShowThemePanel] = useState(false);
   const [activeTab, setActiveTab] = useState("transactions");
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
@@ -1807,18 +1840,19 @@ export default function App() {
             >
               تسجيل الخروج
             </button>
-            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              {Object.keys(THEMES).map((th) => (
-                <button
-                  key={th}
-                  type="button"
-                  onClick={() => setThemeKey(th)}
-                  title={`تغيير الألوان: ${THEMES[th].name}`}
-                  aria-label={`تغيير الألوان: ${THEMES[th].name}`}
-                  aria-pressed={themeKey === th}
-                  style={{ width: 20, height: 20, padding: 0, borderRadius: "50%", border: `2px solid ${themeKey === th ? "#fff" : currentTheme.border}`, background: th === "emerald" ? "#163430" : th === "navy" ? "#1a2536" : "#302616", cursor: "pointer" }}
-                />
-              ))}
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => setShowThemePanel(v => !v)}
+                title="اختيار لون الثيم"
+                aria-label="اختيار لون الثيم"
+                aria-expanded={showThemePanel}
+                style={{ position: "relative", width: 24, height: 24, padding: 0, borderRadius: "50%", border: `2px solid ${currentTheme.ring}`, background: currentTheme.swatchBg, cursor: "pointer" }}
+              >
+                <span style={{ position: "absolute", bottom: -3, left: -3, width: 14, height: 14, borderRadius: "50%", background: currentTheme.accent, border: `2px solid ${currentTheme.swatchBg}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <i className={`ti ti-chevron-${showThemePanel ? "up" : "down"}`} style={{ fontSize: 9, color: "#1a1a1a" }}></i>
+                </span>
+              </button>
             </div>
           </div>
 
@@ -1835,6 +1869,33 @@ export default function App() {
             ))}
           </div>
         </div>
+
+        {showThemePanel && (
+          <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "14px 12px", marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 12, opacity: 0.85 }}>اختار-ي لون الثيم</div>
+            <div style={{ display: "flex", justifyContent: "space-around", gap: 4 }}>
+              {Object.keys(THEMES).map((th) => (
+                <button
+                  key={th}
+                  type="button"
+                  onClick={() => { setThemeKey(th); setShowThemePanel(false); }}
+                  title={THEMES[th].name}
+                  aria-label={`تغيير الألوان: ${THEMES[th].name}`}
+                  aria-pressed={themeKey === th}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0 }}
+                >
+                  <span style={{ position: "relative" }}>
+                    <span style={{ display: "block", width: 26, height: 26, borderRadius: "50%", background: THEMES[th].swatchBg, border: `2px solid ${themeKey === th ? "#fff" : THEMES[th].ring}` }}></span>
+                    {THEMES[th].isDefault && (
+                      <span style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", background: THEMES[th].accent, color: "#1a1a1a", fontSize: 7, fontWeight: 700, padding: "1px 4px", borderRadius: 6, whiteSpace: "nowrap" }}>افتراضي</span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 10, color: currentTheme.text }}>{THEMES[th].name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* شعار خزنتي + الاسم + أفاتار قابل للضغط (يعرض إيميل الحساب) */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
