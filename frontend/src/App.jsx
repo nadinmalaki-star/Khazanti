@@ -83,7 +83,7 @@ const THEMES = {
     boxBg: "#e8dcc0",
     border: "#d9c48f",
     accent: "#b8860b",
-    text: "#3a2f1f",
+    text: "#241a0d",
   },
   purple: {
     name: "بنفسجي",
