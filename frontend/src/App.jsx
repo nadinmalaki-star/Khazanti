@@ -3945,7 +3945,7 @@ export default function App() {
                   </button>
                   {showInvReturnForm && (
                     <div>
-                      <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 8, lineHeight: 1.5 }}>اختار-ي عملية البيع الأصلية نفسها — بيرجع الكمية للمخزون، وينعكس الإيراد وتكلفة البضاعة (COGS) بنفس القيم الحقيقية يلي انباعت فيها، وبيرجع الكاش أو ينقص المستحق حسب نوع البيع الأصلي. ما بتقدر-ي ترجع-ي أكتر من المتبقي القابل للإرجاع (بعد خصم أي مرتجعات سابقة لنفس العملية).</div>
+                      <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 8, lineHeight: 1.5 }}>اختار-ي عملية البيع الأصلية. الكمية والمبلغ بيرجعوا تلقائيًا، وما بتقدر-ي ترجع-ي أكثر من الكمية المتبقية.</div>
                       <select value={invReturnTxId} onChange={(e) => {
                         setInvReturnTxId(e.target.value);
                         const tx = scopedTransactions.find(t => t.id === Number(e.target.value));
