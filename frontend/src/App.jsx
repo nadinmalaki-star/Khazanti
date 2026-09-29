@@ -2536,11 +2536,11 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
             <div style={{ background: "linear-gradient(135deg, #0d211f, #081615)", border: "1px solid #16302d", borderRadius: "16px", padding: "25px" }}>
               <div style={{ background: "#c9a961", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة التوسعية Pro</div>
-              <h3 style={{ color: "#f2ede2", margin: "0 0 10px", fontSize: "17px", fontWeight: 900 }}>خذ-ي قراراتك لمستوى أبعد.</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: "0 0 14px" }}>تحليل متقدم لأعمالك، رؤى أعمق، ومزايا جديدة قادمة لتخليك تشوف-ي أكثر من مجرد الأرقام.</p>
+              <h3 style={{ color: "#f2ede2", margin: "0 0 10px", fontSize: "17px", fontWeight: 900 }}>مش مجرد أرقام. الصورة الكاملة جاية.</h3>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: "0 0 14px" }}>تحليلات أعمق، رؤى أذكى، ومزايا جديدة تساعد على فهم وإدارة المشروع بشكل أفضل.</p>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>
-                <strong style={{ color: "#c9a961" }}>والباقي؟</strong><br />
-                مفاجآت رح نكشف عنها بوقتها.
+                <strong style={{ color: "#c9a961" }}>وفي أشياء ثانية؟</strong><br />
+                خلّوها علينا… بنخبركم عنها بوقتها.
               </p>
             </div>
           </div>
