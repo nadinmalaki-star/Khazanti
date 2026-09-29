@@ -3226,15 +3226,29 @@ export default function App() {
                 </div>
               </div>
 
-              {/* عملات تانية (دولار/دينار) — أرقام منفصلة، بدون جمعها مع الشيكل بدون تحويل واضح */}
+              {/* عملات تانية (دولار/دينار) — كل عملة بصف مستقل وواضح، كاش
+                  وبنك كل واحد برقمه لحاله، بدون جمعها مع الشيكل ولا مع
+                  بعض بدون تحويل واضح. */}
               {["USD", "JOD"].filter(code => walletBalances[code].cash !== 0 || walletBalances[code].bank !== 0).length > 0 && (
-                <div style={{ position: "relative", marginTop: 10, paddingTop: 10, borderTop: `1px solid ${currentTheme.border}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                  {["USD", "JOD"].filter(code => walletBalances[code].cash !== 0 || walletBalances[code].bank !== 0).map(code => (
-                    <div key={code} style={{ fontSize: 11, opacity: 0.8, display: "flex", justifyContent: "center", gap: 10 }}>
-                      <span>{CURRENCIES[code].name}:</span>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>كاش {CURRENCIES[code].symbol}{fmt(walletBalances[code].cash)} · بنك {CURRENCIES[code].symbol}{fmt(walletBalances[code].bank)}</span>
-                    </div>
-                  ))}
+                <div style={{ position: "relative", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${currentTheme.border}` }}>
+                  <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 8 }}>أرصدة بعملات أخرى</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {["USD", "JOD"].filter(code => walletBalances[code].cash !== 0 || walletBalances[code].bank !== 0).map(code => (
+                      <div key={code} style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 10, padding: "9px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700 }}>{CURRENCIES[code].name}</span>
+                        <div style={{ display: "flex", gap: 16 }}>
+                          <span style={{ fontSize: 10.5, opacity: 0.7, display: "flex", alignItems: "center", gap: 5 }}>
+                            <Icon name="wallet" size={11} color={currentTheme.accent} /> كاش
+                            <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: currentTheme.accent, fontWeight: 700 }}>{CURRENCIES[code].symbol}{fmt(walletBalances[code].cash)}</b>
+                          </span>
+                          <span style={{ fontSize: 10.5, opacity: 0.7, display: "flex", alignItems: "center", gap: 5 }}>
+                            <Icon name="bank" size={11} color={currentTheme.accent} /> بنك
+                            <b style={{ fontFamily: "'IBM Plex Mono', monospace", color: currentTheme.accent, fontWeight: 700 }}>{CURRENCIES[code].symbol}{fmt(walletBalances[code].bank)}</b>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
