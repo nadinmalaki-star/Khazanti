@@ -167,18 +167,24 @@ function daysInMonth(month, year) {
 // حساب مشترك لمجموعة حركات محصورة بفترة معيّنة (شهر أو سنة) — بيرجع
 // تغيّر الرصيد وأكتر فئة مصروف. مستخدمة من computeMonthReport
 // وcomputeYearReport عشان ما يتكرر نفس المنطق.
-function computeReportForTx(periodTx, rate) {
+function computeReportForTx(periodTx) {
+  // كل حركة لازم تتحوّل لشيكل بسعر عملتها هي (t.currency)، مش برقم واحد
+  // ثابت لكل الحركات — وإلا مبلغ بعملة تانية (دولار/دينار) بينجمع كأنه
+  // نفس رقم الشيكل بدون أي تحويل (مثلًا ₪50 + $25 يظهر ₪75 غلط).
+  const toILS = (t) => WALLET_CURRENCY_TO_ILS[t.currency] || 1;
+
   const balanceChange = periodTx.reduce((sum, t) => {
-    if (t.type === "دخل" || t.type === "مبيعات") return sum + Number(t.amount);
-    if (t.type === "مصروف" || t.type === "شراء") return sum - Number(t.amount);
+    const amt = Number(t.amount) * toILS(t);
+    if (t.type === "دخل" || t.type === "مبيعات") return sum + amt;
+    if (t.type === "مصروف" || t.type === "شراء") return sum - amt;
     return sum;
-  }, 0) * rate;
+  }, 0);
 
   const expensesByCategory = {};
   let totalExpenses = 0;
   periodTx.forEach((t) => {
     if (t.type === "مصروف" || t.type === "شراء") {
-      const amt = Number(t.amount) * rate;
+      const amt = Number(t.amount) * toILS(t);
       expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + amt;
       totalExpenses += amt;
     }
@@ -202,21 +208,21 @@ function computeReportForTx(periodTx, rate) {
 // تقرير مالي لشهر محدد (سنة + رقم شهر صفري-الأساس) — دالة نقية بتاخد
 // الحركات وسعر الصرف كوسائط عشان تنعمل تختبر لحالها. بترجع null لو ما
 // في ولا حركة بهداك الشهر بالذات.
-function computeMonthReport(txList, rate, year, monthIndex) {
+function computeMonthReport(txList, year, monthIndex) {
   const monthTx = txList.filter((t) => {
     const d = new Date(t.date);
     return d.getFullYear() === year && d.getMonth() === monthIndex;
   });
   if (monthTx.length === 0) return null;
-  return { monthName: ARABIC_MONTHS[monthIndex], ...computeReportForTx(monthTx, rate) };
+  return { monthName: ARABIC_MONTHS[monthIndex], ...computeReportForTx(monthTx) };
 }
 
 // تقرير مالي لسنة محددة — نفس فكرة computeMonthReport بس محصور بسنة
 // كاملة مش شهر. بترجع null لو ما في ولا حركة بهديك السنة.
-function computeYearReport(txList, rate, year) {
+function computeYearReport(txList, year) {
   const yearTx = txList.filter((t) => new Date(t.date).getFullYear() === year);
   if (yearTx.length === 0) return null;
-  return { year, ...computeReportForTx(yearTx, rate) };
+  return { year, ...computeReportForTx(yearTx) };
 }
 
 // تقرير أرباح وخسائر لحساب "مشروع" — مبني بالكامل على الحركات الفعلية
@@ -653,14 +659,16 @@ export default function App() {
   }
 
   useEffect(() => {
-    // نوع الحساب (فرد/مشروع) بيتسأل من جديد كل مرة تُفتح فيها الجلسة
-    // (تحميل الصفحة، أو تسجيل دخول جديد) — مش خيار دائم يُحفظ للأبد،
-    // عشان تقدر-ي تدخلي كـ"فرد" مرة وكـ"مشروع" مرة تانية بنفس الحساب.
+    // نوع الحساب (فرد/مشروع) بيتسأل أول مرة بس — بعدها بيتذكّره من هالجهاز
+    // (localStorage) وبيفتح عليه مباشرة بأي تحميل/تسجيل دخول لاحق، بدل ما
+    // يعيد يسأل من جديد كل مرة. التبديل يضل متاح أي وقت من الزر فوق —
+    // هاد بس بيتحكم بأي نوع يفتح عليه افتراضيًا.
+    const rememberedType = localStorage.getItem("khznti_account_type") || "";
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setIsLoggedIn(true);
         setUserEmail(session.user?.email || "");
-        setAccountType("");
+        setAccountType(rememberedType);
         fetchData();
       } else {
         setLoading(false);
@@ -680,10 +688,10 @@ export default function App() {
       if (session) {
         setIsLoggedIn(true);
         setUserEmail(session.user?.email || "");
-        // بس تسجيل دخول جديد فعلي (SIGNED_IN) بيعيد فتح شاشة الاختيار —
+        // بس تسجيل دخول جديد فعلي (SIGNED_IN) بيفتح على آخر نوع محفوظ —
         // تحديث التوكن التلقائي بالخلفية (TOKEN_REFRESHED) ما لازم يقاطع
         // المستخدم بمنتصف جلسة شغالة أصلًا.
-        if (_event === "SIGNED_IN") setAccountType("");
+        if (_event === "SIGNED_IN") setAccountType(localStorage.getItem("khznti_account_type") || "");
         fetchData();
       } else {
         setIsLoggedIn(false);
@@ -696,6 +704,12 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // حفظ آخر نوع حساب مختار محليًا (لهاد الجهاز) — عشان الجلسة الجاية
+  // تفتح عليه مباشرة بدل ما تسأل من جديد. ما منحفظ "" (لسا ما اخترتي).
+  useEffect(() => {
+    if (accountType) localStorage.setItem("khznti_account_type", accountType);
+  }, [accountType]);
 
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
@@ -725,6 +739,16 @@ export default function App() {
     () => products.filter((p) => (p.account_type || "مشروع") === accountType),
     [products, accountType]
   );
+
+  // "تفعيل تتبع المخزون" (invOn) كانت حالة عرض مؤقتة بترجع OFF تلقائيًا
+  // بكل إعادة تحميل للصفحة — حتى لو عندك منتجات فعلية مسجّلة أصلًا. هاي
+  // كانت السبب الحقيقي وراء "تعديل الشراء ما بيحدّث الكمية/التكلفة":
+  // لائحة اختيار المنتج بنموذج الإضافة/التعديل كانت مربوطة بنفس الفلاغ
+  // فبتختفي بعد أي reload، فالتعديل ما كان يقدر يوصل للمنتج المرتبط.
+  // invActive قيمة محسوبة وقت الرندر (مش effect) بتعتبر التتبع "شغّال"
+  // تلقائيًا لو في أي منتج حقيقي مسجّل، بغض النظر عن حالة المفتاح
+  // اليدوي — عشان الواجهة تعكس البيانات الفعلية مش حالة عرض عشوائية.
+  const invActive = invOn || scopedProducts.length > 0;
 
   // ملاحظة: cashBalance/bankBalance/totalBalance (رقم واحد يجمع كل
   // العملات مباشرة بدون تحويل) انشالت من هون — كانت بتجمع مبالغ حركات
@@ -965,8 +989,8 @@ export default function App() {
     const now = new Date();
     const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    const prevReport = computeMonthReport(scopedTransactions, exchangeRate, prevMonthDate.getFullYear(), prevMonthDate.getMonth());
-    const currentReport = computeMonthReport(scopedTransactions, exchangeRate, now.getFullYear(), now.getMonth());
+    const prevReport = computeMonthReport(scopedTransactions, prevMonthDate.getFullYear(), prevMonthDate.getMonth());
+    const currentReport = computeMonthReport(scopedTransactions, now.getFullYear(), now.getMonth());
 
     const main = prevReport
       ? { ...prevReport, inProgress: false }
@@ -979,7 +1003,7 @@ export default function App() {
     const secondary = (!main.inProgress && currentReport) ? { ...currentReport, inProgress: true } : null;
 
     return { main, secondary, ...receivablesPayables };
-  }, [scopedTransactions, exchangeRate, receivablesPayables]);
+  }, [scopedTransactions, receivablesPayables]);
 
   // تقرير السنة لتبويب "تقارير" — نفس فكرة monthlyReport بالضبط بس عالسنة:
   // آخر سنة كاملة خلصت هي الـmain، وإذا السنة الحالية كمان فيها حركات
@@ -990,8 +1014,8 @@ export default function App() {
     const now = new Date();
     const prevYear = now.getFullYear() - 1;
 
-    const prevReport = computeYearReport(scopedTransactions, exchangeRate, prevYear);
-    const currentReport = computeYearReport(scopedTransactions, exchangeRate, now.getFullYear());
+    const prevReport = computeYearReport(scopedTransactions, prevYear);
+    const currentReport = computeYearReport(scopedTransactions, now.getFullYear());
 
     const main = prevReport
       ? { ...prevReport, inProgress: false }
@@ -1004,7 +1028,7 @@ export default function App() {
     const secondary = (!main.inProgress && currentReport) ? { ...currentReport, inProgress: true } : null;
 
     return { main, secondary };
-  }, [scopedTransactions, exchangeRate]);
+  }, [scopedTransactions]);
 
   // حركات تسديد/تحصيل ديون إلها حركة أصلية معروفة (source_transaction_id) —
   // لازم تُستثنى من تقرير الربح/الخسارة عشان ما ينحسب نفس الدخل/المصروف
@@ -1172,7 +1196,7 @@ export default function App() {
         // إعادة حساب أثر المخزون: نرجّع أثر المنتج/الكمية/النوع (بيع أو
         // شراء) القديم، وبعدين نطبّق أثر الحركة الجديدة — حتى لو المنتج
         // أو نوع الحركة نفسه تغيّر (stockSign بيحدد الاتجاه لكل واحدة).
-        if (invOn && (oldTx?.product_name || commonFields.product_name)) {
+        if (oldTx?.product_name || commonFields.product_name) {
           const oldQty = Number(oldTx?.quantity) || 0;
           const newQty = commonFields.quantity || 0;
           const oldSign = stockSign(oldTx);
@@ -1247,7 +1271,7 @@ export default function App() {
       }
 
       // مبيعات مرتبطة بمنتج مخزون فعلي — بينخصم الكمية المباعة تلقائيًا.
-      if (!dbError && isBizSale && invOn && productName) {
+      if (!dbError && isBizSale && productName) {
         const linkedProduct = scopedProducts.find(p => p.name === productName);
         if (linkedProduct) {
           const newQty = Math.max(0, Number(linkedProduct.quantity) - Number(saleQty || 0));
@@ -1258,7 +1282,7 @@ export default function App() {
 
       // شراء بضاعة مرتبط بمنتج مخزون فعلي — بيزيد الكمية ويحدّث تكلفة
       // المرجع تلقائيًا (نفس أثر handleInvAdd بالضبط).
-      if (!dbError && isBizPurchase && invOn && productName) {
+      if (!dbError && isBizPurchase && productName) {
         const linkedProduct = scopedProducts.find(p => p.name === productName);
         const unitCost = Number(purchaseUnitCost || 0);
         if (linkedProduct) {
@@ -2295,6 +2319,10 @@ export default function App() {
               <h3 style={{ color: "#c9a961", margin: "0 0 8px", fontSize: "15px" }}>بياناتك محفوظة، مش بس بجهازك</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بياناتك بتضل مرتبطة بحسابك، عشان تكون خزنتك معك من أي جهاز، وقت ما تحتاجها.</p>
             </div>
+            <div style={{ background: "#081615", border: "1px solid #16302d", padding: "18px", borderRadius: "12px" }}>
+              <h3 style={{ color: "#c9a961", margin: "0 0 8px", fontSize: "15px" }}>حساب واحد، وضعين</h3>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بدّل-ي بين وضع فرد ووضع مشروع بضغطة — مخزون، موردين، وتقرير أرباح وخسائر لمشروعك، بنفس الحساب.</p>
+            </div>
           </div>
         </div>
 
@@ -2308,10 +2336,6 @@ export default function App() {
             <div style={{ background: "linear-gradient(135deg, #0d211f, #081615)", border: "1px solid #16302d", borderRadius: "16px", padding: "25px" }}>
               <div style={{ background: "#c9a961", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة التوسعية Pro</div>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>شاشة أسعار العملات والمؤشرات المالية المباشرة، مع تقارير ورسوم بيانية تحليلية دقيقة.</p>
-            </div>
-            <div style={{ background: "linear-gradient(135deg, #0d211f, #081615)", border: "1px solid #16302d", borderRadius: "16px", padding: "25px" }}>
-              <div style={{ background: "#c9a961", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة الاحترافية Business</div>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>أدوات متقدمة لإدارة السيولة والتدفقات النقدية، تلبي احتياجات التجار والمستقلين.</p>
             </div>
           </div>
         </div>
@@ -2958,7 +2982,7 @@ export default function App() {
               />
               <div style={{ position: "relative" }}>
                 <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>إجمالي السيولة النقدية (شيكل)</div>
-                <div style={{ fontSize: 28, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace", textShadow: "0 1px 6px rgba(0,0,0,0.5)" }}>
                   ₪ {fmt(walletBalances.ILS.cash + walletBalances.ILS.bank)}
                 </div>
 
@@ -3105,7 +3129,7 @@ export default function App() {
 
                   {isBizSale && (
                     <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                      {invOn && (
+                      {invActive && (
                         <select
                           value={productName}
                           onChange={(e) => {
@@ -3145,7 +3169,7 @@ export default function App() {
 
                   {isBizPurchase && (
                     <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                      {invOn && (
+                      {invActive && (
                         <select
                           value={productName}
                           onChange={(e) => {
@@ -3367,18 +3391,27 @@ export default function App() {
                   <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>ما في نتائج مطابقة.</div>
                 ) : (
                   filteredTransactions.map(t => {
-                    const isIncome = t.type === "دخل" || t.type === "مبيعات";
-                    const isExpense = t.type === "مصروف" || t.type === "شراء";
-                    const isTransfer = t.type === "تحويل";
-                    const iconColor = isIncome ? "#4caf7d" : isExpense ? "#e2726b" : currentTheme.accent;
-                    const iconBg = isIncome ? "rgba(76,175,125,0.14)" : isExpense ? "rgba(226,114,107,0.14)" : "rgba(201,169,97,0.14)";
-                    const amountColor = isIncome ? "#4caf7d" : isExpense ? "#e2726b" : currentTheme.accent;
-                    const sign = isIncome ? "+ " : isExpense ? "- " : "";
+                    const isReturn = t.return_of_transaction_id != null;
+                    const isIncome = !isReturn && (t.type === "دخل" || t.type === "مبيعات");
+                    const isExpense = !isReturn && (t.type === "مصروف" || t.type === "شراء");
+                    const isTransfer = !isReturn && t.type === "تحويل";
+                    const iconColor = isReturn ? "#e2726b" : isIncome ? "#4caf7d" : isExpense ? "#e2726b" : currentTheme.accent;
+                    const iconBg = isReturn ? "rgba(226,114,107,0.14)" : isIncome ? "rgba(76,175,125,0.14)" : isExpense ? "rgba(226,114,107,0.14)" : "rgba(201,169,97,0.14)";
+                    const amountColor = isReturn ? "#e2726b" : isIncome ? "#4caf7d" : isExpense ? "#e2726b" : currentTheme.accent;
+                    // المرتجع مخزّن بمبلغ سالب أصلًا (عكس القيد الأصلي) — هون بس
+                    // عرض، ما منلمس القيمة ولا منضيف إشارة "+" فوقها (كانت
+                    // طالعة "+ ₪ -80.00" مربكة). بيانه بيبان بعلامة "مرتجع" +
+                    // أيقونة رجوع مميزة، والرقم نفسه بإشارته السالبة الطبيعية.
+                    const displayAmount = (t.currency || "ILS") === "ILS" ? Number(t.amount) * exchangeRate : Number(t.amount);
+                    const sign = isReturn ? "" : isIncome ? "+ " : isExpense ? "- " : "";
                     const dt = new Date(t.date);
                     const dateLabel = isNaN(dt) ? t.date : `${dt.getDate()} ${ARABIC_MONTHS[dt.getMonth()]} ${dt.getFullYear()}`;
                     return (
                       <div key={t.id} style={{ background: currentTheme.cardBg, padding: "10px 10px", borderRadius: 8, display: "flex", alignItems: "center", gap: 9, fontSize: "12px" }}>
                         <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: iconBg }}>
+                          {isReturn && (
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9,14 4,9 9,4" /><path d="M4 9h11a5 5 0 0 1 5 5v1a5 5 0 0 1-5 5H9" /></svg>
+                          )}
                           {isIncome && (
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="6,11 12,5 18,11" /></svg>
                           )}
@@ -3388,15 +3421,20 @@ export default function App() {
                           {isTransfer && (
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="2.2" strokeLinecap="round"><polyline points="17,1 21,5 17,9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7,23 3,19 7,15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
                           )}
-                          {!isIncome && !isExpense && !isTransfer && <Icon name="wallet" size={15} color={iconColor} />}
+                          {!isReturn && !isIncome && !isExpense && !isTransfer && <Icon name="wallet" size={15} color={iconColor} />}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.category}</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 5 }}>
+                            {t.category}
+                            {isReturn && (
+                              <span style={{ fontSize: 9, fontWeight: 700, color: "#e2726b", background: "rgba(226,114,107,0.14)", padding: "1px 6px", borderRadius: 8, flexShrink: 0 }}>مرتجع</span>
+                            )}
+                          </div>
                           <div style={{ fontSize: 10, opacity: 0.55, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.account}</div>
                           <div style={{ fontSize: 9.5, fontWeight: 700, color: currentTheme.accent, opacity: 0.85, fontFamily: "'IBM Plex Mono', monospace", marginTop: 2 }}>{dateLabel}</div>
                         </div>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 12.5, color: amountColor, whiteSpace: "nowrap" }}>
-                          {sign}{CURRENCIES[t.currency || "ILS"].symbol} {fmt((t.currency || "ILS") === "ILS" ? Number(t.amount) * exchangeRate : Number(t.amount))}
+                          {sign}{CURRENCIES[t.currency || "ILS"].symbol} {fmt(displayAmount)}
                         </div>
                         <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
                           <button onClick={() => startEditTransaction(t)} style={{ background: "transparent", border: "none", color: currentTheme.accent, cursor: "pointer", padding: 4, display: "flex" }} title="تعديل الحركة">
@@ -3821,14 +3859,14 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => setInvOn(v => !v)}
-                  style={{ width: 42, height: 24, borderRadius: 12, border: "none", background: invOn ? currentTheme.accent : currentTheme.cardBg, position: "relative", cursor: "pointer", flexShrink: 0 }}
+                  style={{ width: 42, height: 24, borderRadius: 12, border: "none", background: invActive ? currentTheme.accent : currentTheme.cardBg, position: "relative", cursor: "pointer", flexShrink: 0 }}
                 >
-                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#f2ede2", position: "absolute", top: 3, [invOn ? "left" : "right"]: 3, transition: "left 0.15s, right 0.15s" }}></div>
+                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#f2ede2", position: "absolute", top: 3, [invActive ? "left" : "right"]: 3, transition: "left 0.15s, right 0.15s" }}></div>
                 </button>
               </div>
             </div>
 
-            {invOn && (
+            {invActive && (
               <>
                 {invMessage && (
                   <div style={{ fontSize: 11, color: currentTheme.accent, marginBottom: 10, textAlign: "center" }}>{invMessage}</div>
