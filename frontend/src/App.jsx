@@ -1903,7 +1903,11 @@ export default function App() {
     setDeletedItem(itemToDelete);
     setDeleteError("");
 
-    if (undoTimer) clearTimeout(undoTimer);
+    // ما منلغي مؤقّت حذف حركة تانية لسا معلّق (لو المستخدم حذف أكتر من
+    // حركة خلال نفس الـ٥ ثواني) — قبل هيك، حذف حركة جديدة كان بيلغي
+    // مؤقّت الحذف الفعلي (بقاعدة البيانات) لآخر حركة محذوفة قبلها، فترجع
+    // تلقائيًا وكأنها ما انحذفت أبدًا رغم إنها اختفت من الواجهة. كل حركة
+    // هلق إلها مؤقّتها المستقل بالكامل.
     const timer = setTimeout(async () => {
       try {
         const { data, error: dbError } = await supabase
@@ -1957,7 +1961,9 @@ export default function App() {
         setDeleteError("فشل حذف الحركة — تحقق-ي من اتصال الإنترنت.");
         setTimeout(() => setDeleteError(""), 6000);
       }
-      setDeletedItem(null);
+      // نصفّر شريط "تراجع" بس لو لسا عم يعرض هاي الحركة بالذات — لأنو لو
+      // المستخدم حذف حركة تانية بعدها، الشريط هلق عم يعرضها هي، مش هاي.
+      setDeletedItem(prev => (prev && prev.id === id ? null : prev));
     }, 5000);
     setUndoTimer(timer);
   }
