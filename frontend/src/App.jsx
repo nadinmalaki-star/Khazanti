@@ -2503,7 +2503,9 @@ export default function App() {
                 <h3 style={{ color: "#c9a961", margin: 0, fontSize: "16px" }}>حساب واحد، وضعين</h3>
                 <span style={{ background: "#c9a961", color: "#0e1a1a", fontSize: "10px", fontWeight: 900, padding: "2px 8px", borderRadius: "10px" }}>جديد</span>
               </div>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بدّل-ي بين وضع فرد ووضع مشروع بضغطة — مخزون، موردين، وتقرير أرباح وخسائر لمشروعك، بنفس الحساب.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: "0 0 10px", lineHeight: "1.5" }}>فرد أو مشروع؟ القرار إلك.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: "0 0 10px", lineHeight: "1.5" }}>بدّل-ي بين الوضعين بضغطة واحدة، وخلّ-ي كل شيء بمكانه — مصروفاتك، مبيعاتك، مخزونك، ديونك وتقارير مشروعك.</p>
+              <p style={{ fontSize: "13px", color: "#c9a961", fontWeight: 700, margin: 0, lineHeight: "1.5" }}>حساب واحد. تجربة أوضح. وإدارة أذكى.</p>
             </div>
             <div style={{ background: "#081615", border: "1px solid #16302d", padding: "18px", borderRadius: "12px" }}>
               <h3 style={{ color: "#c9a961", margin: "0 0 8px", fontSize: "15px" }}>خزنتين، مش خزنة وحدة</h3>
