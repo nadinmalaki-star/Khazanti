@@ -2809,7 +2809,7 @@ export default function App() {
               </button>
               {showAvatarMenu && (
                 <div style={{ position: "absolute", top: 42, left: 0, minWidth: 190, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
-                  <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّل-ة الدخول بحساب</div>
+                  <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّل الدخول بحساب</div>
                   <div style={{ fontSize: 12, fontWeight: 700, wordBreak: "break-all", marginBottom: 10 }}>{userEmail}</div>
                   <button
                     onClick={() => { setShowAvatarMenu(false); supabase.auth.signOut(); }}
