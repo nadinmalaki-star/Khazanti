@@ -984,7 +984,7 @@ export default function App() {
         const dedupeKey = `${d.id}_${todayStr}`;
         if (alreadyNotified[dedupeKey]) return;
         const notification = new Notification("خزنتي — دين مستحق", {
-          body: `دين "${d.name}" (${CURRENCIES[d.currency || "ILS"].symbol} ${((d.currency || "ILS") === "ILS" ? Number(d.amount) * exchangeRate : Number(d.amount)).toFixed(2)}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغط-ي لتحصيله/تسديده أو لتأجيله.`,
+          body: `دين "${d.name}" (${CURRENCIES[d.currency || "ILS"].symbol} ${fmt((d.currency || "ILS") === "ILS" ? Number(d.amount) * exchangeRate : Number(d.amount))}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغط-ي لتحصيله/تسديده أو لتأجيله.`,
           icon: "/icon.png",
         });
         notification.onclick = () => {
@@ -1669,7 +1669,7 @@ export default function App() {
               setTransactions(prev => prev.map(t => t.id === txData[0].id ? { ...t, linked_debt_id: debtData[0].id } : t));
             }
           }
-          setInvMessage(`تم — أُضيف ${qty} لمخزون "${invName.trim()}"، و${total.toFixed(2)} سُجّلت كدين عليك للمورّد.`);
+          setInvMessage(`تم — أُضيف ${qty} لمخزون "${invName.trim()}"، و${fmt(total)} سُجّلت كدين عليك للمورّد.`);
         } else {
           const account = invAccountType === "bank" ? "حساب البنك" : "الصندوق (كاش)";
           const { data: txData } = await supabase.from("transactions").insert([{
@@ -1678,7 +1678,7 @@ export default function App() {
             date: new Date().toISOString().split("T")[0], user_id: user.id, account_type: accountType,
           }]).select();
           if (txData) setTransactions(prev => [txData[0], ...prev]);
-          setInvMessage(`تم — أُضيف ${qty} لمخزون "${invName.trim()}"، وانخصم ${total.toFixed(2)} من الخزنة.`);
+          setInvMessage(`تم — أُضيف ${qty} لمخزون "${invName.trim()}"، وانخصم ${fmt(total)} من الخزنة.`);
         }
       } else {
         setInvMessage(`تم — أُضيف ${qty} لمخزون "${invName.trim()}".`);
@@ -1776,7 +1776,7 @@ export default function App() {
         }
       }
 
-      setInvMessage(`تم تسجيل المرتجع — رجع ${qty} للمخزون، وانخصم ${revenueReversed.toFixed(2)} من الإيراد و${costReversed.toFixed(2)} من تكلفة البضاعة.`);
+      setInvMessage(`تم تسجيل المرتجع — رجع ${qty} للمخزون، وانخصم ${fmt(revenueReversed)} من الإيراد و${fmt(costReversed)} من تكلفة البضاعة.`);
       setInvReturnTxId(""); setInvReturnQty("");
       setShowInvReturnForm(false);
     } catch {
@@ -2057,7 +2057,7 @@ export default function App() {
     const remaining = Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0));
     const payNum = parseFloat(settleAmount);
     if (!payNum || payNum <= 0 || payNum > remaining + 0.005) {
-      alert(`أدخل-ي مبلغ صحيح لا يتجاوز المتبقي (${remaining.toFixed(2)})`);
+      alert(`أدخل-ي مبلغ صحيح لا يتجاوز المتبقي (${fmt(remaining)})`);
       return;
     }
     if (!navigator.onLine) {
@@ -3388,8 +3388,8 @@ export default function App() {
                       </div>
                       <input type="number" value={saleUnitCost} onChange={(e) => setSaleUnitCost(e.target.value)} placeholder="سعر تكلفة القطعة الواحدة (اختياري)..." style={{ width: "100%", padding: 8, borderRadius: 8, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text, marginBottom: 8, boxSizing: "border-box" }} />
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, opacity: 0.8 }}>
-                        <span>إجمالي البيع: {(Number(saleQty || 0) * Number(saleUnitPrice || 0)).toFixed(2)}</span>
-                        <span style={{ color: "#38a169", fontWeight: 700 }}>الربح: {((Number(saleQty || 0) * Number(saleUnitPrice || 0)) - (Number(saleQty || 0) * Number(saleUnitCost || 0))).toFixed(2)}</span>
+                        <span>إجمالي البيع: {fmt(Number(saleQty || 0) * Number(saleUnitPrice || 0))}</span>
+                        <span style={{ color: "#38a169", fontWeight: 700 }}>الربح: {fmt((Number(saleQty || 0) * Number(saleUnitPrice || 0)) - (Number(saleQty || 0) * Number(saleUnitCost || 0)))}</span>
                       </div>
                       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                         <button type="button" onClick={() => setIsCreditTx(false)} style={{ flex: 1, padding: 7, borderRadius: 6, border: "none", fontWeight: 700, fontSize: 11, cursor: "pointer", background: !isCreditTx ? currentTheme.accent : currentTheme.boxBg, color: !isCreditTx ? "#0e1a1a" : currentTheme.text }}>نقدي</button>
@@ -3422,7 +3422,7 @@ export default function App() {
                         <input type="number" min="1" value={purchaseQty} onChange={(e) => setPurchaseQty(e.target.value)} placeholder="الكمية..." style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }} />
                         <input type="number" value={purchaseUnitCost} onChange={(e) => setPurchaseUnitCost(e.target.value)} placeholder="تكلفة القطعة..." style={{ flex: 1, padding: 8, borderRadius: 8, background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, color: currentTheme.text }} />
                       </div>
-                      <div style={{ fontSize: 11, opacity: 0.8 }}>إجمالي الشراء: {(Number(purchaseQty || 0) * Number(purchaseUnitCost || 0)).toFixed(2)}</div>
+                      <div style={{ fontSize: 11, opacity: 0.8 }}>إجمالي الشراء: {fmt(Number(purchaseQty || 0) * Number(purchaseUnitCost || 0))}</div>
                     </div>
                   )}
 
@@ -3732,7 +3732,7 @@ export default function App() {
                   const paidAmt = Number(d.paid_amount || 0);
                   const remaining = Math.max(0, Number(d.amount) - paidAmt);
                   const symbol = CURRENCIES[d.currency || "ILS"].symbol;
-                  const toDisplay = (v) => ((d.currency || "ILS") === "ILS" ? v * exchangeRate : v).toFixed(2);
+                  const toDisplay = (v) => fmt((d.currency || "ILS") === "ILS" ? v * exchangeRate : v);
                   // نستثني الحركة الأصلية (أصل الدين) من كشف الحساب — هاي
                   // مش دفعة، هاي العملية يلي أنشأت الدين أصلًا.
                   const payments = scopedTransactions.filter(t => t.linked_debt_id === d.id && t.id !== d.source_transaction_id);
@@ -3790,7 +3790,7 @@ export default function App() {
                               {payments.map(p => (
                                 <div key={p.id} style={{ fontSize: 10.5, display: "flex", justifyContent: "space-between", opacity: 0.8 }}>
                                   <span>{p.date}</span>
-                                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{CURRENCIES[p.currency || "ILS"].symbol}{Number(p.amount).toFixed(2)}</span>
+                                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{CURRENCIES[p.currency || "ILS"].symbol}{fmt(p.amount)}</span>
                                 </div>
                               ))}
                             </div>
@@ -3818,7 +3818,7 @@ export default function App() {
                       <div key={d.id} style={{ background: currentTheme.cardBg, padding: 10, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center", opacity: 0.55 }}>
                         <div style={{ fontSize: 12 }}>{d.name}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{CURRENCIES[d.currency || "ILS"].symbol} {((d.currency || "ILS") === "ILS" ? Number(d.amount) * exchangeRate : Number(d.amount)).toFixed(2)}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>{CURRENCIES[d.currency || "ILS"].symbol} {fmt((d.currency || "ILS") === "ILS" ? Number(d.amount) * exchangeRate : Number(d.amount))}</span>
                           <button
                             onClick={() => removeDebt(d.id)}
                             title="حذف نهائي"
@@ -3844,8 +3844,8 @@ export default function App() {
                 <>
                   <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>دين "{settlingDebt.name}"</div>
                   <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 18 }}>
-                    متبقي <strong style={{ color: currentTheme.accent }}>{CURRENCIES[settlingDebt.currency || "ILS"].symbol} {((settlingDebt.currency || "ILS") === "ILS" ? Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0)) * exchangeRate : Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0))).toFixed(2)}</strong>
-                    {Number(settlingDebt.paid_amount || 0) > 0 && <> (من أصل {CURRENCIES[settlingDebt.currency || "ILS"].symbol} {((settlingDebt.currency || "ILS") === "ILS" ? Number(settlingDebt.amount) * exchangeRate : Number(settlingDebt.amount)).toFixed(2)})</>}
+                    متبقي <strong style={{ color: currentTheme.accent }}>{CURRENCIES[settlingDebt.currency || "ILS"].symbol} {fmt((settlingDebt.currency || "ILS") === "ILS" ? Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0)) * exchangeRate : Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0)))}</strong>
+                    {Number(settlingDebt.paid_amount || 0) > 0 && <> (من أصل {CURRENCIES[settlingDebt.currency || "ILS"].symbol} {fmt((settlingDebt.currency || "ILS") === "ILS" ? Number(settlingDebt.amount) * exchangeRate : Number(settlingDebt.amount))})</>}
                     {" "}— شو بدك تعمل-ي؟
                   </div>
 
@@ -3879,7 +3879,7 @@ export default function App() {
 
                   <div style={{ marginBottom: 14 }}>
                     <label style={{ fontSize: 12, display: "block", marginBottom: 6 }}>
-                      المبلغ (المتبقي: {CURRENCIES[settlingDebt.currency || "ILS"].symbol} {((settlingDebt.currency || "ILS") === "ILS" ? Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0)) * exchangeRate : Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0))).toFixed(2)})
+                      المبلغ (المتبقي: {CURRENCIES[settlingDebt.currency || "ILS"].symbol} {fmt((settlingDebt.currency || "ILS") === "ILS" ? Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0)) * exchangeRate : Math.max(0, Number(settlingDebt.amount) - Number(settlingDebt.paid_amount || 0)))})
                     </label>
                     <input
                       type="number"
@@ -3948,7 +3948,7 @@ export default function App() {
             <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: 18, textAlign: "center", marginBottom: 16 }}>
               <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>إجمالي الخزائن (شيكل)</div>
               <div style={{ fontSize: 26, fontWeight: 900, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>
-                ₪ {(walletBalances.ILS.cash + walletBalances.ILS.bank).toFixed(2)}
+                ₪ {fmt(walletBalances.ILS.cash + walletBalances.ILS.bank)}
               </div>
             </div>
 
@@ -3964,7 +3964,7 @@ export default function App() {
                     <div style={{ fontSize: "11px", opacity: 0.7 }}>المحفظة النقدية اليومية</div>
                   </div>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
-                    ₪ {walletBalances.ILS.cash.toFixed(2)}
+                    ₪ {fmt(walletBalances.ILS.cash)}
                   </span>
                 </div>
 
@@ -3976,7 +3976,7 @@ export default function App() {
                     <div style={{ fontSize: "11px", opacity: 0.7 }}>الرصيد المحول في البنك</div>
                   </div>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#D4AF37", fontSize: "15px" }}>
-                    ₪ {walletBalances.ILS.bank.toFixed(2)}
+                    ₪ {fmt(walletBalances.ILS.bank)}
                   </span>
                 </div>
               </div>
@@ -3991,15 +3991,15 @@ export default function App() {
                   <div key={code} style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{CURRENCIES[code].name} {CURRENCIES[code].symbol}</div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                      <span>كاش: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{CURRENCIES[code].symbol}{walletBalances[code].cash.toFixed(2)}</span></span>
-                      <span>بنك: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{CURRENCIES[code].symbol}{walletBalances[code].bank.toFixed(2)}</span></span>
+                      <span>كاش: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{CURRENCIES[code].symbol}{fmt(walletBalances[code].cash)}</span></span>
+                      <span>بنك: <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>{CURRENCIES[code].symbol}{fmt(walletBalances[code].bank)}</span></span>
                     </div>
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${currentTheme.border}` }}>
                 <span>المجموع التقريبي (محوّل لشيكل)</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: currentTheme.accent }}>₪{walletTotalInILS.toFixed(2)}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: currentTheme.accent }}>₪{fmt(walletTotalInILS)}</span>
               </div>
             </div>
 
@@ -4245,31 +4245,31 @@ export default function App() {
                         <>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>المبيعات</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#38a169" }}>₪{r.revenue.toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#38a169" }}>₪{fmt(r.revenue)}</div>
                           </div>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>المصاريف</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#e53e3e" }}>₪{(r.cogs + r.fixedExpenses + r.variableExpenses).toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#e53e3e" }}>₪{fmt(r.cogs + r.fixedExpenses + r.variableExpenses)}</div>
                           </div>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>صافي الربح</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: r.netProfit >= 0 ? "#38a169" : "#e53e3e" }}>₪{r.netProfit.toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: r.netProfit >= 0 ? "#38a169" : "#e53e3e" }}>₪{fmt(r.netProfit)}</div>
                           </div>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>الكاش (شيكل)</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>₪{walletBalances.ILS.cash.toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>₪{fmt(walletBalances.ILS.cash)}</div>
                           </div>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>البنك (شيكل)</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>₪{walletBalances.ILS.bank.toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>₪{fmt(walletBalances.ILS.bank)}</div>
                           </div>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مستحق لي (عملاء)</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#38a169" }}>₪{receivablesPayables.owedToMe.toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#38a169" }}>₪{fmt(receivablesPayables.owedToMe)}</div>
                           </div>
                           <div style={{ background: currentTheme.cardBg, borderRadius: 10, padding: 10 }}>
                             <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مستحق عليّ (موردين)</div>
-                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#e53e3e" }}>₪{receivablesPayables.owedByMe.toFixed(2)}</div>
+                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#e53e3e" }}>₪{fmt(receivablesPayables.owedByMe)}</div>
                           </div>
                         </>
                       );
@@ -4284,7 +4284,7 @@ export default function App() {
                     const row = (label, value, color) => (
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "7px 0", borderBottom: `1px solid ${currentTheme.border}` }}>
                         <span>{label}</span>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", color }}>{value >= 0 ? "+ " : "− "}₪{Math.abs(value).toFixed(2)}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", color }}>{value >= 0 ? "+ " : "− "}₪{fmt(Math.abs(value))}</span>
                       </div>
                     );
                     return (
@@ -4296,7 +4296,7 @@ export default function App() {
                         {row("مصاريف متغيّرة", -r.variableExpenses, "#e53e3e")}
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, paddingTop: 12, marginTop: 4 }}>
                           <span>صافي الربح</span>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 16, color: r.netProfit >= 0 ? "#38a169" : "#e53e3e" }}>₪{r.netProfit.toFixed(2)}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 16, color: r.netProfit >= 0 ? "#38a169" : "#e53e3e" }}>₪{fmt(r.netProfit)}</span>
                         </div>
                       </>
                     );
@@ -4313,12 +4313,12 @@ export default function App() {
                     return (
                       <>
                         <div style={{ textAlign: "center", padding: "10px 0" }}>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>₪{r.breakEven.toFixed(2)}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>₪{fmt(r.breakEven)}</div>
                           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 4 }}>قيمة مبيعات لازم توصلها {reportPeriod === "month" ? "هالشهر" : "هالسنة"} عشان تغطي مصاريفك الثابتة</div>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, paddingTop: 10, borderTop: `1px solid ${currentTheme.border}` }}>
                           <span>مصاريف ثابتة</span>
-                          <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₪{r.fixedExpenses.toFixed(2)}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₪{fmt(r.fixedExpenses)}</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 6 }}>
                           <span>هامش المساهمة</span>
@@ -4337,7 +4337,7 @@ export default function App() {
                       <div key={j.invoice} style={{ padding: "8px 0", borderBottom: `1px solid ${currentTheme.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 12 }}>
                           <span>{j.invoice}</span>
-                          <span style={{ color: j.profit >= 0 ? "#38a169" : "#e53e3e", fontFamily: "'IBM Plex Mono', monospace" }}>{j.profit >= 0 ? "ربح" : "خسارة"} ₪{Math.abs(j.profit).toFixed(2)}</span>
+                          <span style={{ color: j.profit >= 0 ? "#38a169" : "#e53e3e", fontFamily: "'IBM Plex Mono', monospace" }}>{j.profit >= 0 ? "ربح" : "خسارة"} ₪{fmt(Math.abs(j.profit))}</span>
                         </div>
                       </div>
                     ))}
@@ -4383,7 +4383,7 @@ export default function App() {
                         )}
                       </svg>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, fontWeight: 800, color: monthlyReport.main.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
-                        {currencySymbol}{Math.abs(monthlyReport.main.balanceChange).toFixed(2)}
+                        {currencySymbol}{fmt(Math.abs(monthlyReport.main.balanceChange))}
                       </span>
                     </div>
                   </div>
@@ -4403,7 +4403,7 @@ export default function App() {
                       </div>
                       <div style={{ textAlign: "left" }}>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 12.5, color: currentTheme.accent }}>
-                          {currencySymbol}{monthlyReport.main.topCategory.amount.toFixed(2)}
+                          {currencySymbol}{fmt(monthlyReport.main.topCategory.amount)}
                         </div>
                         <div style={{ fontSize: 10, opacity: 0.6 }}>{monthlyReport.main.topCategory.percentage.toFixed(0)}٪ من مصاريفك</div>
                       </div>
@@ -4416,7 +4416,7 @@ export default function App() {
                         <div style={{ flex: 1, background: currentTheme.boxBg, borderRadius: 14, padding: "10px 12px" }}>
                           <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 3 }}>لسا متبقي إلك</div>
                           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 13, color: "#38a169" }}>
-                            {currencySymbol}{monthlyReport.owedToMe.toFixed(2)}
+                            {currencySymbol}{fmt(monthlyReport.owedToMe)}
                           </div>
                         </div>
                       )}
@@ -4424,7 +4424,7 @@ export default function App() {
                         <div style={{ flex: 1, background: currentTheme.boxBg, borderRadius: 14, padding: "10px 12px" }}>
                           <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 3 }}>لسا متبقي عليك</div>
                           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 13, color: "#e53e3e" }}>
-                            {currencySymbol}{monthlyReport.owedByMe.toFixed(2)}
+                            {currencySymbol}{fmt(monthlyReport.owedByMe)}
                           </div>
                         </div>
                       )}
@@ -4439,7 +4439,7 @@ export default function App() {
                       <div style={{ fontSize: 11, opacity: 0.7 }}>وين واصل رصيدك بـ{monthlyReport.secondary.monthName} لحد هلق</div>
                     </div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 800, color: monthlyReport.secondary.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
-                      {currencySymbol}{Math.abs(monthlyReport.secondary.balanceChange).toFixed(2)}
+                      {currencySymbol}{fmt(Math.abs(monthlyReport.secondary.balanceChange))}
                     </span>
                   </div>
                 )}
@@ -4485,7 +4485,7 @@ export default function App() {
                         )}
                       </svg>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 24, fontWeight: 800, color: yearlyReport.main.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
-                        {currencySymbol}{Math.abs(yearlyReport.main.balanceChange).toFixed(2)}
+                        {currencySymbol}{fmt(Math.abs(yearlyReport.main.balanceChange))}
                       </span>
                     </div>
                   </div>
@@ -4505,7 +4505,7 @@ export default function App() {
                         </div>
                         <div style={{ textAlign: "left" }}>
                           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: 12.5, color: currentTheme.accent }}>
-                            {currencySymbol}{yearlyReport.main.topCategory.amount.toFixed(2)}
+                            {currencySymbol}{fmt(yearlyReport.main.topCategory.amount)}
                           </div>
                           <div style={{ fontSize: 10, opacity: 0.6 }}>{yearlyReport.main.topCategory.percentage.toFixed(0)}٪ من مصاريفك</div>
                         </div>
@@ -4521,7 +4521,7 @@ export default function App() {
                       <div style={{ fontSize: 11, opacity: 0.7 }}>وين واصل رصيدك بسنة {yearlyReport.secondary.year} لحد هلق</div>
                     </div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15, fontWeight: 800, color: yearlyReport.secondary.balanceChange >= 0 ? "#38a169" : "#e53e3e" }}>
-                      {currencySymbol}{Math.abs(yearlyReport.secondary.balanceChange).toFixed(2)}
+                      {currencySymbol}{fmt(Math.abs(yearlyReport.secondary.balanceChange))}
                     </span>
                   </div>
                 )}
