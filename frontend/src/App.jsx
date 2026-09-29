@@ -205,11 +205,12 @@ function daysInMonth(month, year) {
 // حساب مشترك لمجموعة حركات محصورة بفترة معيّنة (شهر أو سنة) — بيرجع
 // تغيّر الرصيد وأكتر فئة مصروف. مستخدمة من computeMonthReport
 // وcomputeYearReport عشان ما يتكرر نفس المنطق.
-function computeReportForTx(periodTx) {
+function computeReportForTx(periodTx, ratesToILS = WALLET_CURRENCY_TO_ILS) {
   // كل حركة لازم تتحوّل لشيكل بسعر عملتها هي (t.currency)، مش برقم واحد
   // ثابت لكل الحركات — وإلا مبلغ بعملة تانية (دولار/دينار) بينجمع كأنه
-  // نفس رقم الشيكل بدون أي تحويل (مثلًا ₪50 + $25 يظهر ₪75 غلط).
-  const toILS = (t) => WALLET_CURRENCY_TO_ILS[t.currency] || 1;
+  // نفس رقم الشيكل بدون أي تحويل (مثلًا ₪50 + $25 يظهر ₪75 غلط). ratesToILS
+  // بيجي من السعر الحي المتحدث يوميًا لو جاهز، وإلا بيرجع للرقم الثابت.
+  const toILS = (t) => ratesToILS[t.currency] || 1;
 
   const balanceChange = periodTx.reduce((sum, t) => {
     const amt = Number(t.amount) * toILS(t);
@@ -246,21 +247,21 @@ function computeReportForTx(periodTx) {
 // تقرير مالي لشهر محدد (سنة + رقم شهر صفري-الأساس) — دالة نقية بتاخد
 // الحركات وسعر الصرف كوسائط عشان تنعمل تختبر لحالها. بترجع null لو ما
 // في ولا حركة بهداك الشهر بالذات.
-function computeMonthReport(txList, year, monthIndex) {
+function computeMonthReport(txList, year, monthIndex, ratesToILS = WALLET_CURRENCY_TO_ILS) {
   const monthTx = txList.filter((t) => {
     const d = new Date(t.date);
     return d.getFullYear() === year && d.getMonth() === monthIndex;
   });
   if (monthTx.length === 0) return null;
-  return { monthName: ARABIC_MONTHS[monthIndex], ...computeReportForTx(monthTx) };
+  return { monthName: ARABIC_MONTHS[monthIndex], ...computeReportForTx(monthTx, ratesToILS) };
 }
 
 // تقرير مالي لسنة محددة — نفس فكرة computeMonthReport بس محصور بسنة
 // كاملة مش شهر. بترجع null لو ما في ولا حركة بهديك السنة.
-function computeYearReport(txList, year) {
+function computeYearReport(txList, year, ratesToILS = WALLET_CURRENCY_TO_ILS) {
   const yearTx = txList.filter((t) => new Date(t.date).getFullYear() === year);
   if (yearTx.length === 0) return null;
-  return { year, ...computeReportForTx(yearTx) };
+  return { year, ...computeReportForTx(yearTx, ratesToILS) };
 }
 
 // تقرير أرباح وخسائر لحساب "مشروع" — مبني بالكامل على الحركات الفعلية
@@ -277,7 +278,7 @@ function stockSign(t) {
   return 0;
 }
 
-function computeBizReport(periodTx, excludedTxIds) {
+function computeBizReport(periodTx, excludedTxIds, ratesToILS = WALLET_CURRENCY_TO_ILS) {
   let revenue = 0, cogs = 0, fixedExpenses = 0, variableExpenses = 0, otherIncome = 0;
   periodTx.forEach((t) => {
     // حركات تسديد/تحصيل دين إله حركة أصلية معروفة (مش الحركة الأصلية
@@ -286,7 +287,7 @@ function computeBizReport(periodTx, excludedTxIds) {
     // (مستحق → كاش)، مش دخل أو مصروف جديد. استثناؤها هون بيمنع احتساب
     // نفس المبلغ مرتين.
     if (excludedTxIds && excludedTxIds.has(t.id)) return;
-    const toILS = WALLET_CURRENCY_TO_ILS[t.currency] || 1;
+    const toILS = ratesToILS[t.currency] || 1;
     const amt = Number(t.amount) * toILS;
     if (t.type === "دخل" || t.type === "مبيعات") {
       if (t.category === "مبيعات") {
@@ -314,11 +315,11 @@ function computeBizReport(periodTx, excludedTxIds) {
 
 // ربح حسب رقم الفاتورة/المرجع — بيجمع كل عمليات الدخل والمصروف يلي
 // حاملة نفس invoice_number ويحسب صافي ربح تلك الطلبية تحديدًا.
-function computeJobProfits(periodTx) {
+function computeJobProfits(periodTx, ratesToILS = WALLET_CURRENCY_TO_ILS) {
   const byInvoice = {};
   periodTx.forEach((t) => {
     if (!t.invoice_number) return;
-    const toILS = WALLET_CURRENCY_TO_ILS[t.currency] || 1;
+    const toILS = ratesToILS[t.currency] || 1;
     const amt = Number(t.amount) * toILS;
     if (!byInvoice[t.invoice_number]) byInvoice[t.invoice_number] = { invoice: t.invoice_number, revenue: 0, costs: 0, lines: [] };
     if (t.type === "دخل" || t.type === "مبيعات") byInvoice[t.invoice_number].revenue += amt;
@@ -824,6 +825,16 @@ export default function App() {
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
 
+  // سعر التحويل الفعلي المستخدم بكل حسابات التقارير/الخزائن (مش شكل
+  // العرض بس) — لو سعر الصرف الحي جاهز (fxRates)، منستخدم متوسط
+  // البيع/الشراء (السعر الحقيقي قبل هامش العرض)؛ وإلا منرجع لنفس
+  // الرقم الثابت القديم (WALLET_CURRENCY_TO_ILS) لحد ما يوصل أول سعر حي.
+  const ratesToILS = useMemo(() => ({
+    ILS: 1,
+    USD: fxRates ? (fxRates.USD.sell + fxRates.USD.buy) / 2 : WALLET_CURRENCY_TO_ILS.USD,
+    JOD: fxRates ? (fxRates.JOD.sell + fxRates.JOD.buy) / 2 : WALLET_CURRENCY_TO_ILS.JOD,
+  }), [fxRates]);
+
   // مبيعات قطعة قطعة (كمية × سعر) بتنطبق بس على حساب "مشروع"، فئة
   // "مبيعات"، وقت تسجيل عملية دخل.
   const isBizSale = accountType === "مشروع" && entryType === "دخل" && category === "مبيعات";
@@ -892,8 +903,8 @@ export default function App() {
 
   const walletTotalInILS = useMemo(() =>
     Object.keys(walletBalances).reduce((sum, code) =>
-      sum + (walletBalances[code].cash + walletBalances[code].bank) * WALLET_CURRENCY_TO_ILS[code], 0),
-    [walletBalances]
+      sum + (walletBalances[code].cash + walletBalances[code].bank) * (ratesToILS[code] || 1), 0),
+    [walletBalances, ratesToILS]
   );
 
   // اتجاه الرصيد آخر أيام (Sparkline) — بيظهر بس لو في بيانات كافية
@@ -1084,7 +1095,7 @@ export default function App() {
   // تسديد جزئي)، محوّلة لشيكل بس عشان نجمعهم برقم واحد — بدون ما نأثر
   // على قيمة كل دين المخزّنة أو المعروضة لحاله بعملته الأصلية.
   const receivablesPayables = useMemo(() => {
-    const toILS = (d) => (d.currency || "ILS") === "ILS" ? exchangeRate : WALLET_CURRENCY_TO_ILS[d.currency];
+    const toILS = (d) => ratesToILS[d.currency || "ILS"] || 1;
     const remaining = (d) => Math.max(0, Number(d.amount) - Number(d.paid_amount || 0));
     const owedToMe = scopedDebts
       .filter((d) => !d.paid && d.type === "دين له")
@@ -1093,14 +1104,14 @@ export default function App() {
       .filter((d) => !d.paid && d.type === "دين عليه")
       .reduce((sum, d) => sum + remaining(d) * toILS(d), 0);
     return { owedToMe, owedByMe };
-  }, [scopedDebts, exchangeRate]);
+  }, [scopedDebts, ratesToILS]);
 
   const monthlyReport = useMemo(() => {
     const now = new Date();
     const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    const prevReport = computeMonthReport(scopedTransactions, prevMonthDate.getFullYear(), prevMonthDate.getMonth());
-    const currentReport = computeMonthReport(scopedTransactions, now.getFullYear(), now.getMonth());
+    const prevReport = computeMonthReport(scopedTransactions, prevMonthDate.getFullYear(), prevMonthDate.getMonth(), ratesToILS);
+    const currentReport = computeMonthReport(scopedTransactions, now.getFullYear(), now.getMonth(), ratesToILS);
 
     const main = prevReport
       ? { ...prevReport, inProgress: false }
@@ -1113,7 +1124,7 @@ export default function App() {
     const secondary = (!main.inProgress && currentReport) ? { ...currentReport, inProgress: true } : null;
 
     return { main, secondary, ...receivablesPayables };
-  }, [scopedTransactions, receivablesPayables]);
+  }, [scopedTransactions, receivablesPayables, ratesToILS]);
 
   // تقرير السنة لتبويب "تقارير" — نفس فكرة monthlyReport بالضبط بس عالسنة:
   // آخر سنة كاملة خلصت هي الـmain، وإذا السنة الحالية كمان فيها حركات
@@ -1124,8 +1135,8 @@ export default function App() {
     const now = new Date();
     const prevYear = now.getFullYear() - 1;
 
-    const prevReport = computeYearReport(scopedTransactions, prevYear);
-    const currentReport = computeYearReport(scopedTransactions, now.getFullYear());
+    const prevReport = computeYearReport(scopedTransactions, prevYear, ratesToILS);
+    const currentReport = computeYearReport(scopedTransactions, now.getFullYear(), ratesToILS);
 
     const main = prevReport
       ? { ...prevReport, inProgress: false }
@@ -1138,7 +1149,7 @@ export default function App() {
     const secondary = (!main.inProgress && currentReport) ? { ...currentReport, inProgress: true } : null;
 
     return { main, secondary };
-  }, [scopedTransactions]);
+  }, [scopedTransactions, ratesToILS]);
 
   // حركات تسديد/تحصيل ديون إلها حركة أصلية معروفة (source_transaction_id) —
   // لازم تُستثنى من تقرير الربح/الخسارة عشان ما ينحسب نفس الدخل/المصروف
@@ -1162,13 +1173,13 @@ export default function App() {
       const d = new Date(t.date);
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
     });
-    return computeBizReport(monthTx, bizSettlementExclusions);
-  }, [scopedTransactions, bizSettlementExclusions]);
+    return computeBizReport(monthTx, bizSettlementExclusions, ratesToILS);
+  }, [scopedTransactions, bizSettlementExclusions, ratesToILS]);
   const bizYearlyReport = useMemo(() => {
     const yearTx = scopedTransactions.filter((t) => new Date(t.date).getFullYear() === new Date().getFullYear());
-    return computeBizReport(yearTx, bizSettlementExclusions);
-  }, [scopedTransactions, bizSettlementExclusions]);
-  const jobProfits = useMemo(() => computeJobProfits(scopedTransactions), [scopedTransactions]);
+    return computeBizReport(yearTx, bizSettlementExclusions, ratesToILS);
+  }, [scopedTransactions, bizSettlementExclusions, ratesToILS]);
+  const jobProfits = useMemo(() => computeJobProfits(scopedTransactions, ratesToILS), [scopedTransactions, ratesToILS]);
 
   // سجل الحركات مفلتر بالبحث الموجود + رقاقات الفلتر الجديدة (دخل/مصروف/هالشهر)
   const filteredTransactions = useMemo(() => {
@@ -2487,6 +2498,13 @@ export default function App() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" }}>
+            <div style={{ gridColumn: "1 / -1", background: "linear-gradient(135deg, #16302d, #0d211f)", border: "2px solid #c9a961", padding: "20px", borderRadius: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <h3 style={{ color: "#c9a961", margin: 0, fontSize: "16px" }}>حساب واحد، وضعين</h3>
+                <span style={{ background: "#c9a961", color: "#0e1a1a", fontSize: "10px", fontWeight: 900, padding: "2px 8px", borderRadius: "10px" }}>جديد</span>
+              </div>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بدّل-ي بين وضع فرد ووضع مشروع بضغطة — مخزون، موردين، وتقرير أرباح وخسائر لمشروعك، بنفس الحساب.</p>
+            </div>
             <div style={{ background: "#081615", border: "1px solid #16302d", padding: "18px", borderRadius: "12px" }}>
               <h3 style={{ color: "#c9a961", margin: "0 0 8px", fontSize: "15px" }}>خزنتين، مش خزنة وحدة</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>
@@ -2506,10 +2524,6 @@ export default function App() {
               <h3 style={{ color: "#c9a961", margin: "0 0 8px", fontSize: "15px" }}>بياناتك محفوظة، مش بس بجهازك</h3>
               <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بياناتك بتضل مرتبطة بحسابك، عشان تكون خزنتك معك من أي جهاز، وقت ما تحتاجها.</p>
             </div>
-            <div style={{ background: "#081615", border: "1px solid #16302d", padding: "18px", borderRadius: "12px" }}>
-              <h3 style={{ color: "#c9a961", margin: "0 0 8px", fontSize: "15px" }}>حساب واحد، وضعين</h3>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, margin: 0, lineHeight: "1.5" }}>بدّل-ي بين وضع فرد ووضع مشروع بضغطة — مخزون، موردين، وتقرير أرباح وخسائر لمشروعك، بنفس الحساب.</p>
-            </div>
           </div>
         </div>
 
@@ -2522,7 +2536,12 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
             <div style={{ background: "linear-gradient(135deg, #0d211f, #081615)", border: "1px solid #16302d", borderRadius: "16px", padding: "25px" }}>
               <div style={{ background: "#c9a961", color: "#0e1a1a", display: "inline-block", padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 900, marginBottom: "10px" }}>المرحلة التوسعية Pro</div>
-              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>شاشة أسعار العملات والمؤشرات المالية المباشرة، مع تقارير ورسوم بيانية تحليلية دقيقة.</p>
+              <h3 style={{ color: "#f2ede2", margin: "0 0 10px", fontSize: "17px", fontWeight: 900 }}>خذ-ي قراراتك لمستوى أبعد.</h3>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: "0 0 14px" }}>تحليل متقدم لأعمالك، رؤى أعمق، ومزايا جديدة قادمة لتخليك تشوف-ي أكثر من مجرد الأرقام.</p>
+              <p style={{ fontSize: "13px", color: "#f2ede2", opacity: 0.9, lineHeight: "1.6", margin: 0 }}>
+                <strong style={{ color: "#c9a961" }}>والباقي؟</strong><br />
+                مفاجآت رح نكشف عنها بوقتها.
+              </p>
             </div>
           </div>
         </div>
