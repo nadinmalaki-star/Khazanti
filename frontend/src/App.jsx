@@ -1929,8 +1929,14 @@ export default function App() {
             const product = scopedProducts.find(p => p.name === itemToDelete.product_name);
             if (product) {
               // نعكس أثر الحركة المحذوفة بعكس إشارتها: بيع محذوف بيرجع
-              // للمخزون، شراء محذوف بينخصم منه.
-              const restored = Number(product.quantity) - deletedSign * Number(itemToDelete.quantity);
+              // للمخزون، شراء محذوف بينخصم منه. نجيب الكمية الحالية طازة
+              // من قاعدة البيانات (مش من scopedProducts المحفوظة بالـ
+              // closure وقت جدولة الحذف) — لأنو لو انحذفت حركتين لنفس
+              // المنتج بنفس الـ٥ ثواني (فترة التراجع)، الاثنتين بيبنوا
+              // فوق نفس الرقم القديم وآخر كتابة بتلغي التانية.
+              const { data: freshProduct } = await supabase.from("products").select("quantity").eq("id", product.id).single();
+              const baseQty = freshProduct ? Number(freshProduct.quantity) : Number(product.quantity);
+              const restored = baseQty - deletedSign * Number(itemToDelete.quantity);
               const { data: pData } = await supabase.from("products").update({ quantity: Math.max(0, restored) }).eq("id", product.id).select();
               if (pData) setProducts(prev => prev.map(p => p.id === product.id ? pData[0] : p));
             }
