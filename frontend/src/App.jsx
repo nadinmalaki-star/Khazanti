@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase.js";
+import * as XLSX from "xlsx";
 import './App.css';
 
 // ------------------------------------------------------------------
@@ -46,6 +47,43 @@ const WALLET_CURRENCY_TO_ILS = { ILS: 1, USD: 3.70, JOD: 5.26 };
 // دايمًا (مثال: ٢٠٬٢٠٠٫٠٠)، بدون أي تغيير على الرقم الفعلي المخزّن.
 function fmt(n) {
   return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// تحويل رقم عادي (سلسلة نصية) لأرقام عربية-هندية، لعرض سعر الصرف بنفس
+// الشكل يلي كان مكتوب فيه يدويًا قبل (٣.٠٦ بدل 3.06).
+const ARABIC_DIGITS = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+function toArabicDigits(str) {
+  return String(str).replace(/[0-9]/g, (d) => ARABIC_DIGITS[Number(d)]);
+}
+
+// آخر حد "٦:٠٠ ص" مرّ فيه — اليوم لو الوقت الحالي بعد الساعة ٦ صباحًا،
+// وإلا أمس. هاد الحد بيحدد إذا لازم نجيب سعر صرف جديد أو نضل على
+// المخزّن محليًا (تحديث مرة وحدة كل يوم فقط، مش كل ما تتفتح الصفحة).
+function lastSixAmBoundary(now) {
+  const b = new Date(now);
+  b.setHours(6, 0, 0, 0);
+  if (b > now) b.setDate(b.getDate() - 1);
+  return b;
+}
+
+// نص "آخر تحديث" لسعر الصرف — بالعربي، مع تمييز "اليوم/أمس" عن أي
+// تاريخ أقدم (لو فتحت التطبيق بعد يوم أو يومين بدون اتصال مثلًا).
+function formatFxUpdatedAt(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const period = hours < 12 ? "ص" : "م";
+  hours = hours % 12 || 12;
+  const time = toArabicDigits(`${hours}:${minutes}`) + " " + period;
+  if (isToday) return `اليوم ${time}`;
+  if (isYesterday) return `أمس ${time}`;
+  return `${toArabicDigits(String(d.getDate()))} ${ARABIC_MONTHS[d.getMonth()]} ${time}`;
 }
 
 const GOLD_RING = "#D4AF37";
@@ -498,6 +536,32 @@ export default function App() {
 
   // حقول المخزون — كلها اختيارية وحصرية لحساب "مشروع".
   const [invOn, setInvOn] = useState(false);
+
+  // سعر صرف الدولار/الدينار المعروض بالشريط فوق التبويبات — حقيقي ومحدَّث
+  // مرة وحدة باليوم (مش سعر حي/Live FX)، بيتجاب من مصدر مجاني وقت أول
+  // تحميل بعد الساعة ٦ صباحًا، ويتخزّن محليًا لباقي اليوم.
+  const [fxRates, setFxRates] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem("khznti_fx_rates") || "null");
+      if (cached && cached.fetchedAt && new Date(cached.fetchedAt) >= lastSixAmBoundary(new Date())) {
+        return cached.rates;
+      }
+    } catch {
+      // تجاهل — تخزين تالف أو غير موجود، بيضل fxRates فاضي لحد ما يجيب سعر جديد
+    }
+    return null;
+  });
+  const [fxUpdatedAt, setFxUpdatedAt] = useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem("khznti_fx_rates") || "null");
+      if (cached && cached.fetchedAt && new Date(cached.fetchedAt) >= lastSixAmBoundary(new Date())) {
+        return cached.fetchedAt;
+      }
+    } catch {
+      // تجاهل — نفس السبب فوق
+    }
+    return null;
+  });
   const [showInvAddForm, setShowInvAddForm] = useState(false);
   const [invName, setInvName] = useState("");
   const [invQty, setInvQty] = useState("");
@@ -710,6 +774,52 @@ export default function App() {
   useEffect(() => {
     if (accountType) localStorage.setItem("khznti_account_type", accountType);
   }, [accountType]);
+
+  // سعر صرف الدولار/الدينار الحقيقي — يتجاب مرة وحدة كل يوم بس (أول
+  // تحميل بعد حد الساعة ٦ صباحًا)، من مصدر مجاني بدون مفتاح API. لو
+  // الجلب فشل (لا نت مثلًا)، بيضل آخر سعر محفوظ محليًا ظاهر بدل ما
+  // يختفي أو ينكسر الشريط. سعري بيع/شراء محسوبين بهامش بسيط وثابت حوالين
+  // السعر الحقيقي (مافي مصدر مجاني بيعطي بيع/شراء منفصلين فعليًا).
+  useEffect(() => {
+    // نفس فحص التخزين المحلي يلي صار بالـuseState الأولي فوق (مش قراءة
+    // state) — عشان نعرف إذا في داعي نجيب سعر جديد بدون ما نعتمد على
+    // fxRates كـdependency (كان بيسبب تحذير exhaustive-deps).
+    let cachedFresh;
+    try {
+      cachedFresh = JSON.parse(localStorage.getItem("khznti_fx_rates") || "null");
+    } catch {
+      cachedFresh = null;
+    }
+    if (cachedFresh && cachedFresh.fetchedAt && new Date(cachedFresh.fetchedAt) >= lastSixAmBoundary(new Date())) {
+      return;
+    }
+    let cancelled = false;
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !data || !data.rates || !data.rates.ILS || !data.rates.JOD) return;
+        const usdToIls = data.rates.ILS;
+        const jodToIls = data.rates.ILS / data.rates.JOD;
+        const spread = 0.0065;
+        const rates = {
+          USD: { sell: usdToIls * (1 - spread / 2), buy: usdToIls * (1 + spread / 2) },
+          JOD: { sell: jodToIls * (1 - spread / 2), buy: jodToIls * (1 + spread / 2) },
+        };
+        const fetchedAt = new Date().toISOString();
+        try {
+          localStorage.setItem("khznti_fx_rates", JSON.stringify({ rates, fetchedAt }));
+        } catch {
+          // تجاهل — فشل التخزين المحلي مش مانع نعرض السعر الجديد بهاي الجلسة
+        }
+        setFxRates(rates);
+        setFxUpdatedAt(fetchedAt);
+      })
+      .catch(() => {
+        // فشل الجلب (لا نت مثلًا) — بيضل fxRates فاضي فبتظهر القيم
+        // الافتراضية الثابتة بالواجهة بدل ما ينكسر الشريط.
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const exchangeRate = CURRENCIES[currency].rate;
   const currencySymbol = CURRENCIES[currency].symbol;
@@ -1093,6 +1203,83 @@ export default function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  // بيصدّر أرقام التقرير المعروض فعليًا بتبويب "تقارير" (شهري/سنوي، فرد
+  // أو مشروع) — مش سجل الحركات الخام. لازم يعكس بالضبط نفس القيم
+  // الظاهرة على الشاشة وقت الضغط على الزر.
+  function downloadCSV(filename, headers, rows) {
+    const csv = headers + "\n" + rows.join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // ملف Excel حقيقي بشيتين منفصلين — "شهري" و"سنوي" — كل واحد فيهم
+  // مستقل عن التاني، بغض النظر عن أي تبويب (شهري/سنوي) مفعّل حاليًا
+  // بالشاشة. بيعكس أرقام التقرير نفسها المحسوبة أصلًا (بيزنس أو فرد)،
+  // مش سجل حركات خام.
+  function exportReportToExcel() {
+    const wb = XLSX.utils.book_new();
+
+    if (accountType === "مشروع") {
+      const buildBizSheet = (r) => XLSX.utils.aoa_to_sheet([
+        ["المؤشر", "القيمة"],
+        ["إجمالي المبيعات", r.revenue],
+        ["تكلفة البضاعة المباعة", r.cogs],
+        ["دخل آخر", r.otherIncome],
+        ["مصاريف ثابتة", r.fixedExpenses],
+        ["مصاريف متغيّرة", r.variableExpenses],
+        ["صافي الربح", r.netProfit],
+        ["نقطة التعادل", r.breakEven === null ? "غير متوفر" : r.breakEven],
+        ["هامش المساهمة %", Math.round(r.contributionMargin * 100)],
+        ["الكاش (شيكل)", walletBalances.ILS.cash],
+        ["البنك (شيكل)", walletBalances.ILS.bank],
+        ["مستحق لي (عملاء)", receivablesPayables.owedToMe],
+        ["مستحق عليّ (موردين)", receivablesPayables.owedByMe],
+      ]);
+      XLSX.utils.book_append_sheet(wb, buildBizSheet(bizMonthlyReport), "شهري");
+      XLSX.utils.book_append_sheet(wb, buildBizSheet(bizYearlyReport), "سنوي");
+    } else {
+      const buildIndividualSheet = (r) => {
+        if (!r) return XLSX.utils.aoa_to_sheet([["لا يوجد بيانات لهاي الفترة بعد"]]);
+        return XLSX.utils.aoa_to_sheet([
+          ["المؤشر", "القيمة"],
+          ["الفترة", r.main.monthName || r.main.year],
+          ["تغيّر الرصيد", r.main.balanceChange],
+          ["أكتر فئة مصروف", r.main.topCategory ? r.main.topCategory.key : "لا يوجد"],
+          ["قيمة أكتر فئة", r.main.topCategory ? r.main.topCategory.amount : 0],
+          ["نسبة أكتر فئة %", r.main.topCategory ? Math.round(r.main.topCategory.percentage) : 0],
+          ["متبقي لي", r.owedToMe || 0],
+          ["متبقي عليّ", r.owedByMe || 0],
+        ]);
+      };
+      XLSX.utils.book_append_sheet(wb, buildIndividualSheet(monthlyReport), "شهري");
+      XLSX.utils.book_append_sheet(wb, buildIndividualSheet(yearlyReport), "سنوي");
+    }
+
+    XLSX.writeFile(wb, `khezneti_report_${accountType === "مشروع" ? "business" : "individual"}_${new Date().toISOString().split("T")[0]}.xlsx`);
+  }
+
+  // بيصدّر حالة المخزون الحالية (الاسم، الكمية المتبقية، تكلفة القطعة،
+  // القيمة الإجمالية) — مش سجل حركات الشراء/البيع، مجرد لقطة لحظية
+  // لكل منتج زي ما هو ظاهر بتبويب "المخزون" وقت الضغط على الزر.
+  function exportInventoryToCSV() {
+    if (scopedProducts.length === 0) {
+      alert("لا توجد منتجات للتصدير");
+      return;
+    }
+    const rows = scopedProducts.map(p => {
+      const qty = Number(p.quantity) || 0;
+      const cost = Number(p.cost) || 0;
+      return `${p.name},${qty},${cost.toFixed(2)},${(qty * cost).toFixed(2)}`;
+    });
+    downloadCSV(`khezneti_inventory_${new Date().toISOString().split("T")[0]}.csv`, "اسم المنتج,الكمية المتبقية,تكلفة القطعة,القيمة الإجمالية", rows);
   }
 
   async function fetchData() {
@@ -2942,11 +3129,11 @@ export default function App() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
               <span style={{ opacity: 0.7 }}>بيع</span>
-              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>٣.٠٦</b>
+              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{fxRates ? toArabicDigits(fxRates.USD.sell.toFixed(2)) : "٣.٠٦"}</b>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 2 }}>
               <span style={{ opacity: 0.7 }}>شراء</span>
-              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>٣.٠٨</b>
+              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{fxRates ? toArabicDigits(fxRates.USD.buy.toFixed(2)) : "٣.٠٨"}</b>
             </div>
           </div>
           <div style={{ flex: 1, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: "10px 12px" }}>
@@ -2956,15 +3143,15 @@ export default function App() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
               <span style={{ opacity: 0.7 }}>بيع</span>
-              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>٤.٣٠</b>
+              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{fxRates ? toArabicDigits(fxRates.JOD.sell.toFixed(2)) : "٤.٣٠"}</b>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 2 }}>
               <span style={{ opacity: 0.7 }}>شراء</span>
-              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>٤.٣٥</b>
+              <b style={{ color: currentTheme.accent, fontFamily: "'IBM Plex Mono', monospace" }}>{fxRates ? toArabicDigits(fxRates.JOD.buy.toFixed(2)) : "٤.٣٥"}</b>
             </div>
           </div>
         </div>
-        <div style={{ textAlign: "center", fontSize: 10, opacity: 0.5, marginBottom: 16 }}>آخر تحديث: اليوم ٦:٠٠ ص</div>
+        <div style={{ textAlign: "center", fontSize: 10, opacity: 0.5, marginBottom: 16 }}>آخر تحديث: {fxUpdatedAt ? formatFxUpdatedAt(fxUpdatedAt) : "اليوم ٦:٠٠ ص"}</div>
 
         {/* ============ تبويب العمليات ============ */}
         {currentTab === "transactions" && (
@@ -3873,7 +4060,12 @@ export default function App() {
                 )}
 
                 <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>منتجاتك</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>منتجاتك</div>
+                    <button onClick={exportInventoryToCSV} style={{ background: "transparent", border: "none", color: currentTheme.accent, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                      <Icon name="download" size={12} /> تصدير Excel
+                    </button>
+                  </div>
                   {scopedProducts.length === 0 ? (
                     <div style={{ fontSize: 11, opacity: 0.6, textAlign: "center", padding: 10 }}>لا يوجد منتجات مسجّلة بعد.</div>
                   ) : (
@@ -3985,7 +4177,7 @@ export default function App() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-              <button onClick={exportToCSV} style={{ background: "transparent", border: "none", color: currentTheme.accent, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={exportReportToExcel} style={{ background: "transparent", border: "none", color: currentTheme.accent, fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 <Icon name="download" size={12} /> تصدير Excel
               </button>
             </div>
