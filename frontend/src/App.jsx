@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./supabase.js";
 import * as XLSX from "xlsx";
 import './App.css';
@@ -498,6 +498,13 @@ function Icon({ name, size = 16, color }) {
   }
 }
 
+// أوقات تحميل البيانات عند فتح التطبيق (شبكات بطيئة):
+const SESSION_SLOW_HINT_MS = 12000; // تلميح "الاتصال بطيء" على شاشة الشعار
+const DATA_SLOW_HINT_MS = 8000; // تلميح "الاتصال بطيء" أثناء أول تحميل للبيانات
+const DATA_LOAD_TIMEOUT_MS = 30000; // أقصى انتظار لتحميل البيانات قبل عرض "إعادة المحاولة"
+const RESUME_REFRESH_MIN_GAP_MS = 30000; // رجوع سريع للتطبيق ما بيعيد التحميل
+const LOCAL_CHANGE_QUIET_MS = 20000; // ما في تحديث خلفية قريب من تعديل محلي (مهلة التراجع ٥ث + شبكة بطيئة)
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
@@ -534,6 +541,20 @@ export default function App() {
   const [debts, setDebts] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  // حالة تحميل البيانات المالية نفسها (منفصلة عن loading تبع شاشات الدخول):
+  // "idle" قبل أي جلسة، "loading" أول تحميل، "ready" البيانات الحقيقية
+  // جاهزة، "error" فشل/انتهت المهلة. ما منعرض أرصدة ولا قوائم مالية إلا بـ"ready"
+  // — عشان ₪0 مؤقت أو قائمة فاضية ما يبينوا كأنهم بيانات حقيقية.
+  const [dataStatus, setDataStatus] = useState("idle");
+  const [sessionSlow, setSessionSlow] = useState(false);
+  const [dataSlow, setDataSlow] = useState(false);
+  const dataStatusRef = useRef("idle");
+  const loadedUserIdRef = useRef(null); // المستخدم يلي بياناته معروضة أو عم تنحمّل
+  const dataLoadRef = useRef(null); // { userId, promise } — التحميل الجاري حاليًا
+  const lastLoadedAtRef = useRef(0);
+  const dataSnapshotRef = useRef(null);
+  const lastFetchedRef = useRef(null); // آخر بيانات وصلت من السيرفر (للتمييز عن التغيير المحلي)
+  const lastLocalChangeAtRef = useRef(0);
 
   // حقول المخزون — كلها اختيارية وحصرية لحساب "مشروع".
   const [invOn, setInvOn] = useState(false);
@@ -723,23 +744,17 @@ export default function App() {
     setInstallPrompt(null);
   }
 
+  // الاشتراك بأحداث الجلسة بيصير مرة وحدة بس، فبيستدعي آخر نسخة من
+  // syncSession عن طريق ref.
+  const syncSessionRef = useRef(null);
   useEffect(() => {
-    // نوع الحساب (فرد/مشروع) بيتسأل أول مرة بس — بعدها بيتذكّره من هالجهاز
-    // (localStorage) وبيفتح عليه مباشرة بأي تحميل/تسجيل دخول لاحق، بدل ما
-    // يعيد يسأل من جديد كل مرة. التبديل يضل متاح أي وقت من الزر فوق —
-    // هاد بس بيتحكم بأي نوع يفتح عليه افتراضيًا.
-    const rememberedType = localStorage.getItem("khznti_account_type") || "";
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsLoggedIn(true);
-        setUserEmail(session.user?.email || "");
-        setAccountType(rememberedType);
-        fetchData();
-      } else {
-        setLoading(false);
-      }
-    });
+    syncSessionRef.current = syncSession;
+  });
 
+  useEffect(() => {
+    // مصدر واحد لحالة الجلسة: onAuthStateChange (بيبعت INITIAL_SESSION أول
+    // ما يجهز، بعد تجديد التوكن إذا لزم). كان في كمان getSession().then
+    // منفصل، فكان التحميل الكامل يصير مرتين-تلات عند كل فتح للتطبيق.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       // رابط "نسيت كلمة المرور" بيسجّل دخول تلقائي (recovery session) —
       // لازم نعترضه ونعرض فورم "كلمة مرور جديدة" بدل ما نودّيها مباشرة
@@ -749,26 +764,34 @@ export default function App() {
         setLoading(false);
         return;
       }
-
-      if (session) {
-        setIsLoggedIn(true);
-        setUserEmail(session.user?.email || "");
-        // بس تسجيل دخول جديد فعلي (SIGNED_IN) بيفتح على آخر نوع محفوظ —
-        // تحديث التوكن التلقائي بالخلفية (TOKEN_REFRESHED) ما لازم يقاطع
-        // المستخدم بمنتصف جلسة شغالة أصلًا.
-        if (_event === "SIGNED_IN") setAccountType(localStorage.getItem("khznti_account_type") || "");
-        fetchData();
-      } else {
-        setIsLoggedIn(false);
-        setUserEmail("");
-        setAccountType(null);
-        setTransactions([]);
-        setDebts([]);
-      }
+      syncSessionRef.current(_event, session);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // لما تتغيّر البيانات محليًا (إضافة/تعديل/حذف)، منحفظ نسخة مرجعية ووقت
+  // التغيير — تحديث الخلفية ما بيبلش قريب من تغيير محلي (مثلًا خلال مهلة
+  // "تراجع" عن حذف حركة)، وما بيكتب فوق تغيير صار وهو لسا عم يحمّل.
+  useEffect(() => {
+    const fetched = lastFetchedRef.current;
+    const fromServer = fetched && fetched.transactions === transactions && fetched.debts === debts && fetched.products === products;
+    if (!fromServer) lastLocalChangeAtRef.current = Date.now();
+    dataSnapshotRef.current = { transactions, debts, products };
+  }, [transactions, debts, products]);
+
+  // تلميح "الاتصال بطيء" إذا فحص الجلسة أو أول تحميل للبيانات طوّل.
+  useEffect(() => {
+    if (isLoggedIn || !loading) return;
+    const timer = setTimeout(() => setSessionSlow(true), SESSION_SLOW_HINT_MS);
+    return () => { clearTimeout(timer); setSessionSlow(false); };
+  }, [isLoggedIn, loading]);
+
+  useEffect(() => {
+    if (dataStatus !== "loading") return;
+    const timer = setTimeout(() => setDataSlow(true), DATA_SLOW_HINT_MS);
+    return () => { clearTimeout(timer); setDataSlow(false); };
+  }, [dataStatus]);
 
   // حفظ آخر نوع حساب مختار محليًا (لهاد الجهاز) — عشان الجلسة الجاية
   // تفتح عليه مباشرة بدل ما تسأل من جديد. ما منحفظ "" (لسا ما اخترتي).
@@ -1330,24 +1353,119 @@ export default function App() {
     downloadCSV(`khezneti_inventory_${new Date().toISOString().split("T")[0]}.csv`, "اسم المنتج,الكمية المتبقية,تكلفة القطعة,القيمة الإجمالية", rows);
   }
 
-  async function fetchData() {
-    setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      setLoading(false);
+  function updateDataStatus(status) {
+    dataStatusRef.current = status;
+    setDataStatus(status);
+  }
+
+  // بيقرر إمتى منحمّل البيانات حسب حدث الجلسة — تحميل كامل واحد بس لكل
+  // مستخدم حقيقي. INITIAL_SESSION / TOKEN_REFRESHED / USER_UPDATED لنفس
+  // المستخدم ما بيعيدوا التحميل. SIGNED_IN لنفس المستخدم (رجوع التطبيق من
+  // الخلفية) بيحدّث مرة وحدة بالخلفية بدون ما يمسح المعروض.
+  function syncSession(event, session) {
+    setLoading(false);
+
+    if (!session) {
+      setIsLoggedIn(false);
+      setUserEmail("");
+      setAccountType(null);
+      setTransactions([]);
+      setDebts([]);
+      setProducts([]);
+      loadedUserIdRef.current = null;
+      dataLoadRef.current = null;
+      lastLoadedAtRef.current = 0;
+      updateDataStatus("idle");
       return;
     }
 
-    const [{ data: txData }, { data: debtData }, { data: productData }] = await Promise.all([
-      supabase.from("transactions").select("*").eq("user_id", user.id).order("id", { ascending: false }),
-      supabase.from("debts").select("*").eq("user_id", user.id).order("id", { ascending: false }),
-      supabase.from("products").select("*").eq("user_id", user.id).order("id", { ascending: false }),
-    ]);
+    setIsLoggedIn(true);
+    setUserEmail(session.user?.email || "");
+    const userId = session.user?.id;
+    if (!userId) return;
 
-    setTransactions(txData || []);
-    setDebts(debtData || []);
-    setProducts(productData || []);
-    setLoading(false);
+    if (loadedUserIdRef.current !== userId) {
+      // أول تحميل بهاي الجلسة، أو حساب مختلف: ما منعرض أبدًا بيانات حساب سابق.
+      if (loadedUserIdRef.current !== null) {
+        setTransactions([]);
+        setDebts([]);
+        setProducts([]);
+      }
+      loadedUserIdRef.current = userId;
+      // نوع الحساب (فرد/مشروع) بيتسأل أول مرة بس — بعدها بيتذكّره من هالجهاز
+      // (localStorage) وبيفتح عليه مباشرة بأي تحميل/تسجيل دخول لاحق.
+      setAccountType(localStorage.getItem("khznti_account_type") || "");
+      fetchData(userId);
+      return;
+    }
+
+    if (event === "SIGNED_IN") {
+      if (dataStatusRef.current !== "ready") {
+        fetchData(userId);
+      } else if (canBackgroundRefresh()) {
+        fetchData(userId, { background: true });
+      }
+    }
+  }
+
+  // تحديث الخلفية (عند الرجوع للتطبيق) بس إذا ما في أي عملية محلية معلّقة
+  // أو نموذج مفتوح على بيانات مالية — الأولوية لصحة الأرقام مش للسرعة.
+  function canBackgroundRefresh() {
+    const now = Date.now();
+    return (
+      now - lastLoadedAtRef.current > RESUME_REFRESH_MIN_GAP_MS &&
+      now - lastLocalChangeAtRef.current > LOCAL_CHANGE_QUIET_MS &&
+      !deletedItem &&
+      !settlingDebt &&
+      !editingTransactionId
+    );
+  }
+
+  // تحميل الحركات والديون والمنتجات. ما في getUser() هون: الجلسة أصلًا معروفة،
+  // وRLS بيتحقق من التوكن بكل استعلام على السيرفر. تحميل واحد بس بنفس الوقت
+  // لكل مستخدم، بمهلة قصوى. الفشل ما بيحط أبدًا قوائم فاضية مكان البيانات.
+  function fetchData(userId, { background = false } = {}) {
+    if (!userId) return Promise.resolve();
+    if (dataLoadRef.current && dataLoadRef.current.userId === userId) return dataLoadRef.current.promise;
+
+    if (!background) updateDataStatus("loading");
+    const snapshot = dataSnapshotRef.current;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DATA_LOAD_TIMEOUT_MS);
+    const entry = { userId };
+    entry.promise = (async () => {
+      try {
+        const results = await Promise.all(
+          ["transactions", "debts", "products"].map((table) =>
+            supabase.from(table).select("*").eq("user_id", userId).order("id", { ascending: false }).abortSignal(controller.signal)
+          )
+        );
+        const failed = results.find((r) => r.error);
+        if (failed) throw failed.error;
+        if (loadedUserIdRef.current !== userId) return; // الحساب تغيّر بالنص
+        // تحديث خلفية: إذا صار تغيير محلي وهو عم يحمّل، النسخة يلي وصلت ممكن
+        // تكون أقدم منه — منتجاهلها ومنخلّي المعروض زي ما هو.
+        if (background && dataSnapshotRef.current !== snapshot) return;
+        const fresh = { transactions: results[0].data || [], debts: results[1].data || [], products: results[2].data || [] };
+        lastFetchedRef.current = fresh;
+        setTransactions(fresh.transactions);
+        setDebts(fresh.debts);
+        setProducts(fresh.products);
+        lastLoadedAtRef.current = Date.now();
+        updateDataStatus("ready");
+      } catch {
+        if (!background && loadedUserIdRef.current === userId) updateDataStatus("error");
+      } finally {
+        clearTimeout(timer);
+        if (dataLoadRef.current === entry) dataLoadRef.current = null;
+      }
+    })();
+    dataLoadRef.current = entry;
+    return entry.promise;
+  }
+
+  function retryDataLoad() {
+    if (loadedUserIdRef.current) fetchData(loadedUserIdRef.current);
   }
 
   async function addTransaction() {
@@ -2377,11 +2495,7 @@ export default function App() {
       setTimeout(() => {
         setIsPasswordRecovery(false);
         supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) {
-            setIsLoggedIn(true);
-            setUserEmail(session.user?.email || "");
-            fetchData();
-          }
+          if (session) syncSession("SIGNED_IN", session);
         });
       }, 1500);
     } catch (err) {
@@ -2442,10 +2556,21 @@ export default function App() {
   // (خصوصًا لمستخدمة رجعت وهي مسجّلة دخول من قبل).
   if (!isLoggedIn && loading) {
     return (
-      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div dir="rtl" style={{ minHeight: "100vh", background: "#0e1a1a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, padding: 20, fontFamily: "'Tajawal', sans-serif", color: "#f2ede2" }}>
         <div style={{ width: 72, height: 72, borderRadius: 18, overflow: "hidden", border: "2px solid #D4AF37", boxShadow: "0 12px 30px rgba(0,0,0,0.6)" }}>
-          <img src="/logo.png" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <img src="/logo-app.webp" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
+        {sessionSlow && (
+          <div style={{ textAlign: "center", fontSize: 13, maxWidth: 280 }}>
+            <div style={{ opacity: 0.8, marginBottom: 12 }}>الاتصال بطيء — لسا عم نتحقق من تسجيل الدخول.</div>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "8px 18px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -2516,7 +2641,7 @@ export default function App() {
         <div style={{ textAlign: "center", maxWidth: "800px", marginBottom: "50px" }}>
           <div style={{ width: "110px", height: "110px", margin: "0 auto 20px", background: "linear-gradient(135deg, #0d211f, #081615)", border: "2px solid #c9a961", borderRadius: "28px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 30px rgba(0,0,0,0.6)", overflow: "hidden" }}>
             <img
-              src="/logo.png"
+              src="/logo-app.webp"
               alt="شعار خزنتي"
               style={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
@@ -2944,6 +3069,9 @@ export default function App() {
   // تضل الشاشة معلّقة على محتوى تبويب ما عاد موجود — بدون useEffect
   // ولا setState إضافية، مجرد قيمة محسوبة وقت الرندر.
   const currentTab = (accountType !== "مشروع" && activeTab === "inventory") ? "transactions" : activeTab;
+  // التبويبات المالية (أرصدة، قوائم، نماذج تسجيل) ما بتنعرض إلا بعد ما توصل
+  // البيانات الحقيقية — هيك ما في ₪0 مؤقت ولا أي عملية حفظ على بيانات ناقصة.
+  const dataReady = dataStatus === "ready";
 
   return (
     <div dir="rtl" style={{ minHeight: "100vh", background: currentTheme.bg, fontFamily: "'Tajawal', sans-serif", color: currentTheme.text, padding: "24px 16px 60px", display: "flex", justifyContent: "center" }}>
@@ -2976,7 +3104,7 @@ export default function App() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, overflow: "hidden", border: `1.5px solid ${currentTheme.accent}`, flexShrink: 0 }}>
-              <img src="/logo.png" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src="/logo-app.webp" alt="خزنتي" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
             <h1 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>خِزنتي</h1>
           </div>
@@ -3030,7 +3158,9 @@ export default function App() {
               {showNotifPanel && (
                 <div style={{ position: "absolute", top: 42, left: -40, minWidth: 240, maxWidth: 280, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
                   <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>الإشعارات</div>
-                  {upcomingDebts.length === 0 ? (
+                  {!dataReady ? (
+                    <div style={{ fontSize: 11, opacity: 0.6, padding: "6px 0" }}>جارِ تحميل بياناتك…</div>
+                  ) : upcomingDebts.length === 0 ? (
                     <div style={{ fontSize: 11, opacity: 0.6, padding: "6px 0" }}>ما في إشعارات جديدة حاليًا.</div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 240, overflowY: "auto" }}>
@@ -3223,8 +3353,34 @@ export default function App() {
         </div>
         <div style={{ textAlign: "center", fontSize: 10, opacity: 0.5, marginBottom: 16 }}>آخر تحديث: {fxUpdatedAt ? formatFxUpdatedAt(fxUpdatedAt) : "اليوم ٦:٠٠ ص"}</div>
 
+        {/* البيانات المالية لسا ما وصلت (أو فشل تحميلها): بطاقة تحميل بدل أي
+            أرصدة أو قوائم — ما في ₪0 مؤقت، وما في نماذج حفظ قبل ما تجهز البيانات. */}
+        {!dataReady && currentTab !== "contact" && (
+          <div role="status" aria-live="polite" style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: "28px 18px", marginBottom: 16, textAlign: "center" }}>
+            {dataStatus === "error" ? (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>ما قدرنا نحمّل بياناتك.</div>
+                <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 14 }}>تأكد-ي من الاتصال بالإنترنت وحاول-ي مرة تانية.</div>
+                <button
+                  onClick={retryDataLoad}
+                  style={{ background: currentTheme.accent, border: "none", color: "#0e1a1a", padding: "8px 18px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}
+                >
+                  إعادة المحاولة
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>جارِ تحميل بياناتك…</div>
+                {dataSlow && (
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 6 }}>الاتصال بطيء — لسا عم نحمّل.</div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* ============ تبويب العمليات ============ */}
-        {currentTab === "transactions" && (
+        {dataReady && currentTab === "transactions" && (
           <>
             <div style={{ position: "relative", background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: "18px 18px 20px", marginBottom: 16, overflow: "hidden" }}>
               <img
@@ -3725,7 +3881,7 @@ export default function App() {
         )}
 
         {/* ============ تبويب الديون ============ */}
-        {currentTab === "debts" && (
+        {dataReady && currentTab === "debts" && (
           <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16 }}>
             <div style={{ marginBottom: 4 }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>إدارة الديون والذمم</div>
@@ -3980,7 +4136,7 @@ export default function App() {
         )}
 
         {/* ============ تبويب الخزائن ============ */}
-        {currentTab === "wallets" && (
+        {dataReady && currentTab === "wallets" && (
           <div>
             <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: 18, textAlign: "center", marginBottom: 16 }}>
               <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>إجمالي الخزائن (شيكل)</div>
@@ -4120,7 +4276,7 @@ export default function App() {
         )}
 
         {/* ============ تبويب المخزون (حصري لحساب مشروع) ============ */}
-        {currentTab === "inventory" && (
+        {dataReady && currentTab === "inventory" && (
           <div>
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -4253,7 +4409,7 @@ export default function App() {
         )}
 
         {/* ============ تبويب تقارير ============ */}
-        {currentTab === "reports" && (
+        {dataReady && currentTab === "reports" && (
           <div>
             <div style={{ background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 900, color: currentTheme.accent, marginBottom: 2 }}>تقارير شهرية وسنوية</div>
