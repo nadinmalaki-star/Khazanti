@@ -968,34 +968,71 @@ export default function App() {
     }
   };
 
-  // إشعار متصفح (لما يكون التاب مفتوح أو التطبيق مثبّت) لأول دين مستحق
-  // اليوم أو متأخر — مرة وحدة باليوم لكل دين، عشان ما نكرر نفس الإشعار.
+  // إشعار متصفح (لما يكون التاب مفتوح أو التطبيق مثبّت) للديون المستحقة
+  // اليوم أو المتأخرة — مرة وحدة باليوم لكل دين، بإشعار ملخّص واحد.
+  // - النص عام عمدًا (بدون أسماء ولا مبالغ) لأنه بيظهر على شاشة القفل.
+  // - new Notification() بيرمي خطأ على كروم أندرويد (لازم يمر عبر الـ
+  //   service worker)، وبدون حماية كان الخطأ بيوقّع التطبيق كله. منجرّبه
+  //   أول (سطح المكتب، مع فتح الدين مباشرة عند الضغط)، وإذا فشل منستخدم
+  //   registration.showNotification (الضغط عليه بيفتح التطبيق عبر sw.js).
   useEffect(() => {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    if (upcomingDebts.length === 0) return;
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    // تاريخ اليوم المحلي (مش UTC) — عشان بين ١٢ و٣ الفجر ما ينحسب اليوم السابق.
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const notifiedKey = "khznti_notified_debts";
-    const alreadyNotified = JSON.parse(localStorage.getItem(notifiedKey) || "{}");
+    let alreadyNotified = {};
+    try {
+      alreadyNotified = JSON.parse(localStorage.getItem(notifiedKey) || "{}") || {};
+    } catch {
+      alreadyNotified = {};
+    }
 
-    upcomingDebts
-      .filter((d) => d.diffDays <= 0)
-      .forEach((d) => {
-        const dedupeKey = `${d.id}_${todayStr}`;
-        if (alreadyNotified[dedupeKey]) return;
-        const notification = new Notification("خزنتي — دين مستحق", {
-          body: `دين "${d.name}" (${CURRENCIES[d.currency || "ILS"].symbol} ${fmt((d.currency || "ILS") === "ILS" ? Number(d.amount) * exchangeRate : Number(d.amount))}) ${d.diffDays < 0 ? "متأخر" : "مستحق اليوم"}. اضغط-ي لتحصيله/تسديده أو لتأجيله.`,
-          icon: "/icon.png",
-        });
-        notification.onclick = () => {
-          window.focus();
-          setActiveTab("debts");
-          openSettleModal(d);
-        };
-        alreadyNotified[dedupeKey] = true;
-      });
+    const fresh = upcomingDebts.filter((d) => d.diffDays <= 0 && !alreadyNotified[`${d.id}_${todayStr}`]);
+    if (fresh.length === 0) return;
 
-    localStorage.setItem(notifiedKey, JSON.stringify(alreadyNotified));
+    const overdueCount = fresh.filter((d) => d.diffDays < 0).length;
+    const todayCount = fresh.length - overdueCount;
+    let body;
+    if (fresh.length === 1) {
+      body = overdueCount === 1
+        ? "لديك دين تجاوز موعد استحقاقه. افتح خزنتي للتفاصيل."
+        : "لديك دين مستحق اليوم. افتح خزنتي للتفاصيل.";
+    } else {
+      const parts = [];
+      if (overdueCount > 0) parts.push(`${overdueCount} متأخر`);
+      if (todayCount > 0) parts.push(`${todayCount} مستحقة اليوم`);
+      body = `تذكير بالديون — ${parts.join(" · ")}. افتح خزنتي للتفاصيل.`;
+    }
+    const title = "خزنتي";
+    const options = { body, icon: "/icon.png", tag: "khznti-debt-reminder" };
+
+    const markNotified = () => {
+      fresh.forEach((d) => { alreadyNotified[`${d.id}_${todayStr}`] = true; });
+      try {
+        localStorage.setItem(notifiedKey, JSON.stringify(alreadyNotified));
+      } catch {
+        // تخزين ممتلئ/محظور — أسوأ حالة الإشعار بيتكرر مرة تانية، مش أكتر.
+      }
+    };
+
+    try {
+      const notification = new Notification(title, options);
+      notification.onclick = () => {
+        window.focus();
+        setActiveTab("debts");
+        if (fresh.length === 1) openSettleModal(fresh[0]);
+        notification.close();
+      };
+      markNotified();
+    } catch {
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker
+        .getRegistration()
+        .then((reg) => (reg ? reg.showNotification(title, options).then(markNotified) : undefined))
+        .catch(() => {});
+    }
   }, [upcomingDebts]);
 
   // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية.
