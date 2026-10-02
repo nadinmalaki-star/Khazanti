@@ -411,3 +411,10 @@ enabled = true
 # declarative_schema_path = "./schemas"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# KHZNTI Phase 1 Web Push: invoked only by the server-side scheduler with the
+# x-cron-secret header (checked in constant time inside the function), so the
+# platform JWT check is disabled for this one function.
+[functions.send-debt-reminders]
+enabled = true
+verify_jwt = false

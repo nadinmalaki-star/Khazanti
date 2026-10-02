@@ -137,16 +137,23 @@ export function cycleKey(debtId, dueDate) {
   return `${debtId}|${dueDate}`;
 }
 
-// The stage to send for this debt today, or null.
+// The stage to send today for a debt that is ALREADY known to be eligible
+// (e.g. returned by the debt_reminder_candidates() database function, which
+// applies the eligibility rule itself and returns no amounts), or null.
 // takenGroups: Set of STAGE_GROUP values already sent (or actively claimed)
 // for this debt's current cycle (debt_id + due_date).
-export function nextStageForDebt(debt, localDate, takenGroups = new Set()) {
-  if (!isEligibleDebt(debt)) return null;
-  const stage = stageForDays(daysUntilDue(localDate, debt.due_date));
+export function nextStageForEligible(dueDate, localDate, takenGroups = new Set()) {
+  const stage = stageForDays(daysUntilDue(localDate, dueDate));
   if (!stage) return null;
   if (takenGroups.size >= MAX_NOTIFICATIONS_PER_CYCLE) return null;
   if (takenGroups.has(STAGE_GROUP[stage])) return null;
   return stage;
+}
+
+// The stage to send for this debt today, or null.
+export function nextStageForDebt(debt, localDate, takenGroups = new Set()) {
+  if (!isEligibleDebt(debt)) return null;
+  return nextStageForEligible(debt.due_date, localDate, takenGroups);
 }
 
 // ---------------------------------------------------------------- message

@@ -371,3 +371,15 @@ test("two users are fully independent (daily slot and stages are per user/debt)"
   assert.equal(r1.message.url, "/?open=debts&debt=1&mode=individual");
   assert.equal(r2.message.url, "/?open=debts&debt=2&mode=individual");
 });
+
+test("nextStageForEligible (server path, eligibility already applied by the DB) follows the same stage rules", async () => {
+  const { nextStageForEligible } = await import("./debt-reminders.js");
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-10"), STAGE.DUE_IN_3);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-12"), STAGE.DUE_IN_1);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-13"), STAGE.DUE_TODAY);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-20"), STAGE.OVERDUE);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-09"), null);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-11", new Set(["pre_due"])), null);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-13", new Set(["pre_due"])), STAGE.DUE_TODAY);
+  assert.equal(nextStageForEligible("2026-11-13", "2026-11-14", new Set(["pre_due", "due_today", "overdue"])), null);
+});
