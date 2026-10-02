@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./supabase.js";
-import { track } from "./analytics.js";
+import { track, suppressPageViewForSession } from "./analytics.js";
 import * as XLSX from "xlsx";
 import './App.css';
 
@@ -781,11 +781,13 @@ export default function App() {
     dataSnapshotRef.current = { transactions, debts, products };
   }, [transactions, debts, products]);
 
-  // تحليلات: زيارة الصفحة الترحيبية — بس لما تنعرض فعلًا (فحص الجلسة خلص،
-  // مش مسجّل دخول، ومش شاشة استعادة كلمة المرور). مرة وحدة بالجلسة؛ track
-  // نفسه بيمنع التكرار من إعادة الرسم أو StrictMode.
+  // تحليلات: زيارة الصفحة الترحيبية — بس لما تنعرض فعلًا لزائر مجهول (فحص
+  // الجلسة خلص، مش مسجّل دخول، ومش شاشة استعادة كلمة المرور). مرة وحدة
+  // بالجلسة؛ track نفسه بيمنع التكرار من إعادة الرسم أو StrictMode. إذا كان
+  // في مستخدم مسجّل بهاي الجلسة، الترحيبية بعد تسجيل الخروج ما بتنحسب.
   useEffect(() => {
-    if (!loading && !isLoggedIn && !isPasswordRecovery) track("site_page_view");
+    if (isLoggedIn) suppressPageViewForSession();
+    else if (!loading && !isPasswordRecovery) track("site_page_view");
   }, [loading, isLoggedIn, isPasswordRecovery]);
 
   // تلميح "الاتصال بطيء" إذا فحص الجلسة أو أول تحميل للبيانات طوّل.

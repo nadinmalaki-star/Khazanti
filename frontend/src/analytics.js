@@ -116,6 +116,18 @@ function getAttribution() {
 
 if (isTrackingEnabled()) getAttribution();
 
+// مستخدم مسجّل دخول بهاي الجلسة: الصفحة الترحيبية يلي بتطلع بعد تسجيل الخروج
+// (أو إعادة تحميل بنفس الجلسة) مش زيارة تسويقية جديدة — منعلّم site_page_view
+// كأنه انحسب، بدون ما نبعت شي. جلسة جديدة فعلًا بتبلش من الصفر.
+export function suppressPageViewForSession() {
+  try {
+    if (!isTrackingEnabled()) return;
+    writeStore("sessionStorage", SENT_PREFIX + "site_page_view", "1");
+  } catch {
+    // التتبّع عمره ما بيرمي خطأ لجوا التطبيق
+  }
+}
+
 export function track(eventName) {
   try {
     if (!ALLOWED_EVENTS.has(eventName) || !isTrackingEnabled()) return;
