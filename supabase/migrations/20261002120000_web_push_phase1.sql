@@ -5,7 +5,8 @@
 --   1. public.push_subscriptions        (one row per opted-in device)
 --   2. public.debt_reminder_deliveries  (claim -> sent records per stage)
 --   3. public.push_daily_sends          (one push per user per local date)
---   4. register_push_subscription(...)  (browser, authenticated only)
+--   4. register_push_subscription(...)  (browser, authenticated only; never
+--      transfers an endpoint between users)
 --   5. debt_reminder_candidates(...)    (sender, service_role only)
 --   6. claim_daily_push / claim_reminder_stages / finalize_push_run
 --      (sender, service_role only — implement the tested Stage 1 model)
@@ -134,13 +135,14 @@ create or replace function public.register_push_subscription(
   p_auth_key   text,
   p_timezone   text,
   p_user_agent text default null
-) returns void
+) returns text
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
   v_uid uuid := auth.uid();
+  v_id  bigint;
 begin
   if v_uid is null then
     raise exception 'not authenticated' using errcode = '42501';
@@ -170,23 +172,30 @@ begin
     raise exception 'invalid timezone' using errcode = '22023';
   end if;
 
-  -- user_id always comes from auth.uid(). If this browser was previously
-  -- registered by another account, the row moves to the signed-in user and
-  -- its history (created_at, success, failures) is reset.
+  -- user_id always comes from auth.uid().
+  -- New endpoint -> inserted for the caller.
+  -- Endpoint already owned by the caller -> keys / timezone / last_seen refreshed.
+  -- Endpoint owned by ANOTHER user -> nothing changes (no ownership transfer)
+  --   and the caller gets the same generic 'not_registered' status, with no
+  --   information about the existing row. The browser then unsubscribes that
+  --   device subscription and subscribes again, which yields a brand-new
+  --   endpoint that registers cleanly; the old row's endpoint is dead from
+  --   then on and is removed by the sender on its 404/410.
   insert into public.push_subscriptions as s
     (user_id, endpoint, p256dh, auth_key, timezone, user_agent)
   values
     (v_uid, p_endpoint, p_p256dh, p_auth_key, p_timezone, left(p_user_agent, 300))
   on conflict (endpoint) do update set
-    user_id         = excluded.user_id,
-    p256dh          = excluded.p256dh,
-    auth_key        = excluded.auth_key,
-    timezone        = excluded.timezone,
-    user_agent      = excluded.user_agent,
-    last_seen_at    = now(),
-    failure_count   = 0,
-    created_at      = case when s.user_id = excluded.user_id then s.created_at else now() end,
-    last_success_at = case when s.user_id = excluded.user_id then s.last_success_at else null end;
+    p256dh        = excluded.p256dh,
+    auth_key      = excluded.auth_key,
+    timezone      = excluded.timezone,
+    user_agent    = excluded.user_agent,
+    last_seen_at  = now(),
+    failure_count = 0
+  where s.user_id = excluded.user_id
+  returning s.id into v_id;
+
+  return case when v_id is null then 'not_registered' else 'registered' end;
 end;
 $$;
 
