@@ -105,19 +105,68 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// الضغط على إشعار تذكير الديون يلي انعرض عبر الـservice worker (هيك
-// بيصير على أندرويد): منرجّع التركيز لنافذة خزنتي المفتوحة إذا في وحدة،
-// وإلا منفتح التطبيق من جديد.
+// Web Push (المرحلة 1): تذكير الديون من السيرفر. منعرض بس النصوص
+// المعتمدة (بدون أسماء أو مبالغ)، وأي محتوى غريب أو تالف منعرض بداله
+// النص العام. الرابط لازم يكون رابط داخلي للديون وإلا منفتح "/".
+const PUSH_TITLE = "خزنتي";
+const PUSH_TAG = "khznti-debt-reminder";
+const PUSH_FALLBACK_BODY = "لديك تذكير بخصوص ديونك. افتح خزنتي للتفاصيل.";
+const PUSH_BODIES = new Set([
+  "لديك دين مستحق غدًا. افتح خزنتي للتفاصيل.",
+  "لديك دين مستحق بعد يومين. افتح خزنتي للتفاصيل.",
+  "لديك دين مستحق بعد 3 أيام. افتح خزنتي للتفاصيل.",
+  "لديك دين مستحق اليوم. افتح خزنتي للتفاصيل.",
+  "لديك دين تجاوز موعد استحقاقه. افتح خزنتي للتفاصيل.",
+  "تذكير بالديون — لديك ديون متأخرة أو مستحقة قريبًا. افتح خزنتي للتفاصيل.",
+  PUSH_FALLBACK_BODY,
+]);
+const PUSH_URL_RE = /^\/\?open=debts(&debt=\d{1,12})?(&mode=(individual|project))?$/;
+
+function readPushPayload(event) {
+  let data;
+  try {
+    data = event.data ? event.data.json() : null;
+  } catch {
+    data = null;
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) data = {};
+  const body = typeof data.body === "string" && PUSH_BODIES.has(data.body) ? data.body : PUSH_FALLBACK_BODY;
+  const url = typeof data.url === "string" && PUSH_URL_RE.test(data.url) ? data.url : "/";
+  return { body, url };
+}
+
+self.addEventListener("push", (event) => {
+  const { body, url } = readPushPayload(event);
+  event.waitUntil(
+    self.registration.showNotification(PUSH_TITLE, {
+      body,
+      tag: PUSH_TAG,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      dir: "rtl",
+      lang: "ar",
+      data: { url },
+    })
+  );
+});
+
+// الضغط على إشعار تذكير الديون: منرجّع التركيز لنافذة خزنتي المفتوحة
+// ومنبعتلها الرابط (التطبيق بيتحقق من الدين بنفسه)، وإلا منفتح التطبيق
+// على الرابط. الضغط ما بيعمل أي عملية مالية — بس بيفتح الشاشة.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const raw = event.notification.data && event.notification.data.url;
+  const url = typeof raw === "string" && PUSH_URL_RE.test(raw) ? raw : "/";
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windowClients) => {
       for (const client of windowClients) {
         if (new URL(client.url).origin === self.location.origin && "focus" in client) {
-          return client.focus();
+          const focused = await client.focus();
+          if (url !== "/") (focused || client).postMessage({ type: "khznti-open", url });
+          return focused;
         }
       }
-      return self.clients.openWindow("/");
+      return self.clients.openWindow(url);
     })
   );
 });

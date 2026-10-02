@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./supabase.js";
 import { track, suppressPageViewForSession } from "./analytics.js";
+import {
+  getPushSupport, enablePush, disablePush, refreshPushRegistration, cleanupPushOnLogout,
+  deleteAllPushForUser, unsubscribeThisDevice, isPushActiveForUser, isPushPromptDismissed,
+  dismissPushPrompt, parseOpenIntent,
+} from "./push.js";
 import * as XLSX from "xlsx";
 import './App.css';
 
@@ -506,6 +511,18 @@ const DATA_LOAD_TIMEOUT_MS = 30000; // أقصى انتظار لتحميل الب
 const RESUME_REFRESH_MIN_GAP_MS = 30000; // رجوع سريع للتطبيق ما بيعيد التحميل
 const LOCAL_CHANGE_QUIET_MS = 20000; // ما في تحديث خلفية قريب من تعديل محلي (مهلة التراجع ٥ث + شبكة بطيئة)
 
+// رابط فتح من إشعار (‎/?open=debts…‎) — بينقرا مرة وحدة عند فتح الصفحة.
+const INITIAL_OPEN_INTENT = typeof window !== "undefined" ? parseOpenIntent(window.location.search) : null;
+
+const PUSH_ENABLE_ERRORS = {
+  ios_needs_install: "على آيفون، التنبيهات بتشتغل بعد إضافة خزنتي للشاشة الرئيسية وفتحها من هناك.",
+  unsupported: "هالمتصفح ما بيدعم تنبيهات الديون.",
+  no_timezone: "ما قدرنا نحدد المنطقة الزمنية لهالجهاز، فما تفعّلت التنبيهات.",
+  denied: "التنبيهات محظورة بإعدادات المتصفح. فعّل-يها من الإعدادات وحاول-ي مرة تانية.",
+  dismissed: "ما تفعّلت التنبيهات.",
+};
+const PUSH_ENABLE_FAILED = "ما قدرنا نفعّل التنبيهات هلق. حاول-ي مرة تانية.";
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState("");
@@ -694,6 +711,14 @@ export default function App() {
   const [notifyPermission, setNotifyPermission] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "unsupported"
   );
+  // Web Push (تنبيهات الديون حتى لو خزنتي مسكّر) — بموافقة صريحة بس.
+  const [pushSupport] = useState(() => getPushSupport());
+  const [pushActive, setPushActive] = useState(false); // هالجهاز مسجّل فعليًا لهالمستخدم
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushNotice, setPushNotice] = useState(null); // { type: "success" | "error", text }
+  const [pushPromptDismissed, setPushPromptDismissed] = useState(() => isPushPromptDismissed());
+  const pendingOpenRef = useRef(INITIAL_OPEN_INTENT); // فتح دين من إشعار، بعد ما تجهز البيانات
+  const debtsRef = useRef([]);
 
   const currentTheme = THEMES[themeKey];
 
@@ -972,7 +997,8 @@ export default function App() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return scopedDebts
-      .filter((d) => d.due_date && !d.paid)
+      // دين مدفوع جزئيًا لحد ما ضل منه شي (فرق تقريب) ما بينحسب مستحق.
+      .filter((d) => d.due_date && !d.paid && Number(d.amount || 0) - Number(d.paid_amount || 0) > 0.005)
       .map((d) => {
         const due = new Date(d.due_date);
         due.setHours(0, 0, 0, 0);
@@ -1008,7 +1034,10 @@ export default function App() {
   //   service worker)، وبدون حماية كان الخطأ بيوقّع التطبيق كله. منجرّبه
   //   أول (سطح المكتب، مع فتح الدين مباشرة عند الضغط)، وإذا فشل منستخدم
   //   registration.showNotification (الضغط عليه بيفتح التطبيق عبر sw.js).
+  // إذا Web Push مفعّل ومسجّل فعليًا على هالجهاز، التذكير بيوصل من السيرفر،
+  // فما منكرّره هون. غير هيك (مش مفعّل أو مش مدعوم) هاد التذكير بيضل زي ما هو.
   useEffect(() => {
+    if (pushActive) return;
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
 
     // تاريخ اليوم المحلي (مش UTC) — عشان بين ١٢ و٣ الفجر ما ينحسب اليوم السابق.
@@ -1066,7 +1095,38 @@ export default function App() {
         .then((reg) => (reg ? reg.showNotification(title, options).then(markNotified) : undefined))
         .catch(() => {});
     }
-  }, [upcomingDebts]);
+  }, [upcomingDebts, pushActive]);
+
+  useEffect(() => {
+    debtsRef.current = debts;
+  }, [debts]);
+
+  // رابط الفتح من الإشعار انقرا؛ منشيله من شريط العنوان عشان التحديث
+  // ما يعيد فتح نفس الدين.
+  useEffect(() => {
+    if (INITIAL_OPEN_INTENT) window.history.replaceState(window.history.state, "", window.location.pathname + window.location.hash);
+  }, []);
+
+  // ضغط على إشعار والتطبيق مفتوح أصلًا: الـservice worker بيبعت الرابط هون.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event) => {
+      const data = event.data;
+      if (!data || data.type !== "khznti-open" || typeof data.url !== "string") return;
+      let intent = null;
+      try {
+        const url = new URL(data.url, window.location.origin);
+        if (url.origin === window.location.origin && url.pathname === "/") intent = parseOpenIntent(url.search);
+      } catch {
+        intent = null;
+      }
+      if (!intent) return;
+      pendingOpenRef.current = intent;
+      if (dataStatusRef.current === "ready") applyOpenIntent(debtsRef.current);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, []);
 
   // مخطط المصاريف حسب الفئة — مرتب تنازليًا، بيستبعد الفئات الصفرية.
   // محصور بحركات الشهر الحالي فقط (كان قبل هيك بيحسب كل الحركات من الأول
@@ -1386,6 +1446,9 @@ export default function App() {
       dataLoadRef.current = null;
       lastLoadedAtRef.current = 0;
       updateDataStatus("idle");
+      // الجلسة خلصت بدون تسجيل خروج عادي: هالجهاز بيوقف يستقبل تذكيرات.
+      setPushActive(false);
+      unsubscribeThisDevice();
       return;
     }
 
@@ -1406,6 +1469,11 @@ export default function App() {
       // (localStorage) وبيفتح عليه مباشرة بأي تحميل/تسجيل دخول لاحق.
       setAccountType(localStorage.getItem("khznti_account_type") || "");
       fetchData(userId);
+      // Web Push: بس إذا هالمستخدم فعّله على هالجهاز من قبل — بدون أي طلب إذن.
+      setPushActive(isPushActiveForUser(userId));
+      refreshPushRegistration(supabase, userId).then((active) => {
+        if (loadedUserIdRef.current === userId) setPushActive(active);
+      });
       return;
     }
 
@@ -1463,6 +1531,7 @@ export default function App() {
         setProducts(fresh.products);
         lastLoadedAtRef.current = Date.now();
         updateDataStatus("ready");
+        if (pendingOpenRef.current) applyOpenIntent(fresh.debts);
       } catch {
         if (!background && loadedUserIdRef.current === userId) updateDataStatus("error");
       } finally {
@@ -2185,6 +2254,13 @@ export default function App() {
         return;
       }
 
+      const { error: pushError } = await deleteAllPushForUser(supabase, user.id);
+      if (pushError) {
+        setDeleteDataError("فشل حذف اشتراكات التنبيهات — حاول-ي مرة تانية.");
+        setDeletingData(false);
+        return;
+      }
+
       const { error: txError } = await supabase.from("transactions").delete().eq("user_id", user.id);
       if (txError) {
         setDeleteDataError("فشل حذف الحركات: " + txError.message);
@@ -2327,6 +2403,78 @@ export default function App() {
     } finally {
       setPostponingInProgress(false);
     }
+  }
+
+  // فتح من إشعار: ما منوثق بالرابط لحاله — الدين لازم يكون من ديون هالمستخدم
+  // المحمّلة (RLS) ولسا مستحق فعلًا. الضغط بيفتح الشاشة بس؛ أي دفع أو تحصيل
+  // أو تأجيل بيضل قرار المستخدم من جوا النافذة.
+  function applyOpenIntent(currentDebts) {
+    const intent = pendingOpenRef.current;
+    pendingOpenRef.current = null;
+    if (!intent) return;
+    const userId = loadedUserIdRef.current;
+    const debt = intent.debtId === null
+      ? null
+      : (currentDebts || []).find((d) => Number(d.id) === intent.debtId && d.user_id === userId) || null;
+    const eligible = !!debt && !!debt.due_date && !debt.paid
+      && Number(debt.amount || 0) - Number(debt.paid_amount || 0) > 0.005;
+    const mode = eligible ? (debt.account_type || "فرد") : intent.mode;
+    if (mode === "فرد" || mode === "مشروع") setAccountType(mode);
+    setActiveTab("debts");
+    if (eligible) openSettleModal(debt);
+  }
+
+  async function handleEnablePush() {
+    if (pushBusy) return;
+    setPushNotice(null);
+    setPushBusy(true);
+    try {
+      const result = await enablePush(supabase, loadedUserIdRef.current);
+      if (typeof Notification !== "undefined") setNotifyPermission(Notification.permission);
+      if (result.ok) {
+        setPushActive(true);
+        setPushNotice({ type: "success", text: "تم تفعيل تنبيهات الديون على هالجهاز." });
+      } else {
+        setPushNotice({ type: "error", text: PUSH_ENABLE_ERRORS[result.reason] || PUSH_ENABLE_FAILED });
+      }
+    } catch {
+      setPushNotice({ type: "error", text: PUSH_ENABLE_FAILED });
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  async function handleDisablePush() {
+    if (pushBusy) return;
+    setPushNotice(null);
+    if (!navigator.onLine) {
+      setPushNotice({ type: "error", text: "ما في اتصال بالإنترنت. تحقق-ي من الشبكة وحاول-ي مرة تانية." });
+      return;
+    }
+    setPushBusy(true);
+    try {
+      const result = await disablePush(supabase);
+      if (result.ok) {
+        setPushActive(false);
+        setPushNotice({ type: "success", text: "تم إيقاف تنبيهات الديون على هالجهاز." });
+      } else {
+        setPushNotice({ type: "error", text: "ما قدرنا نوقف التنبيهات هلق. حاول-ي مرة تانية." });
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
+  function handleDismissPushPrompt() {
+    dismissPushPrompt();
+    setPushPromptDismissed(true);
+  }
+
+  // تسجيل الخروج: أول شي منشيل اشتراك هالجهاز (بدّه الجلسة)، بعدين منطلع.
+  async function handleLogout() {
+    setShowAvatarMenu(false);
+    await cleanupPushOnLogout(supabase);
+    supabase.auth.signOut();
   }
 
   function requestDebtNotifications() {
@@ -3216,8 +3364,20 @@ export default function App() {
                 <div style={{ position: "absolute", top: 42, left: 0, minWidth: 190, background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 12, padding: 12, zIndex: 50, boxShadow: "0 12px 30px rgba(0,0,0,0.4)" }}>
                   <div style={{ fontSize: 10, opacity: 0.6, marginBottom: 4 }}>مسجّل الدخول بحساب</div>
                   <div style={{ fontSize: 12, fontWeight: 700, wordBreak: "break-all", marginBottom: 10 }}>{userEmail}</div>
+                  {pushSupport === "supported" && (
+                    <button
+                      onClick={pushActive ? handleDisablePush : handleEnablePush}
+                      disabled={pushBusy}
+                      style={{ width: "100%", textAlign: "start", background: "none", border: "none", borderTop: `1px solid ${currentTheme.border}`, paddingTop: 10, marginBottom: 6, color: currentTheme.text, fontSize: 11.5, fontWeight: 700, cursor: pushBusy ? "default" : "pointer", opacity: pushBusy ? 0.6 : 1, fontFamily: "inherit" }}
+                    >
+                      {pushActive ? "إيقاف تنبيهات الديون على هالجهاز" : "تفعيل تنبيهات الديون"}
+                    </button>
+                  )}
+                  {pushSupport === "supported" && pushNotice && (
+                    <div style={{ fontSize: 10.5, lineHeight: 1.6, marginBottom: 8, color: pushNotice.type === "error" ? "#ff6b6b" : currentTheme.accent }}>{pushNotice.text}</div>
+                  )}
                   <button
-                    onClick={() => { setShowAvatarMenu(false); supabase.auth.signOut(); }}
+                    onClick={handleLogout}
                     style={{ width: "100%", textAlign: "start", background: "none", border: "none", borderTop: `1px solid ${currentTheme.border}`, paddingTop: 10, marginBottom: 6, color: currentTheme.text, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                   >
                     تسجيل الخروج
@@ -3914,7 +4074,45 @@ export default function App() {
               </button>
             </div>
 
-            {typeof Notification !== "undefined" && notifyPermission === "default" && (
+            {pushSupport === "supported" && !pushActive && !pushPromptDismissed && notifyPermission !== "denied" && (
+              <div style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: "12px", marginBottom: 14, fontSize: 11.5 }}>
+                <div style={{ lineHeight: 1.7, marginBottom: 10 }}>فعّل تنبيهات الديون لتذكيرك بمواعيد الاستحقاق حتى لو خزنتي مسكّر. التنبيهات ما بتعرض أسماء أو مبالغ.</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={handleEnablePush}
+                    disabled={pushBusy}
+                    style={{ background: "#D4AF37", border: "none", color: "#16302d", padding: "7px 14px", borderRadius: 8, fontWeight: 700, cursor: pushBusy ? "default" : "pointer", opacity: pushBusy ? 0.7 : 1, fontSize: 11, whiteSpace: "nowrap", fontFamily: "inherit" }}
+                  >
+                    {pushBusy ? "جاري التفعيل…" : "تفعيل التنبيهات"}
+                  </button>
+                  <button
+                    onClick={handleDismissPushPrompt}
+                    disabled={pushBusy}
+                    style={{ background: "none", border: "1px solid rgba(212,175,55,0.4)", color: "inherit", padding: "7px 14px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap", fontFamily: "inherit" }}
+                  >
+                    مش هلق
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {pushSupport === "ios_needs_install" && !pushPromptDismissed && (
+              <div style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11.5 }}>
+                <span style={{ lineHeight: 1.7 }}>على آيفون، التنبيهات بتشتغل بعد إضافة خزنتي للشاشة الرئيسية وفتحها من هناك.</span>
+                <button
+                  onClick={handleDismissPushPrompt}
+                  style={{ background: "none", border: "1px solid rgba(212,175,55,0.4)", color: "inherit", padding: "6px 12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap", fontFamily: "inherit" }}
+                >
+                  مش هلق
+                </button>
+              </div>
+            )}
+
+            {pushSupport === "supported" && pushNotice && (
+              <div style={{ fontSize: 11, lineHeight: 1.7, marginBottom: 14, color: pushNotice.type === "error" ? "#ff6b6b" : currentTheme.accent }}>{pushNotice.text}</div>
+            )}
+
+            {pushSupport === "unsupported" && typeof Notification !== "undefined" && notifyPermission === "default" && (
               <div style={{ background: "rgba(212,175,55,0.1)", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: "10px 12px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, fontSize: 11.5 }}>
                 <span>فعّل-ي التنبيهات عشان نذكّرك لما يستحق دين.</span>
                 <button
