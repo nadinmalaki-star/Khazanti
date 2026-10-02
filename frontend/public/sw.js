@@ -4,6 +4,10 @@ const CACHE_NAME = "khznti-shell-v4";
 const SHELL_KEY = "/";
 // أقصى وقت منستنّى فيه الشبكة لصفحة التطبيق قبل ما نفتح النسخة المحفوظة.
 const NAV_TIMEOUT_MS = 3500;
+// النسخة المحفوظة بتنفتح فورًا (بدون انتظار الشبكة) بس إذا عمرها أقل من
+// هيك؛ أقدم من هيك منرجع لـ"الشبكة أولًا" عشان ما يضل جهاز عالق على نسخة قديمة.
+const SHELL_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const SHELL_SAVED_AT_HEADER = "x-khznti-shell-saved-at";
 
 // ملفات /assets/ يلي بتطلبها صفحة HTML معيّنة (أسماؤها فيها hash من Vite،
 // يعني كل اسم = محتوى ثابت ما بيتغيّر أبدًا).
@@ -41,10 +45,19 @@ async function loadFreshShell(request, cache) {
     return { response, fresh: false };
   }
 
-  await cache.put(SHELL_KEY, response.clone());
+  // ملفات النسخة السابقة منخليها كمان: ممكن تكون لسا شغالة على الشاشة.
+  const previous = await cache.match(SHELL_KEY);
+  const previousAssets = previous ? assetPathsIn(await previous.text()) : [];
 
-  // تنظيف ملفات JS/CSS من النسخ السابقة يلي ما عادت الصفحة الحالية بتطلبها.
-  const keep = new Set(assets);
+  // الصفحة بتتخزّن مع وقت حفظها (لحد أقصى عمر النسخة المحفوظة).
+  const headers = new Headers(response.headers);
+  headers.delete("content-encoding"); // النص محفوظ مفكوك أصلًا
+  headers.delete("content-length");
+  headers.set(SHELL_SAVED_AT_HEADER, String(Date.now()));
+  await cache.put(SHELL_KEY, new Response(html, { status: response.status, statusText: response.statusText, headers }));
+
+  // تنظيف ملفات JS/CSS من النسخ الأقدم — منخلي النسخة الحالية والسابقة بس.
+  const keep = new Set([...assets, ...previousAssets]);
   for (const key of await cache.keys()) {
     const path = new URL(key.url).pathname;
     if (path.startsWith("/assets/") && /\.(js|css)$/.test(path) && !keep.has(path)) {
@@ -115,6 +128,18 @@ self.addEventListener("notificationclick", (event) => {
 // محفوظة أصلًا (أول زيارة)، منستنّى الشبكة متل أي موقع عادي.
 async function handleNavigation(event) {
   const cache = await caches.open(CACHE_NAME);
+
+  // نسخة محفوظة متكاملة وحديثة (أقل من ٧ أيام): منفتحها فورًا — خصوصًا لما
+  // iOS يعيد تشغيل التطبيق المثبّت — والنسخة الجديدة (إذا في) بتتحمّل
+  // بالخلفية وبتشتغل من الفتحة الجاية. البيانات المالية ما إلها علاقة هون:
+  // بتضل تيجي من Supabase مباشرة بكل فتحة.
+  const savedShell = await completeCachedShell(cache);
+  const savedAt = savedShell ? Number(savedShell.headers.get(SHELL_SAVED_AT_HEADER)) : 0;
+  if (savedShell && savedAt > 0 && Date.now() - savedAt < SHELL_MAX_AGE_MS) {
+    event.waitUntil(loadFreshShell(event.request, cache).catch(() => {}));
+    return savedShell;
+  }
+
   const freshShell = loadFreshShell(event.request, cache);
   event.waitUntil(freshShell.catch(() => {}));
 
