@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./supabase.js";
+import { track } from "./analytics.js";
 import * as XLSX from "xlsx";
 import './App.css';
 
@@ -779,6 +780,13 @@ export default function App() {
     if (!fromServer) lastLocalChangeAtRef.current = Date.now();
     dataSnapshotRef.current = { transactions, debts, products };
   }, [transactions, debts, products]);
+
+  // تحليلات: زيارة الصفحة الترحيبية — بس لما تنعرض فعلًا (فحص الجلسة خلص،
+  // مش مسجّل دخول، ومش شاشة استعادة كلمة المرور). مرة وحدة بالجلسة؛ track
+  // نفسه بيمنع التكرار من إعادة الرسم أو StrictMode.
+  useEffect(() => {
+    if (!loading && !isLoggedIn && !isPasswordRecovery) track("site_page_view");
+  }, [loading, isLoggedIn, isPasswordRecovery]);
 
   // تلميح "الاتصال بطيء" إذا فحص الجلسة أو أول تحميل للبيانات طوّل.
   useEffect(() => {
@@ -2333,6 +2341,7 @@ export default function App() {
 
   // تفتح المودال بوضع نظيف (تمسح أي رسالة خطأ/نجاح قديمة من فتحة سابقة)
   function openAuthModal(mode) {
+    if (mode === "signup") track("signup_start"); // تحليلات: ضغط فعلي على "حساب جديد"
     setAuthMode(mode);
     setLoginError("");
     setForgotMode(false);
@@ -2345,6 +2354,7 @@ export default function App() {
 
   // تبديل بين تسجيل الدخول/حساب جديد جوا المودال المفتوح أصلاً
   function switchAuthMode(mode) {
+    if (mode === "signup") track("signup_start"); // تحليلات: ضغط فعلي على تبويب "حساب جديد"
     setAuthMode(mode);
     setLoginError("");
     setForgotMode(false);
@@ -2407,6 +2417,12 @@ export default function App() {
         });
 
         if (error) throw error;
+
+        // تحليلات: حساب جديد انخلق فعلًا. لما الإيميل مسجّل أصلًا، Supabase
+        // بيرجّع مستخدم بـidentities فاضية بدون أي خطأ — هاد ما بينحسب.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length > 0) {
+          track("signup_complete");
+        }
 
         if (data.session) {
           // (أ) الحساب اتسجّل وفي جلسة فورية — يعني تأكيد البريد مش مفعّل
