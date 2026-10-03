@@ -181,7 +181,13 @@ export async function refreshPushRegistration(client, userId) {
   try {
     const reg = await navigator.serviceWorker.ready;
     const existing = await reg.pushManager.getSubscription();
-    if (!existing) { clearFlag(); return false; }
+    if (!existing) {
+      // The browser dropped this device's subscription: remove its now-dead
+      // row too (RLS: own rows only), so no stale row stays behind.
+      try { await client.from("push_subscriptions").delete().eq("endpoint", flag.endpoint); } catch { /* best effort */ }
+      clearFlag();
+      return false;
+    }
     const timeZone = getDeviceTimeZone();
     if (!timeZone) return true; // keep the existing registration; nothing to refresh
     const { result, subscription } = await registerWithFreshFallback(client, reg, existing, timeZone);
@@ -194,21 +200,27 @@ export async function refreshPushRegistration(client, userId) {
 }
 
 // Turn off on this device: delete this device's row (RLS: own rows only),
-// then unsubscribe. Order matters: deleting needs the session. If the delete
-// fails, nothing changes (unless force, used on logout) so the user can retry.
+// then unsubscribe. Order matters: deleting needs the session. The row is
+// found by the endpoint saved when this device registered, so the delete does
+// not wait for the service worker (slow on an iOS cold start) and still works
+// if the browser already dropped the subscription. If the delete fails,
+// nothing changes (unless force, used on logout) so the user can retry.
 export async function disablePush(client, { force = false } = {}) {
-  const sub = await currentSubscription().catch(() => null);
-  if (sub) {
+  const flagEndpoint = readFlag()?.endpoint || null;
+  let sub = flagEndpoint ? null : await currentSubscription().catch(() => null);
+  const endpoint = flagEndpoint || (sub && sub.endpoint);
+  if (endpoint) {
     let failed;
     try {
-      const { error } = await client.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      const { error } = await client.from("push_subscriptions").delete().eq("endpoint", endpoint);
       failed = !!error;
     } catch {
       failed = true;
     }
     if (failed && !force) return { ok: false };
-    try { await sub.unsubscribe(); } catch { /* ignore */ }
   }
+  if (!sub) sub = await currentSubscription().catch(() => null);
+  if (sub) { try { await sub.unsubscribe(); } catch { /* ignore */ } }
   clearFlag();
   return { ok: true };
 }

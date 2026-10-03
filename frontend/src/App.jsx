@@ -1446,9 +1446,13 @@ export default function App() {
       dataLoadRef.current = null;
       lastLoadedAtRef.current = 0;
       updateDataStatus("idle");
-      // الجلسة خلصت بدون تسجيل خروج عادي: هالجهاز بيوقف يستقبل تذكيرات.
       setPushActive(false);
-      unsubscribeThisDevice();
+      // بس نهاية جلسة حقيقية (SIGNED_OUT، مثلًا توكن ملغي) بتوقف التذكيرات
+      // على هالجهاز. INITIAL_SESSION فاضي ممكن يكون مؤقت (شبكة ما جهزت عند
+      // فتح التطبيق والتوكن منتهي) والجلسة بترجع لحالها بعد ثواني — وقتها ما
+      // منلمس الاشتراك ولا علامة الجهاز. تسجيل الخروج العادي وحذف البيانات
+      // بينظّفوا قبل signOut أصلًا.
+      if (event === "SIGNED_OUT") unsubscribeThisDevice();
       return;
     }
 
