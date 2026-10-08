@@ -3565,14 +3565,18 @@ export default function App() {
         {dataReady && currentTab === "transactions" && (
           <>
             <div style={{ position: "relative", background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: 20, padding: "18px 18px 20px", marginBottom: 16, overflow: "hidden" }}>
+              {/* مشهد البطاقة حسب نوع الحساب (فرد/مشروع)، معروض كما هو بدون فلتر
+                  أو تغيير ألوان. الصندوق ١٣٠×٨٧ (٣:٢) بالزاوية الفاضية فوق مربعات
+                  البنك/الكاش، و"contain" بيحافظ على نسبة الصورة بدون قص. قناع
+                  شعاعي عريض: المركز واضح ١٠٠٪ وبعدها تلاشي تدريجي ناعم لحد ما
+                  تذوب الأطراف (القاعدة والإضاءة) بلون البطاقة. */}
               <img
-                src="/wallet-illustration.webp"
+                src={accountType === "مشروع" ? "/liquidity-business.webp" : "/liquidity-individual.webp"}
                 alt=""
                 style={{
-                  position: "absolute", left: -14, top: 4, width: 172, height: "auto", opacity: 0.85,
-                  filter: "brightness(0.74) saturate(1.15)",
-                  maskImage: "radial-gradient(ellipse 58% 58% at 50% 50%, #000 35%, transparent 100%)",
-                  WebkitMaskImage: "radial-gradient(ellipse 58% 58% at 50% 50%, #000 35%, transparent 100%)",
+                  position: "absolute", left: 6, top: 5, width: 130, height: 87, objectFit: "contain", objectPosition: "center bottom",
+                  maskImage: "radial-gradient(ellipse 60% 62% at 50% 44%, #000 42%, rgba(0,0,0,0.72) 62%, rgba(0,0,0,0.3) 83%, transparent 100%)",
+                  WebkitMaskImage: "radial-gradient(ellipse 60% 62% at 50% 44%, #000 42%, rgba(0,0,0,0.72) 62%, rgba(0,0,0,0.3) 83%, transparent 100%)",
                 }}
               />
               <div style={{ position: "relative" }}>
