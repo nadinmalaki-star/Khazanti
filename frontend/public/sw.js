@@ -68,6 +68,17 @@ async function loadFreshShell(request, cache) {
   return { response, fresh: true };
 }
 
+// تحميل الخلفية الجاري حاليًا لنسخة التطبيق (إذا في) — عشان فحص "في نسخة
+// جديدة؟" يستنّى نفس التحميل بدل ما يبلّش تحميل تاني.
+let shellRefresh = null;
+function trackShellRefresh(promise) {
+  shellRefresh = promise;
+  promise.catch(() => {}).then(() => {
+    if (shellRefresh === promise) shellRefresh = null;
+  });
+  return promise;
+}
+
 // الصفحة المحفوظة — بس إذا كل ملفاتها موجودة بالكاش (نسخة متكاملة).
 async function completeCachedShell(cache) {
   const cached = await cache.match(SHELL_KEY);
@@ -185,11 +196,11 @@ async function handleNavigation(event) {
   const savedShell = await completeCachedShell(cache);
   const savedAt = savedShell ? Number(savedShell.headers.get(SHELL_SAVED_AT_HEADER)) : 0;
   if (savedShell && savedAt > 0 && Date.now() - savedAt < SHELL_MAX_AGE_MS) {
-    event.waitUntil(loadFreshShell(event.request, cache).catch(() => {}));
+    event.waitUntil(trackShellRefresh(loadFreshShell(event.request, cache)).catch(() => {}));
     return savedShell;
   }
 
-  const freshShell = loadFreshShell(event.request, cache);
+  const freshShell = trackShellRefresh(loadFreshShell(event.request, cache));
   event.waitUntil(freshShell.catch(() => {}));
 
   const timedOut = new Promise((resolve) => setTimeout(() => resolve(null), NAV_TIMEOUT_MS));
@@ -227,6 +238,37 @@ async function handleStatic(request) {
     return (await cache.match(request)) || Response.error();
   }
 }
+
+// فحص "في نسخة جديدة؟": الصفحة المفتوحة بتبعت ملفات /assets/ يلي انفتحت
+// فيها ووقت فتحها. منستنّى تحميل الخلفية (أو منبلّش واحد إذا ما في)،
+// ومنبعت "khznti-update-ready" بس إذا النسخة المحفوظة هلّق: (١) متكاملة
+// — كل ملفاتها بالكاش، (٢) ملفاتها غير ملفات الصفحة (أسماء Vite فيها hash
+// المحتوى، يعني بناء مختلف)، و(٣) انحفظت بعد ما انفتحت الصفحة — يعني أحدث
+// منها، مش أقدم. ما في أي إعادة تحميل من هون؛ القرار للمستخدم.
+self.addEventListener("message", (event) => {
+  const data = event.data;
+  if (!data || data.type !== "khznti-check-update" || !event.source) return;
+  const pageAssets = Array.isArray(data.assets) ? data.assets.filter((a) => typeof a === "string" && a.startsWith("/assets/")) : [];
+  const loadedAt = Number(data.loadedAt);
+  if (pageAssets.length === 0 || !(loadedAt > 0)) return;
+
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await (shellRefresh || trackShellRefresh(loadFreshShell(new Request(SHELL_KEY, { cache: "no-cache" }), cache))).catch(() => {});
+
+      const latest = await completeCachedShell(cache);
+      if (!latest) return;
+      const savedAt = Number(latest.headers.get(SHELL_SAVED_AT_HEADER));
+      const latestAssets = assetPathsIn(await latest.text());
+      const pageSet = new Set(pageAssets);
+      const sameBuild = latestAssets.length === pageSet.size && latestAssets.every((a) => pageSet.has(a));
+      if (!sameBuild && savedAt > loadedAt) {
+        event.source.postMessage({ type: "khznti-update-ready" });
+      }
+    })()
+  );
+});
 
 // بنخزّن بس شكل التطبيق نفسه (HTML/JS/CSS/صور) عشان يفتح حتى بدون نت.
 // طلبات Supabase (بيانات مالية حقيقية) وأي موقع خارجي ما بتمر من هون

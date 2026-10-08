@@ -690,6 +690,9 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
   const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  // نسخة جديدة من التطبيق تحمّلت كاملة بالخلفية — منعرض تنبيه صغير بس،
+  // والتحديث (إعادة التحميل) ما بيصير إلا لما المستخدم يضغط "تحديث".
+  const [updateReady, setUpdateReady] = useState(false);
 
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [debtName, setDebtName] = useState("");
@@ -1123,6 +1126,16 @@ export default function App() {
       if (!intent) return;
       pendingOpenRef.current = intent;
       if (dataStatusRef.current === "ready") applyOpenIntent(debtsRef.current);
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, []);
+
+  // الـservice worker بيبلّغ إنو في نسخة أحدث جاهزة كاملة (شوف main.jsx/sw.js).
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event) => {
+      if (event.data && event.data.type === "khznti-update-ready") setUpdateReady(true);
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
@@ -2745,6 +2758,36 @@ export default function App() {
     );
   }
 
+  // تنبيه "نسخة جديدة جاهزة": ثابت بأسفل الشاشة (ما بيزيح أي محتوى ولا
+  // بيقاطع نموذج مفتوح)، وتحت النوافذ المنبثقة (zIndex 1000). "تحديث" هو
+  // الشي الوحيد يلي بيعيد تحميل الصفحة؛ "×" بيخفيه بس.
+  const updateBanner = updateReady ? (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{ position: "fixed", left: 16, right: 16, bottom: "calc(16px + env(safe-area-inset-bottom))", zIndex: 900, display: "flex", justifyContent: "center", pointerEvents: "none" }}
+    >
+      <div dir="rtl" style={{ pointerEvents: "auto", width: "100%", maxWidth: 348, display: "flex", alignItems: "center", gap: 10, background: currentTheme.cardBg, border: `1px solid ${currentTheme.accent}`, borderRadius: 12, padding: "10px 12px", boxShadow: "0 10px 28px rgba(0,0,0,0.45)", color: currentTheme.text, fontFamily: "'Tajawal', sans-serif" }}>
+        <span style={{ flex: 1, fontSize: 12.5, fontWeight: 700 }}>نسخة جديدة من خزنتي جاهزة</span>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          style={{ background: currentTheme.accent, color: "#0e1a1a", border: "none", padding: "6px 14px", borderRadius: 8, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+        >
+          تحديث
+        </button>
+        <button
+          type="button"
+          onClick={() => setUpdateReady(false)}
+          aria-label="إغلاق"
+          style={{ background: "none", border: "none", color: currentTheme.text, opacity: 0.6, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "2px 4px" }}
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   // الشاشة الترحيبية — بدون أي تغيير على المحتوى الأصلي، فقط إضافة "تواصل معنا"
   if (!isLoggedIn) {
     return (
@@ -3185,6 +3228,8 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {updateBanner}
       </div>
     );
   }
@@ -5080,6 +5125,8 @@ export default function App() {
         )}
 
       </div>
+
+      {updateBanner}
     </div>
   );
 }
