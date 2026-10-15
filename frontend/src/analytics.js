@@ -1,9 +1,12 @@
 // analytics.js — تتبّع خفيف لقمع التسجيل (زيارة الصفحة الترحيبية ← بداية
-// التسجيل ← حساب جديد) بجدول public.analytics_events.
+// التسجيل ← حساب جديد) ولجولة Smart Start وأول حركة حقيقية، بجدول
+// public.analytics_events.
 //
 // قواعد ثابتة:
-// - بس الأحداث التلاتة المسموحة، وبس على دومين الإنتاج (localhost والـpreview
-//   ما بيكتبوا أي شي بجدول الإنتاج).
+// - بس الأحداث المسموحة بـALLOWED_EVENTS، وبس على دومين الإنتاج (localhost
+//   والـpreview ما بيكتبوا أي شي بجدول الإنتاج).
+// - metadata بس من القائمة المسموحة تحت (حاليًا نوع الحساب فقط) — أي مفتاح
+//   أو قيمة تانية بتنرمى، فما في طريقة يوصل مبلغ أو فئة أو رصيد للجدول.
 // - "أرسل وانسى": ما في await، وأي فشل بينبلع — التتبّع عمره ما بيوقف أو
 //   بيغيّر التسجيل أو التنقل.
 // - ما في أي بيانات حساسة: لا إيميل ولا اسم ولا مبالغ ولا تفاصيل مالية، ولا
@@ -11,7 +14,13 @@
 // - user_id ما بنبعته: قاعدة البيانات بتعبّيه لحالها من auth.uid().
 import { supabase } from "./supabase.js";
 
-const ALLOWED_EVENTS = new Set(["site_page_view", "signup_start", "signup_complete"]);
+const ALLOWED_EVENTS = new Set([
+  "site_page_view", "signup_start", "signup_complete",
+  "smart_start_shown", "smart_start_started", "smart_start_skipped", "smart_start_completed",
+  "first_transaction_saved",
+]);
+// المفاتيح والقيم الوحيدة المسموحة بعمود metadata.
+const ALLOWED_METADATA = { account_type: new Set(["individual", "business"]) };
 const ONCE_PER_SESSION = new Set(["site_page_view", "signup_start"]);
 const PRODUCTION_HOSTS = new Set(["www.khznti.app", "khznti.app"]);
 const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content"];
@@ -128,7 +137,18 @@ export function suppressPageViewForSession() {
   }
 }
 
-export function track(eventName) {
+// بيرجّع بس المفاتيح/القيم المسموحة؛ إذا ما ضل شي، العمود بياخد قيمته الافتراضية {}.
+function sanitizeMetadata(metadata) {
+  const clean = {};
+  if (metadata && typeof metadata === "object") {
+    Object.keys(ALLOWED_METADATA).forEach((key) => {
+      if (ALLOWED_METADATA[key].has(metadata[key])) clean[key] = metadata[key];
+    });
+  }
+  return clean;
+}
+
+export function track(eventName, metadata) {
   try {
     if (!ALLOWED_EVENTS.has(eventName) || !isTrackingEnabled()) return;
     if (ONCE_PER_SESSION.has(eventName)) {
@@ -149,6 +169,8 @@ export function track(eventName) {
       utm_campaign: attribution.utm_campaign || null,
       utm_content: attribution.utm_content || null,
     };
+    const cleanMetadata = sanitizeMetadata(metadata);
+    if (Object.keys(cleanMetadata).length > 0) row.metadata = cleanMetadata;
 
     supabase
       .from("analytics_events")

@@ -7,6 +7,12 @@ import {
   dismissPushPrompt, parseOpenIntent,
 } from "./push.js";
 import * as XLSX from "xlsx";
+import {
+  SMART_START_MAX_EXPOSURES, isSmartStartUser, mergeSmartStart, sameSmartStart, readMetadataSmartStart,
+  readLocalSmartStart, writeLocalSmartStart, pushSmartStartToMetadata, readSessionPhase, writeSessionPhase,
+  analyticsAccountType,
+} from "./smartStart.js";
+import { SmartStartSpotlight } from "./SmartStartSpotlight.jsx";
 import './App.css';
 
 // ------------------------------------------------------------------
@@ -724,6 +730,114 @@ export default function App() {
   const debtsRef = useRef([]);
 
   const currentTheme = THEMES[themeKey];
+
+  // ============ Smart Start (V1) — جولة أول حركة حقيقية لحسابات جديدة ============
+  // شوف smartStart.js للحالة والمفاتيح. الحالة الفعلية مشتقة (مش مخزّنة
+  // بـstate): user_metadata + النسخة المحلية + تحديثات هالجلسة، مدموجين
+  // بقاعدة "الأكثر تقدّمًا بيغلب" — فما في سباق بين الكتابة والقراءة.
+  const [smartStartAuth, setSmartStartAuth] = useState(null); // { userId, createdAt, meta }
+  const [smartStartOverride, setSmartStartOverride] = useState(null); // { userId, state } من أفعال المستخدم
+  const [smartStartPhaseOverride, setSmartStartPhaseOverride] = useState(null); // { userId, phase }
+  const [smartStartSuccess, setSmartStartSuccess] = useState(false);
+  const smartStartPushedRef = useRef("");
+
+  const smartStart = useMemo(() => {
+    if (!smartStartAuth || !isSmartStartUser(smartStartAuth.createdAt)) return null;
+    const { userId, meta } = smartStartAuth;
+    let state = mergeSmartStart(meta, readLocalSmartStart(userId));
+    if (smartStartOverride && smartStartOverride.userId === userId) state = mergeSmartStart(state, smartStartOverride.state);
+    return state;
+  }, [smartStartAuth, smartStartOverride]);
+
+  const smartStartPhase = useMemo(() => {
+    if (!smartStartAuth) return null;
+    if (smartStartPhaseOverride && smartStartPhaseOverride.userId === smartStartAuth.userId) return smartStartPhaseOverride.phase;
+    return readSessionPhase(smartStartAuth.userId);
+  }, [smartStartAuth, smartStartPhaseOverride]);
+
+  // بيحفظ محليًا فورًا وبيرفع لـuser_metadata لو مختلف عنه (مرة وحدة لكل قيمة).
+  function persistSmartStart(state) {
+    if (!smartStartAuth) return;
+    const { userId, meta } = smartStartAuth;
+    const merged = mergeSmartStart(readLocalSmartStart(userId), state);
+    writeLocalSmartStart(userId, merged);
+    const key = userId + JSON.stringify(merged);
+    if (!sameSmartStart(merged, meta) && smartStartPushedRef.current !== key) {
+      smartStartPushedRef.current = key;
+      pushSmartStartToMetadata(merged);
+    }
+  }
+
+  const smartStartEventMeta = { account_type: analyticsAccountType(accountType) };
+
+  const smartStartVisible =
+    !!smartStart && smartStart.status === "active" && isLoggedIn && !!accountType &&
+    dataStatus === "ready" && transactions.length === 0 &&
+    ((accountType !== "مشروع" && activeTab === "inventory") ? "transactions" : activeTab) === "transactions" &&
+    !editingTransactionId && !showAddTransactionForm &&
+    !showThemePanel && !showAvatarMenu && !showNotifPanel && !showDeleteDataModal && !showAddDebtModal &&
+    !settlingDebt && !showContactModal && !showPrivacyModal && !updateReady &&
+    smartStartPhase !== "started" &&
+    (smartStartPhase === "seen" || smartStart.exposures < SMART_START_MAX_EXPOSURES);
+
+  // مزامنة: النسخة المحلية أو هالجلسة سابقة لـuser_metadata (مثلًا كتابة فشلت قبل) → منرفعها.
+  useEffect(() => {
+    if (smartStart) persistSmartStart(smartStart);
+  }, [smartStart, smartStartAuth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // عرض واحد بالحد الأقصى بكل جلسة متصفح، و٣ عروض بالمجمل.
+  useEffect(() => {
+    if (!smartStartVisible || !smartStartAuth) return;
+    const { userId } = smartStartAuth;
+    if (readSessionPhase(userId)) return;
+    writeSessionPhase(userId, "seen");
+    const base = mergeSmartStart(readLocalSmartStart(userId), smartStart);
+    persistSmartStart({ ...base, exposures: Math.min(SMART_START_MAX_EXPOSURES, base.exposures + 1) });
+    track("smart_start_shown", smartStartEventMeta);
+  }, [smartStartVisible, smartStartAuth]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // صار عنده حركات بطريق تاني (رصيد افتتاحي، تحويل، مخزون...) قبل ما يكمّل
+  // الجولة → بتنتهي بصمت (ended)، بدون smart_start_completed.
+  useEffect(() => {
+    if (smartStart && smartStart.status === "active" && dataStatus === "ready" && transactions.length > 0) {
+      persistSmartStart({ ...smartStart, status: "ended" });
+    }
+  }, [smartStart, dataStatus, transactions.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // رسالة النجاح بتختفي لحالها بعد شوي.
+  useEffect(() => {
+    if (!smartStartSuccess) return undefined;
+    const timer = setTimeout(() => setSmartStartSuccess(false), 6000);
+    return () => clearTimeout(timer);
+  }, [smartStartSuccess]);
+
+  function handleSmartStartStarted() {
+    if (!smartStartVisible || !smartStartAuth) return;
+    writeSessionPhase(smartStartAuth.userId, "started");
+    setSmartStartPhaseOverride({ userId: smartStartAuth.userId, phase: "started" });
+    track("smart_start_started", smartStartEventMeta);
+  }
+
+  function handleSmartStartSkipped() {
+    if (!smartStart || !smartStartAuth) return;
+    setSmartStartOverride({ userId: smartStartAuth.userId, state: { ...smartStart, status: "skipped" } });
+    track("smart_start_skipped", smartStartEventMeta);
+  }
+
+  // بتنستدعى من حفظ حركة جديدة ناجح (نموذج تسجيل العملية) لما ما في قبلها
+  // ولا حركة دخل/مصروف حقيقية. بس لحسابات ما بعد الإطلاق (smartStart != null).
+  function handleSmartStartFirstSave() {
+    if (!smartStart || !smartStartAuth) return;
+    const current = mergeSmartStart(readLocalSmartStart(smartStartAuth.userId), smartStart);
+    if (!current.firstTxSaved) track("first_transaction_saved", smartStartEventMeta);
+    const completes = current.status === "active" && current.exposures > 0;
+    if (completes) {
+      track("smart_start_completed", smartStartEventMeta);
+      setSmartStartSuccess(true);
+    }
+    const status = current.status === "active" ? (completes ? "done" : "ended") : current.status;
+    setSmartStartOverride({ userId: smartStartAuth.userId, state: { ...current, firstTxSaved: true, status } });
+  }
 
   // تذكر الإيميل — تعبئة تلقائية من آخر مرة (بدون كلمة المرور إطلاقًا)
   useEffect(() => {
@@ -1460,6 +1574,7 @@ export default function App() {
       lastLoadedAtRef.current = 0;
       updateDataStatus("idle");
       setPushActive(false);
+      setSmartStartAuth(null);
       // بس نهاية جلسة حقيقية (SIGNED_OUT، مثلًا توكن ملغي) بتوقف التذكيرات
       // على هالجهاز. INITIAL_SESSION فاضي ممكن يكون مؤقت (شبكة ما جهزت عند
       // فتح التطبيق والتوكن منتهي) والجلسة بترجع لحالها بعد ثواني — وقتها ما
@@ -1473,6 +1588,15 @@ export default function App() {
     setUserEmail(session.user?.email || "");
     const userId = session.user?.id;
     if (!userId) return;
+
+    // Smart Start: تاريخ إنشاء الحساب + الحالة المحفوظة بـuser_metadata (كمان
+    // بعد USER_UPDATED). نفس القيم = نفس الكائن، فما في إعادة حساب بدون داعي.
+    const smartStartMeta = readMetadataSmartStart(session.user);
+    setSmartStartAuth((prev) =>
+      prev && prev.userId === userId && prev.createdAt === session.user.created_at && sameSmartStart(prev.meta, smartStartMeta)
+        ? prev
+        : { userId, createdAt: session.user.created_at, meta: smartStartMeta }
+    );
 
     if (loadedUserIdRef.current !== userId) {
       // أول تحميل بهاي الجلسة، أو حساب مختلف: ما منعرض أبدًا بيانات حساب سابق.
@@ -1694,6 +1818,8 @@ export default function App() {
       }
 
       const newRecord = { ...commonFields, user_id: user.id, account_type: accountType };
+      // Smart Start: هل هاي أول حركة دخل/مصروف حقيقية؟ (الرصيد الافتتاحي والتحويل ما بينحسبوا)
+      const isFirstRealTransaction = !transactions.some((t) => t.type !== "تحويل" && t.type !== "رصيد افتتاحي");
 
       const { data, error: dbError } = await supabase
         .from("transactions")
@@ -1744,6 +1870,7 @@ export default function App() {
       if (dbError) {
         setError("فشل الحفظ: " + dbError.message);
       } else if (data) {
+        if (isFirstRealTransaction) handleSmartStartFirstSave();
         setTransactions(prev => [data[0], ...prev]);
         setAmount("");
         setNote("");
@@ -3693,6 +3820,13 @@ export default function App() {
                 تسجيل العملية تحت مع تحديد النوع مسبقًا. التحويل مقصود إنه
                 مش هون — مكانه بس بتبويب الخزائن عشان ما يصير تكرار. */}
             {!editingTransactionId && (
+              <SmartStartSpotlight
+                active={smartStartVisible}
+                success={smartStartSuccess}
+                theme={currentTheme}
+                onStart={handleSmartStartStarted}
+                onSkip={handleSmartStartSkipped}
+              >
               <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
                 <button
                   type="button"
@@ -3719,6 +3853,7 @@ export default function App() {
                   دخل
                 </button>
               </div>
+              </SmartStartSpotlight>
             )}
 
             <div style={{ background: currentTheme.boxBg, border: `1px solid ${currentTheme.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
