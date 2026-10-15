@@ -11,6 +11,6 @@ export default defineConfig({
     // لحظة إطلاق Smart Start على الإنتاج (UTC). null = الميزة مطفية. بتنحدد
     // مباشرة قبل نشر الإنتاج بلحظة الإطلاق الفعلية، مثلًا:
     // JSON.stringify("YYYY-MM-DDTHH:MM:SSZ") — الحسابات المنخلقة بعدها بس بتشوف الجولة.
-    __KHZNTI_SMART_START_LAUNCH_AT__: 'null',
+    __KHZNTI_SMART_START_LAUNCH_AT__: JSON.stringify("2026-10-15T06:23:36Z"),
   },
 })
